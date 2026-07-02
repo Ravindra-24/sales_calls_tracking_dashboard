@@ -68,5 +68,5 @@ export interface InviteResult {
   email: string;
   role: 'manager' | 'rep';
   expiresAt: string;
-  inviteLink: string;
+  inviteLink?: string;
 }
