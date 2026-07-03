@@ -283,3 +283,701 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   transform: translateX(20px);
   background-color: white;
 }
+
+.product-page {
+  --product-bg: #091018;
+  --product-surface: rgba(12, 19, 28, 0.78);
+  --product-line: rgba(198, 221, 232, 0.16);
+  --product-teal: #4fd7c5;
+  --product-mint: #7ee787;
+  --product-coral: #ff8668;
+  --product-gold: #f5c85f;
+  --product-blue: #6da8ff;
+  min-height: 100vh;
+  overflow: hidden;
+  color: #f8fbff;
+  background:
+    linear-gradient(135deg, rgba(79, 215, 197, 0.12), transparent 28%),
+    linear-gradient(225deg, rgba(255, 134, 104, 0.11), transparent 26%),
+    linear-gradient(180deg, #0d1620 0%, var(--product-bg) 48%, #10100d 100%);
+}
+
+.product-page a { color: inherit; }
+
+.product-nav {
+  width: min(1180px, calc(100% - 32px));
+  min-height: 70px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  position: relative;
+  z-index: 5;
+}
+
+.product-brand,
+.product-nav-links,
+.product-kicker,
+.product-hero-actions,
+.product-trust-row,
+.product-primary-action,
+.product-secondary-action,
+.product-download-button {
+  display: flex;
+  align-items: center;
+}
+
+.product-brand {
+  gap: 10px;
+  color: #fff;
+  font: 800 18px 'Manrope', sans-serif;
+  text-decoration: none;
+}
+
+.product-brand span {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #061114;
+  background: linear-gradient(135deg, var(--product-teal), var(--product-gold));
+  box-shadow: 0 12px 30px rgba(79, 215, 197, 0.22);
+}
+
+.product-nav-links {
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid var(--product-line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(18px);
+}
+
+.product-nav-links a {
+  padding: 9px 13px;
+  border-radius: 999px;
+  color: #d7e5ec;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+  transition: 180ms ease;
+}
+
+.product-nav-links a:hover {
+  color: #061114;
+  background: var(--product-teal);
+}
+
+.product-hero {
+  width: min(1180px, calc(100% - 32px));
+  min-height: calc(100vh - 70px);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 0.94fr) minmax(360px, 1.06fr);
+  align-items: center;
+  gap: clamp(32px, 6vw, 78px);
+  padding: 34px 0 74px;
+}
+
+.product-hero-copy {
+  max-width: 610px;
+}
+
+.product-kicker {
+  gap: 8px;
+  width: fit-content;
+  margin-bottom: 18px;
+  color: var(--product-teal);
+  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.product-hero h1 {
+  max-width: 760px;
+  font-size: clamp(42px, 7vw, 76px);
+  line-height: 0.98;
+  letter-spacing: 0;
+}
+
+.product-hero-copy > p:not(.product-kicker) {
+  max-width: 580px;
+  margin-top: 22px;
+  color: #bfd0d9;
+  font-size: clamp(16px, 2vw, 19px);
+  line-height: 1.7;
+}
+
+.product-hero-actions {
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.product-primary-action,
+.product-secondary-action,
+.product-download-button {
+  min-height: 48px;
+  justify-content: center;
+  gap: 9px;
+  border-radius: 8px;
+  padding: 12px 18px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: 180ms ease;
+}
+
+.product-primary-action,
+.product-download-button {
+  color: #051316;
+  background: linear-gradient(135deg, var(--product-teal), var(--product-gold));
+  box-shadow: 0 18px 42px rgba(79, 215, 197, 0.22);
+}
+
+.product-primary-action:hover,
+.product-download-button:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.04);
+}
+
+.product-secondary-action {
+  color: #eff8fb;
+  border: 1px solid var(--product-line);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.product-secondary-action:hover {
+  border-color: rgba(255, 255, 255, 0.32);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.product-trust-row {
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.product-trust-row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  color: #d6e4ea;
+  background: rgba(255, 255, 255, 0.035);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.product-trust-row svg { color: var(--product-mint); }
+
+.product-visual {
+  position: relative;
+  min-height: 520px;
+  isolation: isolate;
+}
+
+.signal-ring {
+  position: absolute;
+  inset: 8% 2% auto auto;
+  width: min(470px, 86%);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1px solid rgba(79, 215, 197, 0.2);
+  background:
+    radial-gradient(circle, rgba(79, 215, 197, 0.18) 0 2px, transparent 3px),
+    radial-gradient(circle, rgba(245, 200, 95, 0.12), transparent 60%);
+  background-size: 28px 28px, auto;
+  animation: product-spin 24s linear infinite;
+  z-index: -1;
+}
+
+.dashboard-preview {
+  width: min(520px, 92%);
+  margin: 30px 0 0 auto;
+  padding: 18px;
+  border: 1px solid var(--product-line);
+  border-radius: 8px;
+  background: linear-gradient(145deg, rgba(18, 30, 43, 0.96), rgba(11, 17, 26, 0.9));
+  box-shadow: 0 34px 80px rgba(0, 0, 0, 0.35);
+  animation: product-float 7s ease-in-out infinite;
+}
+
+.preview-toolbar {
+  display: flex;
+  gap: 7px;
+  padding-bottom: 18px;
+}
+
+.preview-toolbar span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--product-coral);
+}
+
+.preview-toolbar span:nth-child(2) { background: var(--product-gold); }
+.preview-toolbar span:nth-child(3) { background: var(--product-mint); }
+
+.preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.preview-grid div,
+.phone-screen,
+.live-pill,
+.product-feature-card,
+.workflow-step,
+.plan-card,
+.download-panel {
+  border: 1px solid var(--product-line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.preview-grid div {
+  min-height: 104px;
+  padding: 16px;
+}
+
+.preview-grid p,
+.download-section p,
+.product-section-heading p,
+.product-feature-card p,
+.workflow-step p,
+.plan-card p,
+.download-panel p {
+  color: #a9bbc5;
+  line-height: 1.65;
+}
+
+.preview-grid strong {
+  display: block;
+  margin-top: 14px;
+  font: 800 34px 'Manrope', sans-serif;
+}
+
+.preview-bars {
+  height: 170px;
+  display: flex;
+  align-items: end;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.preview-bars i {
+  flex: 1;
+  min-width: 20px;
+  border-radius: 6px 6px 2px 2px;
+  background: linear-gradient(180deg, var(--product-teal), var(--product-blue));
+  box-shadow: 0 0 22px rgba(79, 215, 197, 0.22);
+  animation: bar-pulse 2.8s ease-in-out infinite;
+}
+
+.preview-bars i:nth-child(2n) { animation-delay: 220ms; background: linear-gradient(180deg, var(--product-gold), var(--product-coral)); }
+.preview-bars i:nth-child(3n) { animation-delay: 420ms; }
+
+.phone-preview {
+  position: absolute;
+  left: 0;
+  bottom: 36px;
+  width: min(220px, 44vw);
+  min-height: 350px;
+  padding: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 26px;
+  background: linear-gradient(180deg, #151d29, #070b10);
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.38);
+  animation: product-float 8s ease-in-out infinite reverse;
+}
+
+.phone-preview img {
+  width: 100%;
+  height: 190px;
+  object-fit: contain;
+  display: block;
+  margin: 8px auto 4px;
+}
+
+.phone-screen {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  color: #f8fbff;
+  background: linear-gradient(145deg, rgba(79, 215, 197, 0.14), rgba(255, 134, 104, 0.11));
+}
+
+.phone-screen svg { color: var(--product-teal); }
+.phone-screen span { color: #a9bbc5; font-size: 12px; }
+
+.live-pill {
+  position: absolute;
+  right: 26px;
+  bottom: 78px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 13px;
+  color: #081316;
+  background: var(--product-mint);
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: 0 18px 50px rgba(126, 231, 135, 0.22);
+  animation: pill-pop 2.6s ease-in-out infinite;
+}
+
+.product-section,
+.product-workflow,
+.download-section {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+}
+
+.product-section,
+.download-section {
+  padding: 82px 0;
+}
+
+.product-section-heading {
+  max-width: 680px;
+  margin-bottom: 28px;
+}
+
+.product-section-heading h2,
+.download-section h2 {
+  font-size: clamp(30px, 4vw, 48px);
+  line-height: 1.08;
+}
+
+.product-feature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.product-feature-card,
+.workflow-step,
+.plan-card,
+.download-panel {
+  position: relative;
+  overflow: hidden;
+  padding: 20px;
+  backdrop-filter: blur(18px);
+}
+
+.product-feature-card::before,
+.plan-card::before,
+.download-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, var(--product-teal), var(--product-gold), var(--product-coral));
+}
+
+.product-feature-card > span,
+.workflow-step > span,
+.download-icon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #061114;
+  background: var(--product-teal);
+  margin-bottom: 18px;
+}
+
+.product-feature-card h3,
+.workflow-step h3,
+.plan-card h3,
+.download-panel h3 {
+  margin-bottom: 8px;
+  font-size: 18px;
+}
+
+.product-workflow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  padding: 18px 0 74px;
+}
+
+.workflow-step {
+  min-height: 246px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.025));
+}
+
+.workflow-index {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  color: rgba(255, 255, 255, 0.12);
+  font: 800 42px 'Manrope', sans-serif;
+}
+
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+.plan-card {
+  min-height: 365px;
+  display: flex;
+  flex-direction: column;
+  background: var(--product-surface);
+}
+
+.plan-card.featured {
+  transform: translateY(-10px);
+  border-color: rgba(79, 215, 197, 0.38);
+  box-shadow: 0 26px 80px rgba(79, 215, 197, 0.13);
+}
+
+.plan-card.mint::before { background: var(--product-mint); }
+.plan-card.blue::before { background: var(--product-blue); }
+.plan-card.coral::before { background: var(--product-coral); }
+
+.plan-badge {
+  width: fit-content;
+  margin-bottom: 16px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: #061114;
+  background: var(--product-teal);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.plan-card h3 {
+  font-size: 26px;
+}
+
+.plan-card ul {
+  display: grid;
+  gap: 12px;
+  padding: 0;
+  margin: 24px 0 0;
+  list-style: none;
+}
+
+.plan-card li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: #d8e8ee;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.plan-card li svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--product-mint);
+}
+
+.download-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+  gap: 36px;
+  align-items: center;
+  padding-bottom: 110px;
+}
+
+.download-section code {
+  padding: 2px 6px;
+  border-radius: 5px;
+  color: #dcfff9;
+  background: rgba(79, 215, 197, 0.11);
+}
+
+.download-section > div:first-child > p:not(.product-kicker) {
+  max-width: 640px;
+  margin-top: 18px;
+  font-size: 16px;
+}
+
+.download-panel {
+  padding: 28px;
+  background:
+    linear-gradient(145deg, rgba(79, 215, 197, 0.12), rgba(255, 134, 104, 0.09)),
+    rgba(255, 255, 255, 0.055);
+}
+
+.download-icon {
+  background: linear-gradient(135deg, var(--product-gold), var(--product-coral));
+}
+
+.download-panel .product-download-button {
+  width: 100%;
+  margin: 22px 0 14px;
+}
+
+.product-download-button.is-disabled {
+  cursor: not-allowed;
+  color: #9ca9af;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}
+
+.product-download-button.is-disabled:hover {
+  transform: none;
+  filter: none;
+}
+
+.download-panel > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #a9bbc5;
+  font-size: 12px;
+}
+
+.product-reveal {
+  animation: reveal-up 700ms ease both;
+}
+
+.product-visual.product-reveal { animation-delay: 120ms; }
+
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes product-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes product-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+
+@keyframes bar-pulse {
+  0%, 100% { filter: brightness(0.9); transform: scaleY(0.97); }
+  50% { filter: brightness(1.12); transform: scaleY(1.03); }
+}
+
+@keyframes pill-pop {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-6px) scale(1.02); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-reveal,
+  .signal-ring,
+  .dashboard-preview,
+  .phone-preview,
+  .preview-bars i,
+  .live-pill {
+    animation: none;
+  }
+}
+
+@media (max-width: 980px) {
+  .product-hero {
+    min-height: auto;
+    grid-template-columns: 1fr;
+    padding-top: 36px;
+  }
+
+  .product-visual {
+    min-height: 500px;
+  }
+
+  .product-feature-grid,
+  .plan-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .product-workflow,
+  .download-section {
+    grid-template-columns: 1fr;
+  }
+
+  .plan-card.featured {
+    transform: none;
+  }
+}
+
+@media (max-width: 680px) {
+  .product-nav {
+    min-height: auto;
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 16px 0 0;
+  }
+
+  .product-nav-links {
+    width: 100%;
+    justify-content: space-between;
+    overflow-x: auto;
+    border-radius: 8px;
+  }
+
+  .product-nav-links a {
+    flex: 1 0 auto;
+    text-align: center;
+  }
+
+  .product-hero h1 {
+    font-size: clamp(38px, 14vw, 56px);
+  }
+
+  .product-primary-action,
+  .product-secondary-action {
+    width: 100%;
+  }
+
+  .product-visual {
+    min-height: 470px;
+  }
+
+  .dashboard-preview {
+    width: 100%;
+    margin-top: 0;
+  }
+
+  .phone-preview {
+    left: 14px;
+    bottom: 18px;
+    width: min(190px, 54vw);
+    min-height: 312px;
+  }
+
+  .phone-preview img {
+    height: 150px;
+  }
+
+  .live-pill {
+    right: 12px;
+    bottom: 38px;
+  }
+
+  .product-feature-grid,
+  .plan-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-bars {
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .product-section,
+  .download-section {
+    padding: 58px 0;
+  }
+}

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import { FirebaseError } from 'firebase/app';
 import { sendPasswordResetEmail, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { LogIn, Mail, Lock, AlertCircle } from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/auth';
 
 export const Login: React.FC = () => {
@@ -20,7 +21,7 @@ export const Login: React.FC = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    
+
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
       const claims = await refreshClaims();
@@ -30,7 +31,11 @@ export const Login: React.FC = () => {
         return;
       }
       navigate('/');
-    } catch {
+    } catch (error) {
+      if (error instanceof FirebaseError && error.code.includes('api-key')) {
+        setError('Dashboard Firebase configuration is invalid. Set the VITE_FIREBASE_* variables in Vercel and redeploy.');
+        return;
+      }
       setError('Sign-in failed. Check your email and password.');
     } finally {
       setLoading(false);
@@ -116,6 +121,9 @@ export const Login: React.FC = () => {
             Reset password
           </button>
         </form>
+        <p style={{ marginTop: '1.25rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.86rem' }}>
+          New here? <Link to="/product" style={{ color: '#8edbd1', fontWeight: 700, textDecoration: 'none' }}>View product page</Link>
+        </p>
       </div>
     </div>
   );

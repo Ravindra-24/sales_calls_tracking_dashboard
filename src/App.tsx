@@ -10,6 +10,7 @@ import { Team } from './pages/Team';
 import { Platform } from './pages/Platform';
 import { ClaimAccount } from './pages/ClaimAccount';
 import { Settings } from './pages/Settings';
+import { ProductPage } from './pages/ProductPage';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, claims } = useAuth();
@@ -24,6 +25,7 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          <Route path="/product" element={<ProductPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/claim" element={<ClaimAccount />} />
           
