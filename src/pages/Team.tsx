@@ -183,9 +183,22 @@ export const Team = () => {
               <div className="success-icon"><Check size={18} /></div>
               <div><strong>{invite.createdUser ? 'Account created' : 'Invitation created'} for {invite.email}</strong><p>{invite.createdUser ? 'Share the login link and temporary password securely.' : `The invite expires ${format(new Date(invite.expiresAt), 'd MMM yyyy, h:mm a')}.`}{invite.emailSent === false ? ' Email was not sent; copy and share manually.' : ''}</p></div>
               <code>{invite.createdUser ? `${invite.createdUser.loginLink} | ${invite.createdUser.temporaryPassword}` : invite.inviteLink ?? invite.token}</code>
-              <button className="secondary-button" type="button" onClick={() => copyText(invite.createdUser ? `${invite.createdUser.loginLink}\nEmail: ${invite.email}\nTemporary password: ${invite.createdUser.temporaryPassword}` : invite.inviteLink ?? invite.token, 'new-invite')}>
-                {copied === 'new-invite' ? <Check size={16} /> : <Copy size={16} />} {copied === 'new-invite' ? 'Copied' : 'Copy'}
-              </button>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                <button className="secondary-button" type="button" onClick={() => copyText(invite.createdUser ? `${invite.createdUser.loginLink}\nEmail: ${invite.email}\nTemporary password: ${invite.createdUser.temporaryPassword}` : invite.inviteLink ?? invite.token, 'new-invite')}>
+                  {copied === 'new-invite' ? <Check size={16} /> : <Copy size={16} />} {copied === 'new-invite' ? 'Copied' : 'Copy Link'}
+                </button>
+                {!invite.createdUser && (invite.token || invite.inviteLink) && (
+                  <button className="secondary-button" type="button" onClick={() => {
+                    let t = invite.token;
+                    if (!t && invite.inviteLink) {
+                      try { t = new URL(invite.inviteLink).searchParams.get('token') || ''; } catch { t = invite.inviteLink.split('token=')[1]?.split('&')[0] || ''; }
+                    }
+                    if (t) copyText(t, 'new-invite-token');
+                  }}>
+                    {copied === 'new-invite-token' ? <Check size={16} /> : <Copy size={16} />} {copied === 'new-invite-token' ? 'Token Copied' : 'Copy Token'}
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </section>
@@ -246,7 +259,16 @@ export const Team = () => {
                   <td>{row.expiresAt ? format(new Date(row.expiresAt), 'd MMM yyyy') : '—'}</td>
                   <td>
                     <div className="row-actions">
-                      {row.status === 'pending' && row.inviteLink && <button className="secondary-button" onClick={() => copyText(row.inviteLink!, row.id)}>{copied === row.id ? <Check size={15} /> : <Copy size={15} />} Copy</button>}
+                      {row.status === 'pending' && row.inviteLink && (
+                        <>
+                          <button className="secondary-button" onClick={() => copyText(row.inviteLink!, row.id)}>{copied === row.id ? <Check size={15} /> : <Copy size={15} />} Copy Link</button>
+                          <button className="secondary-button" onClick={() => {
+                            let t = '';
+                            try { t = new URL(row.inviteLink!).searchParams.get('token') || ''; } catch { t = row.inviteLink!.split('token=')[1]?.split('&')[0] || ''; }
+                            if (t) copyText(t, `${row.id}-token`);
+                          }}>{copied === `${row.id}-token` ? <Check size={15} /> : <Copy size={15} />} Copy Token</button>
+                        </>
+                      )}
                       {row.status === 'pending' && <button className="secondary-button" onClick={() => resendInvite(row.id)}><RefreshCw size={15} /> Resend</button>}
                       {row.status === 'pending' && <button className="secondary-button danger-button" onClick={() => revokeInvite(row.id)}>Revoke</button>}
                     </div>

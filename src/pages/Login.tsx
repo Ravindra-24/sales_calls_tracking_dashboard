@@ -59,7 +59,7 @@ export const Login: React.FC = () => {
           <div style={{ width: '48px', height: '48px', background: 'var(--accent-primary)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', boxShadow: '0 4px 20px rgba(59, 130, 246, 0.4)' }}>
             <LogIn color="white" size={24} />
           </div>
-          <h2>SalesTracker</h2>
+          <h2>RevConnect</h2>
           <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Sign in to manage sales calls</p>
         </div>
 

@@ -17,6 +17,7 @@ export interface TeamMember {
   role: UserRole;
   status: UserStatus;
   phoneNumber?: string;
+  avatarUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -103,7 +104,14 @@ export interface PlatformOrganization {
   id: string;
   name: string;
   plan: string;
+  status: 'active' | 'disabled';
   ownerUserId: string;
+  settings?: {
+    timezone?: string;
+    workingHoursStart?: string;
+    workingHoursEnd?: string;
+    weeklyReportsEnabled?: boolean;
+  };
   createdAt: string | null;
   updatedAt: string | null;
   admin?: {
@@ -113,6 +121,11 @@ export interface PlatformOrganization {
     role: UserRole;
     status: UserStatus;
   } | null;
+}
+
+export interface PlatformSettings {
+  weeklyReportsEnabled: boolean;
+  updatedAt?: string | null;
 }
 
 export interface TenantCreateResult {

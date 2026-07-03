@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Building2, LayoutDashboard, PhoneCall, Users, LogOut } from 'lucide-react';
+import { Building2, LayoutDashboard, PhoneCall, Users, LogOut, Settings } from 'lucide-react';
 import { auth } from '../config/firebase';
 import { useAuth } from '../context/auth';
 
@@ -22,6 +22,7 @@ export const Layout: React.FC = () => {
     ...(isPlatformOwner ? [{ path: '/platform', icon: Building2, label: 'Tenants' }] : []),
     ...(canViewCalls ? [{ path: '/calls', icon: PhoneCall, label: 'Call History' }] : []),
     ...(canManageTeam ? [{ path: '/team', icon: Users, label: 'Team Management' }] : []),
+    { path: '/settings', icon: Settings, label: 'Settings' },
   ];
 
   const roleLabel = {
@@ -39,7 +40,7 @@ export const Layout: React.FC = () => {
             <div style={{ width: '36px', height: '36px', background: 'var(--accent-primary)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <PhoneCall color="white" size={18} />
             </div>
-            <h2>SalesTracker</h2>
+            <h2>RevConnect</h2>
           </div>
         </div>
 

@@ -54,7 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <AuthContext.Provider value={{ user, claims, loading, refreshClaims }}>
-      {loading ? <div className="app-loader">Loading SalesTracker…</div> : children}
+      {loading ? <div className="app-loader">Loading RevConnect…</div> : children}
     </AuthContext.Provider>
   );
 };

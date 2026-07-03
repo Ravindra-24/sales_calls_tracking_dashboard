@@ -9,6 +9,7 @@ import { CallHistory } from './pages/CallHistory';
 import { Team } from './pages/Team';
 import { Platform } from './pages/Platform';
 import { ClaimAccount } from './pages/ClaimAccount';
+import { Settings } from './pages/Settings';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, claims } = useAuth();
@@ -38,6 +39,7 @@ function App() {
             <Route path="calls" element={<CallHistory />} />
             <Route path="team" element={<Team />} />
             <Route path="platform" element={<Platform />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
           
           <Route path="*" element={<Navigate to="/" replace />} />
