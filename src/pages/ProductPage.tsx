@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
@@ -5,11 +6,15 @@ import {
   Building2,
   CheckCircle2,
   Cloud,
+  Copy,
   Download,
   Gauge,
   LockKeyhole,
+  MessageCircle,
   PhoneCall,
+  Send,
   ShieldCheck,
+  Share2,
   Smartphone,
   Sparkles,
   Timer,
@@ -17,7 +22,10 @@ import {
 } from 'lucide-react';
 
 const apkDownloadUrl = import.meta.env.VITE_APK_DOWNLOAD_URL?.trim() ?? '';
+const configuredSiteUrl = import.meta.env.VITE_PUBLIC_SITE_URL?.trim().replace(/\/$/, '') ?? '';
 const appIcon = '/favicon.svg';
+const shareTitle = 'RevConnect - Sales Call Tracking SaaS';
+const shareDescription = 'Track sales calls from Android devices, monitor team performance, and manage your sales operation from one dashboard.';
 
 const highlights = [
   { icon: PhoneCall, label: 'Automatic call capture', detail: 'Android sales calls sync into the dashboard with rep, duration, direction, and time.' },
@@ -56,6 +64,36 @@ const plans = [
 
 export const ProductPage = () => {
   const apkReady = Boolean(apkDownloadUrl);
+  const [shareStatus, setShareStatus] = useState('');
+  const shareUrl = useMemo(() => {
+    if (configuredSiteUrl) return `${configuredSiteUrl}/`;
+    if (typeof window !== 'undefined') return `${window.location.origin}/`;
+    return 'https://saleconnect.vercel.app/';
+  }, []);
+  const encodedShareUrl = encodeURIComponent(shareUrl);
+  const encodedShareText = encodeURIComponent(`${shareTitle} - ${shareDescription}`);
+
+  const copyShareLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareStatus('Copied');
+    } catch {
+      setShareStatus('Copy link');
+    }
+    window.setTimeout(() => setShareStatus(''), 1800);
+  };
+
+  const shareLandingPage = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: shareTitle, text: shareDescription, url: shareUrl });
+        return;
+      } catch {
+        return;
+      }
+    }
+    await copyShareLink();
+  };
 
   return (
     <main className="product-page">
@@ -92,6 +130,35 @@ export const ProductPage = () => {
             <span><CheckCircle2 size={16} /> Firebase backed</span>
             <span><CheckCircle2 size={16} /> Role secured</span>
             <span><CheckCircle2 size={16} /> Mobile first</span>
+          </div>
+          <div className="share-strip" aria-label="Share RevConnect">
+            <button type="button" onClick={shareLandingPage}>
+              <Share2 size={16} /> Share
+            </button>
+            <a
+              href={`https://wa.me/?text=${encodedShareText}%20${encodedShareUrl}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <MessageCircle size={16} /> WhatsApp
+            </a>
+            <a
+              href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodedShareUrl}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <Send size={16} /> LinkedIn
+            </a>
+            <a
+              href={`https://twitter.com/intent/tweet?text=${encodedShareText}&url=${encodedShareUrl}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              X
+            </a>
+            <button type="button" onClick={copyShareLink}>
+              <Copy size={16} /> {shareStatus || 'Copy'}
+            </button>
           </div>
         </div>
 

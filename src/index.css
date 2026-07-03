@@ -483,6 +483,40 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .product-trust-row svg { color: var(--product-mint); }
 
+.share-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.share-strip a,
+.share-strip button {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 8px;
+  color: #d7e5ec;
+  background: rgba(255, 255, 255, 0.045);
+  text-decoration: none;
+  font: 800 12px 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: 180ms ease;
+}
+
+.share-strip a:hover,
+.share-strip button:hover {
+  color: #061114;
+  border-color: transparent;
+  background: var(--product-teal);
+  transform: translateY(-1px);
+}
+
 .product-visual {
   position: relative;
   min-height: 520px;

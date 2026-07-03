@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">RevConnect - Sales Call Tracking SaaS</title>
+  <desc id="desc">A social preview card for RevConnect showing call analytics and Android call sync.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#111827"/>
+      <stop offset="0.5" stop-color="#25114d"/>
+      <stop offset="1" stop-color="#062b2c"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a855f7"/>
+      <stop offset="0.5" stop-color="#6d28d9"/>
+      <stop offset="1" stop-color="#4c1d95"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#4fd7c5"/>
+      <stop offset="1" stop-color="#f5c85f"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="24" stdDeviation="24" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1030" cy="120" r="260" fill="#4fd7c5" opacity="0.12"/>
+  <circle cx="160" cy="540" r="260" fill="#ff8668" opacity="0.14"/>
+  <g filter="url(#shadow)">
+    <rect x="74" y="78" width="150" height="150" rx="42" fill="url(#mark)"/>
+    <path fill="#fff" d="M112 132c8-39 63-43 75-12 4 12-19 23-31 43-8 20 18 66 49 97 27 27 74 16 74-19 0-19-23-38-31-50-12-16-16-31 16-47l27-23-19-27 70-8-4 63-27-35c-43 43-55 94-20 117 20 12 23 55-16 74-55 24-125-31-164-94-24-43-8-59 1-79Z"/>
+  </g>
+  <text x="74" y="310" fill="#fff" font-family="Inter, Arial, sans-serif" font-size="74" font-weight="800">RevConnect</text>
+  <text x="78" y="368" fill="#d9e8ef" font-family="Inter, Arial, sans-serif" font-size="32" font-weight="600">Sales call tracking SaaS for Android teams</text>
+  <text x="78" y="430" fill="#a9bbc5" font-family="Inter, Arial, sans-serif" font-size="25">Sync calls, monitor team performance, manage tenants,</text>
+  <text x="78" y="466" fill="#a9bbc5" font-family="Inter, Arial, sans-serif" font-size="25">and share your mobile APK from one secure dashboard.</text>
+  <rect x="78" y="522" width="330" height="56" rx="10" fill="url(#accent)"/>
+  <text x="112" y="558" fill="#061114" font-family="Inter, Arial, sans-serif" font-size="23" font-weight="800">Android call sync ready</text>
+  <g transform="translate(708 128)" filter="url(#shadow)">
+    <rect width="390" height="330" rx="22" fill="#0d1620" stroke="#426172"/>
+    <rect x="28" y="34" width="145" height="84" rx="12" fill="#172536"/>
+    <text x="48" y="68" fill="#a9bbc5" font-family="Inter, Arial, sans-serif" font-size="18">Today calls</text>
+    <text x="48" y="104" fill="#fff" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="800">248</text>
+    <rect x="192" y="34" width="145" height="84" rx="12" fill="#172536"/>
+    <text x="212" y="68" fill="#a9bbc5" font-family="Inter, Arial, sans-serif" font-size="18">Connected</text>
+    <text x="212" y="104" fill="#fff" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="800">81%</text>
+    <rect x="30" y="146" width="38" height="126" rx="8" fill="#4fd7c5"/>
+    <rect x="88" y="104" width="38" height="168" rx="8" fill="#f5c85f"/>
+    <rect x="146" y="130" width="38" height="142" rx="8" fill="#6da8ff"/>
+    <rect x="204" y="84" width="38" height="188" rx="8" fill="#4fd7c5"/>
+    <rect x="262" y="118" width="38" height="154" rx="8" fill="#ff8668"/>
+    <rect x="320" y="72" width="38" height="200" rx="8" fill="#f5c85f"/>
+  </g>
+</svg>
