@@ -30,7 +30,7 @@ export const Login: React.FC = () => {
         setError('This account is not linked to dashboard access yet.');
         return;
       }
-      navigate('/');
+      navigate('/dashboard');
     } catch (error) {
       if (error instanceof FirebaseError && error.code.includes('api-key')) {
         setError('Dashboard Firebase configuration is invalid. Set the VITE_FIREBASE_* variables in Vercel and redeploy.');
@@ -122,7 +122,7 @@ export const Login: React.FC = () => {
           </button>
         </form>
         <p style={{ marginTop: '1.25rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.86rem' }}>
-          New here? <Link to="/product" style={{ color: '#8edbd1', fontWeight: 700, textDecoration: 'none' }}>View product page</Link>
+          New here? <Link to="/" style={{ color: '#8edbd1', fontWeight: 700, textDecoration: 'none' }}>View product page</Link>
         </p>
       </div>
     </div>

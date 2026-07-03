@@ -18,11 +18,11 @@ export const Layout: React.FC = () => {
   const canViewCalls = claims.role === 'org_admin' || claims.role === 'manager' || claims.role === 'sales_member';
 
   const navItems = [
-    { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-    ...(isPlatformOwner ? [{ path: '/platform', icon: Building2, label: 'Tenants' }] : []),
-    ...(canViewCalls ? [{ path: '/calls', icon: PhoneCall, label: 'Call History' }] : []),
-    ...(canManageTeam ? [{ path: '/team', icon: Users, label: 'Team Management' }] : []),
-    { path: '/settings', icon: Settings, label: 'Settings' },
+    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', end: true },
+    ...(isPlatformOwner ? [{ path: '/dashboard/platform', icon: Building2, label: 'Tenants' }] : []),
+    ...(canViewCalls ? [{ path: '/dashboard/calls', icon: PhoneCall, label: 'Call History' }] : []),
+    ...(canManageTeam ? [{ path: '/dashboard/team', icon: Users, label: 'Team Management' }] : []),
+    { path: '/dashboard/settings', icon: Settings, label: 'Settings' },
   ];
 
   const roleLabel = {
@@ -49,6 +49,7 @@ export const Layout: React.FC = () => {
             <NavLink
               key={item.path}
               to={item.path}
+              end={item.end}
               className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
             >
               <item.icon size={20} color="currentColor" />

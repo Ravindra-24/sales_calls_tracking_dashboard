@@ -342,8 +342,15 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   place-items: center;
   border-radius: 8px;
   color: #061114;
-  background: linear-gradient(135deg, var(--product-teal), var(--product-gold));
+  background: rgba(255, 255, 255, 0.08);
   box-shadow: 0 12px 30px rgba(79, 215, 197, 0.22);
+  overflow: hidden;
+}
+
+.product-brand img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .product-nav-links {
@@ -609,6 +616,11 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   margin: 8px auto 4px;
 }
 
+.phone-preview .phone-app-icon {
+  width: 132px;
+  filter: drop-shadow(0 20px 34px rgba(0, 0, 0, 0.32));
+}
+
 .phone-screen {
   display: grid;
   gap: 6px;
@@ -851,6 +863,18 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .product-visual.product-reveal { animation-delay: 120ms; }
 
+.product-scroll-reveal {
+  transform-origin: center top;
+}
+
+@supports (animation-timeline: view()) {
+  .product-scroll-reveal {
+    animation: scroll-reveal both;
+    animation-timeline: view();
+    animation-range: entry 8% cover 32%;
+  }
+}
+
 @keyframes reveal-up {
   from { opacity: 0; transform: translateY(18px); }
   to { opacity: 1; transform: none; }
@@ -875,8 +899,22 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   50% { transform: translateY(-6px) scale(1.02); }
 }
 
+@keyframes scroll-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(34px) scale(0.97);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .product-reveal,
+  .product-scroll-reveal,
   .signal-ring,
   .dashboard-preview,
   .phone-preview,

@@ -38,7 +38,7 @@ export const ClaimAccount = () => {
       });
       await signInWithCustomToken(auth, response.data.data.customToken);
       await refreshClaims();
-      navigate('/');
+      navigate('/dashboard');
     } catch (requestError) {
       setError(getApiErrorMessage(requestError, 'Failed to claim this account.'));
     } finally {

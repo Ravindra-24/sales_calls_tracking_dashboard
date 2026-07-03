@@ -25,12 +25,18 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/product" element={<ProductPage />} />
+          <Route path="/" element={<ProductPage />} />
+          <Route path="/home" element={<ProductPage />} />
+          <Route path="/product" element={<Navigate to="/" replace />} />
           <Route path="/login" element={<Login />} />
           <Route path="/claim" element={<ClaimAccount />} />
+          <Route path="/calls" element={<Navigate to="/dashboard/calls" replace />} />
+          <Route path="/team" element={<Navigate to="/dashboard/team" replace />} />
+          <Route path="/platform" element={<Navigate to="/dashboard/platform" replace />} />
+          <Route path="/settings" element={<Navigate to="/dashboard/settings" replace />} />
           
           <Route 
-            path="/" 
+            path="/dashboard" 
             element={
               <ProtectedRoute>
                 <Layout />

@@ -15,9 +15,9 @@ import {
   Timer,
   Zap,
 } from 'lucide-react';
-import heroImage from '../assets/hero.png';
 
 const apkDownloadUrl = import.meta.env.VITE_APK_DOWNLOAD_URL?.trim() ?? '';
+const appIcon = '/favicon.svg';
 
 const highlights = [
   { icon: PhoneCall, label: 'Automatic call capture', detail: 'Android sales calls sync into the dashboard with rep, duration, direction, and time.' },
@@ -60,8 +60,8 @@ export const ProductPage = () => {
   return (
     <main className="product-page">
       <nav className="product-nav">
-        <Link className="product-brand" to="/product" aria-label="RevConnect product home">
-          <span><PhoneCall size={18} /></span>
+        <Link className="product-brand" to="/" aria-label="RevConnect product home">
+          <span><img src={appIcon} alt="" /></span>
           RevConnect
         </Link>
         <div className="product-nav-links" aria-label="Product navigation">
@@ -123,7 +123,7 @@ export const ProductPage = () => {
             </div>
           </div>
           <div className="phone-preview">
-            <img src={heroImage} alt="" />
+            <img className="phone-app-icon" src={appIcon} alt="" />
             <div className="phone-screen">
               <PhoneCall size={18} />
               <strong>Call synced</strong>
@@ -134,14 +134,14 @@ export const ProductPage = () => {
         </div>
       </section>
 
-      <section className="product-section">
+      <section className="product-section product-scroll-reveal">
         <div className="product-section-heading">
           <p className="product-kicker">Why teams use it</p>
           <h2>Everything your sales operation needs after the call happens.</h2>
         </div>
         <div className="product-feature-grid">
           {highlights.map((item) => (
-            <article className="product-feature-card" key={item.label}>
+            <article className="product-feature-card product-scroll-reveal" key={item.label}>
               <span><item.icon size={21} /></span>
               <h3>{item.label}</h3>
               <p>{item.detail}</p>
@@ -150,9 +150,9 @@ export const ProductPage = () => {
         </div>
       </section>
 
-      <section className="product-workflow">
+      <section className="product-workflow product-scroll-reveal">
         {workflow.map((item, index) => (
-          <article className="workflow-step" key={item.title}>
+          <article className="workflow-step product-scroll-reveal" key={item.title}>
             <div className="workflow-index">0{index + 1}</div>
             <span><item.icon size={22} /></span>
             <h3>{item.title}</h3>
@@ -161,14 +161,14 @@ export const ProductPage = () => {
         ))}
       </section>
 
-      <section className="product-section" id="plans">
+      <section className="product-section product-scroll-reveal" id="plans">
         <div className="product-section-heading">
           <p className="product-kicker">Plans</p>
           <h2>Start focused, then scale to a complete multi-tenant platform.</h2>
         </div>
         <div className="plan-grid">
           {plans.map((plan) => (
-            <article className={`plan-card ${plan.accent}${plan.featured ? ' featured' : ''}`} key={plan.name}>
+            <article className={`plan-card product-scroll-reveal ${plan.accent}${plan.featured ? ' featured' : ''}`} key={plan.name}>
               {plan.featured && <div className="plan-badge">Recommended</div>}
               <h3>{plan.name}</h3>
               <p>{plan.price}</p>
@@ -182,7 +182,7 @@ export const ProductPage = () => {
         </div>
       </section>
 
-      <section className="download-section" id="download-app">
+      <section className="download-section product-scroll-reveal" id="download-app">
         <div>
           <p className="product-kicker"><Building2 size={15} /> Android APK</p>
           <h2>Give your sales team the mobile app in one click.</h2>
