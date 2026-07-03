@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, PhoneCall, Users, LogOut } from 'lucide-react';
+import { Building2, LayoutDashboard, PhoneCall, Users, LogOut } from 'lucide-react';
 import { auth } from '../config/firebase';
 import { useAuth } from '../context/auth';
 
@@ -13,11 +13,23 @@ export const Layout: React.FC = () => {
     navigate('/login');
   };
 
+  const isPlatformOwner = claims.role === 'platform_owner';
+  const canManageTeam = claims.role === 'org_admin' || claims.role === 'manager';
+  const canViewCalls = claims.role === 'org_admin' || claims.role === 'manager' || claims.role === 'sales_member';
+
   const navItems = [
     { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-    { path: '/calls', icon: PhoneCall, label: 'Call History' },
-    { path: '/team', icon: Users, label: 'Team Management' },
+    ...(isPlatformOwner ? [{ path: '/platform', icon: Building2, label: 'Tenants' }] : []),
+    ...(canViewCalls ? [{ path: '/calls', icon: PhoneCall, label: 'Call History' }] : []),
+    ...(canManageTeam ? [{ path: '/team', icon: Users, label: 'Team Management' }] : []),
   ];
+
+  const roleLabel = {
+    platform_owner: 'Platform owner',
+    org_admin: 'Org admin',
+    manager: 'Manager',
+    sales_member: 'Sales member',
+  }[claims.role ?? 'sales_member'];
 
   return (
     <div className="app-shell">
@@ -51,7 +63,7 @@ export const Layout: React.FC = () => {
             </div>
             <div style={{ overflow: 'hidden' }}>
               <p className="user-email">{user?.email}</p>
-              <p className="user-role">{claims.role}</p>
+              <p className="user-role">{roleLabel}</p>
             </div>
           </div>
           <button 

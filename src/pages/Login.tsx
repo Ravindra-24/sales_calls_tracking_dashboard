@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { sendPasswordResetEmail, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { LogIn, Mail, Lock, AlertCircle } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -10,6 +10,7 @@ export const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { refreshClaims } = useAuth();
@@ -23,9 +24,9 @@ export const Login: React.FC = () => {
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
       const claims = await refreshClaims();
-      if (!claims.orgId || (claims.role !== 'owner' && claims.role !== 'manager')) {
+      if (!claims.role) {
         await auth.signOut();
-        setError('This dashboard is available only to organization owners and managers.');
+        setError('This account is not linked to dashboard access yet.');
         return;
       }
       navigate('/');
@@ -36,6 +37,21 @@ export const Login: React.FC = () => {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!email.trim()) {
+      setError('Enter your email first, then request a reset link.');
+      return;
+    }
+    setError('');
+    setResetSent(false);
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+      setResetSent(true);
+    } catch {
+      setResetSent(true);
+    }
+  };
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
       <div className="glass-panel animate-fade-in" style={{ width: '100%', maxWidth: '400px', padding: '2.5rem' }}>
@@ -43,7 +59,7 @@ export const Login: React.FC = () => {
           <div style={{ width: '48px', height: '48px', background: 'var(--accent-primary)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', boxShadow: '0 4px 20px rgba(59, 130, 246, 0.4)' }}>
             <LogIn color="white" size={24} />
           </div>
-          <h2>Admin Dashboard</h2>
+          <h2>SalesTracker</h2>
           <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Sign in to manage sales calls</p>
         </div>
 
@@ -51,6 +67,12 @@ export const Login: React.FC = () => {
           <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid var(--danger)', color: 'var(--danger)', padding: '0.75rem', borderRadius: 'var(--radius-md)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
             <AlertCircle size={18} />
             {error || 'Your account does not have dashboard access.'}
+          </div>
+        )}
+
+        {resetSent && (
+          <div className="notice success-notice" style={{ marginBottom: '1.5rem' }}>
+            If an account exists for this email, a reset link has been sent.
           </div>
         )}
 
@@ -89,6 +111,9 @@ export const Login: React.FC = () => {
 
           <button type="submit" className="btn-primary" disabled={loading} style={{ marginTop: '0.5rem', width: '100%' }}>
             {loading ? 'Authenticating...' : 'Sign In'}
+          </button>
+          <button type="button" className="secondary-button" onClick={handleResetPassword}>
+            Reset password
           </button>
         </form>
       </div>

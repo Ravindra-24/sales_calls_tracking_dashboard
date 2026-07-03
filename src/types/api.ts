@@ -7,7 +7,7 @@ export interface ApiResponse<T> {
   };
 }
 
-export type UserRole = 'owner' | 'manager' | 'rep';
+export type UserRole = 'platform_owner' | 'org_admin' | 'manager' | 'sales_member';
 export type UserStatus = 'active' | 'disabled';
 
 export interface TeamMember {
@@ -66,7 +66,60 @@ export interface InviteResult {
   inviteId: string;
   token: string;
   email: string;
-  role: 'manager' | 'rep';
+  role: 'manager' | 'sales_member' | 'org_admin';
   expiresAt: string;
   inviteLink?: string;
+  emailSent?: boolean;
+  emailError?: string;
+  createdUser?: {
+    uid: string;
+    email: string;
+    loginLink: string;
+    temporaryPassword: string;
+  };
+}
+
+export interface InviteLog {
+  id: string;
+  email: string;
+  role: UserRole;
+  status: 'pending' | 'accepted' | 'expired' | 'revoked';
+  invitedBy: string;
+  createdAt: string | null;
+  expiresAt: string | null;
+  acceptedAt?: string | null;
+  resentAt?: string | null;
+  revokedAt?: string | null;
+  inviteLink?: string;
+}
+
+export interface PlatformAnalytics {
+  totalOrganizations: number;
+  totalUsers: number;
+  roleCounts: Record<string, number>;
+}
+
+export interface PlatformOrganization {
+  id: string;
+  name: string;
+  plan: string;
+  ownerUserId: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+  admin?: {
+    id: string;
+    name: string;
+    email: string;
+    role: UserRole;
+    status: UserStatus;
+  } | null;
+}
+
+export interface TenantCreateResult {
+  org: { id: string; name: string; plan: string };
+  admin: { uid: string; email: string; name: string; role: 'org_admin' };
+  loginLink: string;
+  temporaryPassword: string;
+  emailSent: boolean;
+  emailError?: string;
 }

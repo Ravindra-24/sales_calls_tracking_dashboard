@@ -5,6 +5,13 @@ import { auth } from '../config/firebase';
 import { AuthContext, emptyClaims } from './auth';
 import type { AuthClaims } from './auth';
 
+const parseRole = (role: unknown): AuthClaims['role'] => {
+  if (role === 'platform_owner' || role === 'org_admin' || role === 'manager' || role === 'sales_member') {
+    return role;
+  }
+  return null;
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [claims, setClaims] = useState<AuthClaims>(emptyClaims);
@@ -14,12 +21,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const token = await currentUser.getIdTokenResult(forceRefresh);
     const nextClaims: AuthClaims = {
       orgId: typeof token.claims.orgId === 'string' ? token.claims.orgId : '',
-      role:
-        token.claims.role === 'owner' ||
-        token.claims.role === 'manager' ||
-        token.claims.role === 'rep'
-          ? token.claims.role
-          : null,
+      role: parseRole(token.claims.role),
     };
     setClaims(nextClaims);
     return nextClaims;

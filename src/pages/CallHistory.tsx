@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { format, subDays } from 'date-fns';
 import { ArrowLeft, ArrowRight, Filter, PhoneIncoming, PhoneMissed, PhoneOutgoing } from 'lucide-react';
 import { api, getApiErrorMessage } from '../api/client';
+import { useAuth } from '../context/auth';
 import type { ApiResponse, CallRecord, TeamMember } from '../types/api';
 
 const initialFrom = format(subDays(new Date(), 29), 'yyyy-MM-dd');
 const initialTo = format(new Date(), 'yyyy-MM-dd');
 
 export const CallHistory = () => {
+  const { user, claims } = useAuth();
   const [calls, setCalls] = useState<CallRecord[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,17 +23,34 @@ export const CallHistory = () => {
   const currentCursor = cursorHistory[cursorHistory.length - 1];
 
   useEffect(() => {
+    if (claims.role === 'platform_owner') return;
     let active = true;
-    api.get<ApiResponse<{ orgId: string }>>('/auth/me')
-      .then((meResponse) => api.get<ApiResponse<TeamMember[]>>(`/orgs/${meResponse.data.data.orgId}/users`, { params: { limit: 100 } }))
-      .then((usersResponse) => {
-        if (active) setMembers(usersResponse.data.data);
-      })
-      .catch(() => undefined);
+    if (claims.role === 'sales_member' && user) {
+      setMembers([{
+        id: user.uid,
+        email: user.email ?? '',
+        name: user.displayName ?? user.email ?? 'You',
+        role: 'sales_member',
+        status: 'active',
+        createdAt: '',
+        updatedAt: '',
+      }]);
+    } else if (claims.orgId) {
+      api.get<ApiResponse<TeamMember[]>>(`/orgs/${claims.orgId}/users`, { params: { limit: 100 } })
+        .then((usersResponse) => {
+          if (active) setMembers(usersResponse.data.data);
+        })
+        .catch(() => undefined);
+    }
     return () => { active = false; };
-  }, []);
+  }, [claims.orgId, claims.role, user]);
 
   useEffect(() => {
+    if (claims.role === 'platform_owner') {
+      setCalls([]);
+      setLoading(false);
+      return;
+    }
     let active = true;
     setLoading(true);
     setError('');
@@ -58,18 +77,19 @@ export const CallHistory = () => {
         if (active) setLoading(false);
       });
     return () => { active = false; };
-  }, [currentCursor, direction, from, repId, to]);
+  }, [claims.role, currentCursor, direction, from, repId, to]);
 
   const names = useMemo(() => new Map(members.map((member) => [member.id, member.name || member.email])), [members]);
-  const reps = members.filter((member) => member.role === 'rep');
+  const reps = members.filter((member) => member.role === 'sales_member');
   const resetPage = () => setCursorHistory([undefined]);
 
   return (
     <div className="page animate-fade-in">
       <div className="page-header">
-        <div><p className="eyebrow">Calls</p><h1>Call history</h1><p>Review synchronized calls across your organization.</p></div>
+        <div><p className="eyebrow">Calls</p><h1>Call history</h1><p>{claims.role === 'sales_member' ? 'Review calls synchronized from your mobile app.' : 'Review synchronized calls across your organization.'}</p></div>
       </div>
 
+      {claims.role !== 'sales_member' && (
       <div className="filter-panel section-card">
         <div className="filter-title"><Filter size={18} /> Filters</div>
         <label>Representative
@@ -86,6 +106,20 @@ export const CallHistory = () => {
         <label>From<input className="input-field" type="date" value={from} max={to} onChange={(event) => { setFrom(event.target.value); resetPage(); }} /></label>
         <label>To<input className="input-field" type="date" value={to} min={from} onChange={(event) => { setTo(event.target.value); resetPage(); }} /></label>
       </div>
+      )}
+
+      {claims.role === 'sales_member' && (
+        <div className="filter-panel section-card member-filter-panel">
+          <div className="filter-title"><Filter size={18} /> Filters</div>
+          <label>Direction
+            <select className="input-field" value={direction} onChange={(event) => { setDirection(event.target.value); resetPage(); }}>
+              <option value="">All directions</option><option value="outgoing">Outgoing</option><option value="incoming">Incoming</option><option value="missed">Missed</option>
+            </select>
+          </label>
+          <label>From<input className="input-field" type="date" value={from} max={to} onChange={(event) => { setFrom(event.target.value); resetPage(); }} /></label>
+          <label>To<input className="input-field" type="date" value={to} min={from} onChange={(event) => { setTo(event.target.value); resetPage(); }} /></label>
+        </div>
+      )}
 
       {error && <div className="notice error-notice">{error}</div>}
 

@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Activity, Clock, PhoneCall, PhoneIncoming, PhoneMissed, PhoneOutgoing } from 'lucide-react';
+import { Activity, Building2, Clock, PhoneCall, PhoneIncoming, PhoneMissed, PhoneOutgoing, Users } from 'lucide-react';
 import { eachDayOfInterval, format, parseISO, subDays } from 'date-fns';
 import { api, getApiErrorMessage } from '../api/client';
-import type { ApiResponse, TeamMember, TeamStats } from '../types/api';
+import { useAuth } from '../context/auth';
+import type { ApiResponse, PlatformAnalytics, TeamMember, TeamStats } from '../types/api';
 
 const today = format(new Date(), 'yyyy-MM-dd');
 
@@ -14,9 +15,11 @@ const formatDuration = (seconds: number) => {
 };
 
 export const Dashboard = () => {
+  const { user, claims } = useAuth();
   const [days, setDays] = useState(7);
   const [stats, setStats] = useState<TeamStats | null>(null);
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const [platformStats, setPlatformStats] = useState<PlatformAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -27,18 +30,45 @@ export const Dashboard = () => {
     setLoading(true);
     setError('');
 
-    Promise.all([
-      api.get<ApiResponse<TeamStats>>('/stats/team', { params: { from, to: today } }),
-      api.get<ApiResponse<{ orgId: string }>>('/auth/me'),
-    ])
-      .then(async ([statsResponse, meResponse]) => {
-        const usersResponse = await api.get<ApiResponse<TeamMember[]>>(
-          `/orgs/${meResponse.data.data.orgId}/users`,
-          { params: { limit: 100 } },
-        );
+    if (claims.role === 'platform_owner') {
+      api.get<ApiResponse<PlatformAnalytics>>('/admin/analytics')
+        .then((response) => {
+          if (active) setPlatformStats(response.data.data);
+        })
+        .catch((requestError) => {
+          if (active) setError(getApiErrorMessage(requestError, 'Failed to load platform analytics.'));
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+      return () => {
+        active = false;
+      };
+    }
+
+    api.get<ApiResponse<TeamStats>>('/stats/team', { params: { from, to: today } })
+      .then(async (statsResponse) => {
+        let nextMembers: TeamMember[] = [];
+        if (claims.role !== 'sales_member' && claims.orgId) {
+          const usersResponse = await api.get<ApiResponse<TeamMember[]>>(
+            `/orgs/${claims.orgId}/users`,
+            { params: { limit: 100 } },
+          );
+          nextMembers = usersResponse.data.data;
+        } else if (user) {
+          nextMembers = [{
+            id: user.uid,
+            email: user.email ?? '',
+            name: user.displayName ?? user.email ?? 'You',
+            role: 'sales_member',
+            status: 'active',
+            createdAt: '',
+            updatedAt: '',
+          }];
+        }
         if (active) {
           setStats(statsResponse.data.data);
-          setMembers(usersResponse.data.data);
+          setMembers(nextMembers);
         }
       })
       .catch((requestError) => {
@@ -51,7 +81,7 @@ export const Dashboard = () => {
     return () => {
       active = false;
     };
-  }, [days, from]);
+  }, [claims.orgId, claims.role, days, from, user]);
 
   const memberNames = useMemo(
     () => new Map(members.map((member) => [member.id, member.name || member.email])),
@@ -73,7 +103,50 @@ export const Dashboard = () => {
 
   const maximumCalls = Math.max(...dailyTrend.map((day) => day.calls), 1);
   const totals = stats?.teamTotals;
-  const activeReps = members.filter((member) => member.role === 'rep' && member.status === 'active').length;
+  const activeReps = claims.role === 'sales_member'
+    ? 1
+    : members.filter((member) => member.role === 'sales_member' && member.status === 'active').length;
+
+  if (claims.role === 'platform_owner') {
+    return (
+      <div className="page animate-fade-in">
+        <div className="page-header">
+          <div>
+            <p className="eyebrow">Platform</p>
+            <h1>Owner dashboard</h1>
+            <p>Monitor tenant growth and users across the SalesTracker service.</p>
+          </div>
+        </div>
+
+        {error && <div className="notice error-notice">{error}</div>}
+
+        <div className="stats-grid" aria-busy={loading}>
+          <StatCard title="Organizations" value={loading ? '—' : platformStats?.totalOrganizations ?? 0} icon={<Building2 />} tone="blue" />
+          <StatCard title="Total users" value={loading ? '—' : platformStats?.totalUsers ?? 0} icon={<Users />} tone="green" />
+          <StatCard title="Org admins" value={loading ? '—' : platformStats?.roleCounts.org_admin ?? 0} icon={<Activity />} tone="violet" />
+          <StatCard title="Sales members" value={loading ? '—' : platformStats?.roleCounts.sales_member ?? 0} icon={<PhoneCall />} tone="orange" />
+        </div>
+
+        <section className="section-card platform-summary">
+          <div className="section-heading">
+            <div>
+              <h2>Role distribution</h2>
+              <p>Current user mix across all tenant accounts.</p>
+            </div>
+          </div>
+          <div className="summary-list">
+            {Object.entries(platformStats?.roleCounts ?? {}).map(([role, count]) => (
+              <div className="summary-row" key={role}>
+                <span>{role.replace('_', ' ')}</span>
+                <strong>{count}</strong>
+              </div>
+            ))}
+            {!loading && Object.keys(platformStats?.roleCounts ?? {}).length === 0 && <EmptyState message="No users have been created yet." />}
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="page animate-fade-in">
@@ -81,7 +154,7 @@ export const Dashboard = () => {
         <div>
           <p className="eyebrow">Performance</p>
           <h1>Dashboard overview</h1>
-          <p>Team call activity from {format(parseISO(from), 'd MMM')} to {format(parseISO(today), 'd MMM yyyy')}.</p>
+          <p>{claims.role === 'sales_member' ? 'Your call activity' : 'Team call activity'} from {format(parseISO(from), 'd MMM')} to {format(parseISO(today), 'd MMM yyyy')}.</p>
         </div>
         <select className="input-field compact-select" value={days} onChange={(event) => setDays(Number(event.target.value))}>
           <option value={7}>Last 7 days</option>
@@ -104,7 +177,7 @@ export const Dashboard = () => {
           <div className="section-heading">
             <div>
               <h2>Call trend</h2>
-              <p>Daily call volume across the team</p>
+              <p>{claims.role === 'sales_member' ? 'Daily call volume from your device' : 'Daily call volume across the team'}</p>
             </div>
           </div>
           {dailyTrend.some((day) => day.calls > 0) ? (
@@ -125,8 +198,8 @@ export const Dashboard = () => {
         <section className="section-card">
           <div className="section-heading">
             <div>
-              <h2>Top representatives</h2>
-              <p>Ranked by total calls</p>
+              <h2>{claims.role === 'sales_member' ? 'Your performance' : 'Top representatives'}</h2>
+              <p>{claims.role === 'sales_member' ? 'Total calls and talk time' : 'Ranked by total calls'}</p>
             </div>
           </div>
           <div className="rep-list">

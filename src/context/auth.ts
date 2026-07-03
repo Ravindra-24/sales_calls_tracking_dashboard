@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react';
 import type { User } from 'firebase/auth';
 
-export type DashboardRole = 'owner' | 'manager' | 'rep';
+export type DashboardRole = 'platform_owner' | 'org_admin' | 'manager' | 'sales_member';
 
 export interface AuthClaims {
   orgId: string;
