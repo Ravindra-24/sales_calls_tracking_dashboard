@@ -903,12 +903,10 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   from {
     opacity: 0;
     transform: translateY(34px) scale(0.97);
-    filter: blur(8px);
   }
   to {
     opacity: 1;
     transform: none;
-    filter: none;
   }
 }
 

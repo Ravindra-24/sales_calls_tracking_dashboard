@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { FirebaseError } from 'firebase/app';
 import { sendPasswordResetEmail, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../config/firebase';
-import { LogIn, Mail, Lock, AlertCircle } from 'lucide-react';
+import { Mail, Lock, AlertCircle } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/auth';
+
+const appIcon = '/favicon.svg';
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -61,8 +63,8 @@ export const Login: React.FC = () => {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
       <div className="glass-panel animate-fade-in" style={{ width: '100%', maxWidth: '400px', padding: '2.5rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{ width: '48px', height: '48px', background: 'var(--accent-primary)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', boxShadow: '0 4px 20px rgba(59, 130, 246, 0.4)' }}>
-            <LogIn color="white" size={24} />
+          <div style={{ width: '56px', height: '56px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', boxShadow: '0 12px 30px rgba(109, 40, 217, 0.32)', overflow: 'hidden' }}>
+            <img src={appIcon} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <h2>RevConnect</h2>
           <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Sign in to manage sales calls</p>
