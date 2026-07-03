@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, User, Building2, Bell, Shield, Lock, Save, AlertCircle } from 'lucide-react';
+import { User, Building2, Shield, Lock, Save, AlertCircle } from 'lucide-react';
 import { api, getApiErrorMessage } from '../api/client';
 import { useAuth } from '../context/auth';
 import { sendPasswordResetEmail } from 'firebase/auth';
@@ -7,17 +7,16 @@ import { auth } from '../config/firebase';
 import type { ApiResponse, PlatformSettings, PlatformOrganization } from '../types/api';
 
 export const Settings = () => {
-  const { user, claims, refreshClaims } = useAuth();
-  
+  const { user, claims } = useAuth();
+
   // Profile state
   const [name, setName] = useState(user?.displayName || '');
   const [avatarUrl, setAvatarUrl] = useState(''); // Will load from backend
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMessage, setProfileMessage] = useState('');
-  
+
   // Org state (org_admin only)
   const [orgSettings, setOrgSettings] = useState<PlatformOrganization['settings']>({});
-  const [orgStatus, setOrgStatus] = useState<'active'|'disabled'>('active');
   const [orgSaving, setOrgSaving] = useState(false);
   const [orgMessage, setOrgMessage] = useState('');
   const [orgLoading, setOrgLoading] = useState(false);
@@ -32,7 +31,7 @@ export const Settings = () => {
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const res = await api.get('/auth/me');
+        await api.get('/auth/me');
         // if avatarUrl is returned we would set it here.
         // The /auth/me route doesn't return avatarUrl currently, but we can get it or just let the user set it.
       } catch (err) {
@@ -156,7 +155,7 @@ export const Settings = () => {
       </header>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        
+
         {/* PROFILE SETTINGS */}
         <section className="section-card">
           <div className="section-heading" style={{ padding: '20px 24px 0', marginBottom: '16px' }}>
@@ -170,11 +169,11 @@ export const Settings = () => {
               </div>
             </div>
           </div>
-          
+
           <div style={{ padding: '0 24px 24px' }}>
             <form onSubmit={handleProfileSave} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div style={{ display: 'flex', gap: '32px', alignItems: 'flex-start' }}>
-                
+
                 {/* Custom Avatar Picker */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
                   <label htmlFor="avatar-upload" className="avatar-picker">
@@ -187,11 +186,11 @@ export const Settings = () => {
                       <span style={{ fontSize: '12px', fontWeight: 600, color: 'white' }}>Change</span>
                     </div>
                   </label>
-                  <input 
+                  <input
                     id="avatar-upload"
-                    type="file" 
-                    accept="image/*" 
-                    onChange={handleAvatarChange} 
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarChange}
                     className="avatar-input"
                   />
                   <label htmlFor="avatar-upload" style={{ fontSize: '13px', color: 'var(--accent-primary)', cursor: 'pointer', fontWeight: 500 }}>
@@ -202,22 +201,22 @@ export const Settings = () => {
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div className="form-group">
                     <label className="form-label" style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px', display: 'block' }}>Full Name</label>
-                    <input 
-                      type="text" 
-                      className="input-field" 
-                      value={name} 
-                      onChange={e => setName(e.target.value)} 
+                    <input
+                      type="text"
+                      className="input-field"
+                      value={name}
+                      onChange={e => setName(e.target.value)}
                       placeholder="Your Name"
                     />
                   </div>
                   <div className="form-group">
                     <label className="form-label" style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px', display: 'block' }}>Email Address</label>
-                    <input 
-                      type="text" 
-                      className="input-field" 
-                      value={user?.email || ''} 
-                      disabled 
-                      style={{ opacity: 0.6, cursor: 'not-allowed' }} 
+                    <input
+                      type="text"
+                      className="input-field"
+                      value={user?.email || ''}
+                      disabled
+                      style={{ opacity: 0.6, cursor: 'not-allowed' }}
                     />
                   </div>
                 </div>
@@ -227,7 +226,7 @@ export const Settings = () => {
                 <button type="button" onClick={handlePasswordReset} className="secondary-button" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
                   <Lock size={16} /> Reset Password
                 </button>
-                
+
                 <button type="submit" className="btn-primary" disabled={profileSaving}>
                   {profileSaving ? 'Saving...' : <><Save size={16} /> Save Profile</>}
                 </button>
@@ -261,16 +260,16 @@ export const Settings = () => {
                 <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Loading settings...</div>
               ) : (
                 <form onSubmit={handleOrgSave} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  
+
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
                     <div>
                       <h3 style={{ fontSize: '15px', color: 'var(--text-primary)', marginBottom: '4px' }}>Weekly Summary Reports</h3>
                       <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>Automatically send weekly performance emails to managers</p>
                     </div>
                     <label className="toggle-switch">
-                      <input 
-                        type="checkbox" 
-                        checked={orgSettings?.weeklyReportsEnabled ?? true} 
+                      <input
+                        type="checkbox"
+                        checked={orgSettings?.weeklyReportsEnabled ?? true}
                         onChange={e => setOrgSettings(s => ({ ...s, weeklyReportsEnabled: e.target.checked }))}
                       />
                       <span className="toggle-slider"></span>
@@ -279,7 +278,7 @@ export const Settings = () => {
 
                   <div className="form-group" style={{ maxWidth: '400px' }}>
                     <label className="form-label" style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px', display: 'block' }}>Default Timezone</label>
-                    <select 
+                    <select
                       className="input-field"
                       value={orgSettings?.timezone || 'Asia/Kolkata'}
                       onChange={e => setOrgSettings(s => ({ ...s, timezone: e.target.value }))}
@@ -328,7 +327,7 @@ export const Settings = () => {
                 <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Loading settings...</div>
               ) : (
                 <form onSubmit={handlePlatformSave} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  
+
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'rgba(248, 113, 113, 0.05)', borderRadius: '12px', border: '1px solid rgba(248, 113, 113, 0.1)' }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--danger)', marginBottom: '4px' }}>
@@ -338,9 +337,9 @@ export const Settings = () => {
                       <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>Master switch to allow or block the cron job from sending any weekly reports</p>
                     </div>
                     <label className="toggle-switch">
-                      <input 
-                        type="checkbox" 
-                        checked={platformSettings?.weeklyReportsEnabled ?? false} 
+                      <input
+                        type="checkbox"
+                        checked={platformSettings?.weeklyReportsEnabled ?? false}
                         onChange={e => setPlatformSettings(s => s ? { ...s, weeklyReportsEnabled: e.target.checked } : null)}
                       />
                       <span className="toggle-slider" style={{ background: platformSettings?.weeklyReportsEnabled ? 'var(--danger)' : '' }}></span>
