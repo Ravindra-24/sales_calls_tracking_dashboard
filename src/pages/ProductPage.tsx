@@ -254,14 +254,14 @@ export const ProductPage = () => {
           <p className="product-kicker"><Building2 size={15} /> Android APK</p>
           <h2>Give your sales team the mobile app in one click.</h2>
           <p>
-            Upload the APK to Firebase Storage, set <code>VITE_APK_DOWNLOAD_URL</code>, and this section will serve
-            the latest Android build directly from your public product page.
+            Download the Android app, sign in with your RevConnect account, and let call activity sync securely
+            to the dashboard for managers and sales teams.
           </p>
         </div>
         <div className="download-panel">
           <div className="download-icon"><Smartphone size={28} /></div>
           <h3>RevConnect Android</h3>
-          <p>{apkReady ? 'APK download is ready.' : 'APK URL is waiting for your Firebase Storage link.'}</p>
+          <p>{apkReady ? 'Install the latest Android build for call syncing.' : 'The Android app download will be available soon.'}</p>
           <a
             className={`product-download-button${apkReady ? '' : ' is-disabled'}`}
             href={apkReady ? apkDownloadUrl : '#download-app'}
