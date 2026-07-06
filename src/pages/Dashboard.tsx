@@ -103,9 +103,9 @@ export const Dashboard = () => {
 
   const maximumCalls = Math.max(...dailyTrend.map((day) => day.calls), 1);
   const totals = stats?.teamTotals;
-  const activeReps = claims.role === 'sales_member'
-    ? 1
-    : members.filter((member) => member.role === 'sales_member' && member.status === 'active').length;
+  const isSalesMember = claims.role === 'sales_member';
+  const connectedCalls = (totals?.incomingCount ?? 0) + (totals?.outgoingCount ?? 0);
+  const activeReps = members.filter((member) => member.role === 'sales_member' && member.status === 'active').length;
 
   if (claims.role === 'platform_owner') {
     return (
@@ -168,7 +168,12 @@ export const Dashboard = () => {
       <div className="stats-grid" aria-busy={loading}>
         <StatCard title="Total calls" value={loading ? '—' : totals?.totalCalls ?? 0} icon={<PhoneCall />} tone="blue" />
         <StatCard title="Talk time" value={loading ? '—' : formatDuration(totals?.totalDurationSeconds ?? 0)} icon={<Clock />} tone="violet" />
-        <StatCard title="Active reps" value={loading ? '—' : activeReps} icon={<Activity />} tone="green" />
+        <StatCard
+          title={isSalesMember ? 'Connected calls' : 'Active reps'}
+          value={loading ? '—' : isSalesMember ? connectedCalls : activeReps}
+          icon={isSalesMember ? <PhoneIncoming /> : <Activity />}
+          tone="green"
+        />
         <StatCard title="Missed calls" value={loading ? '—' : totals?.missedCount ?? 0} icon={<PhoneMissed />} tone="orange" />
       </div>
 
