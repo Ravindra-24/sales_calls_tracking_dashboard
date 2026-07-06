@@ -3,10 +3,10 @@ import { Check, Copy, KeyRound, Mail, RefreshCw, Shield, User, UserPlus, X } fro
 import { format } from 'date-fns';
 import { api, getApiErrorMessage } from '../api/client';
 import { useAuth } from '../context/auth';
-import type { ApiResponse, InviteLog, InviteResult, TeamMember } from '../types/api';
+import type { ApiResponse, InviteLog, InviteResult, OrganizationDetails, TeamMember } from '../types/api';
 
 export const Team = () => {
-  const { claims } = useAuth();
+  const { user, claims } = useAuth();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [invites, setInvites] = useState<InviteLog[]>([]);
   const [membersLoading, setMembersLoading] = useState(true);
@@ -22,6 +22,10 @@ export const Team = () => {
   const [submitting, setSubmitting] = useState(false);
   const [invite, setInvite] = useState<InviteResult | null>(null);
   const [copied, setCopied] = useState('');
+  const [managerCanEditSalesMembers, setManagerCanEditSalesMembers] = useState(true);
+  const [editingMemberId, setEditingMemberId] = useState('');
+  const [editingName, setEditingName] = useState('');
+  const [savingMemberId, setSavingMemberId] = useState('');
   const canManage = claims.role === 'org_admin' || claims.role === 'manager';
 
   const loadMembers = useCallback(async () => {
@@ -58,6 +62,14 @@ export const Team = () => {
 
   useEffect(() => { void loadMembers(); }, [loadMembers]);
   useEffect(() => { void loadInvites(); }, [loadInvites]);
+
+  useEffect(() => {
+    if (!claims.orgId || claims.role !== 'manager') return;
+
+    api.get<ApiResponse<OrganizationDetails>>(`/orgs/${claims.orgId}`)
+      .then((response) => setManagerCanEditSalesMembers(response.data.data.settings.managerCanEditSalesMembers ?? true))
+      .catch(() => setManagerCanEditSalesMembers(true));
+  }, [claims.orgId, claims.role]);
 
   const submitInvite = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -140,6 +152,50 @@ export const Team = () => {
     }
   };
 
+  const canEditMember = (member: TeamMember) => {
+    if (member.id === user?.uid) return false;
+    if (claims.role === 'org_admin') return true;
+    return member.role === 'sales_member' && managerCanEditSalesMembers;
+  };
+
+  const startEdit = (member: TeamMember) => {
+    setEditingMemberId(member.id);
+    setEditingName(member.name || '');
+  };
+
+  const saveMemberName = async (member: TeamMember) => {
+    if (!editingName.trim()) return;
+    setSavingMemberId(member.id);
+    setError('');
+    setMessage('');
+    try {
+      await api.patch(`/orgs/users/${member.id}`, { name: editingName.trim() });
+      setMessage(`Updated ${member.email}.`);
+      setEditingMemberId('');
+      await loadMembers();
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, 'Failed to update member.'));
+    } finally {
+      setSavingMemberId('');
+    }
+  };
+
+  const toggleMemberStatus = async (member: TeamMember) => {
+    setSavingMemberId(member.id);
+    setError('');
+    setMessage('');
+    try {
+      const status = member.status === 'active' ? 'disabled' : 'active';
+      await api.patch(`/orgs/users/${member.id}`, { status });
+      setMessage(`${member.email} is now ${status}.`);
+      await loadMembers();
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, 'Failed to update member status.'));
+    } finally {
+      setSavingMemberId('');
+    }
+  };
+
   if (!canManage) {
     return (
       <div className="page animate-fade-in">
@@ -160,6 +216,9 @@ export const Team = () => {
 
       {error && <div className="notice error-notice">{error}</div>}
       {message && <div className="notice success-notice">{message}</div>}
+      {claims.role === 'manager' && !managerCanEditSalesMembers && (
+        <div className="notice error-notice">Manager sales representative edits are disabled by the org admin.</div>
+      )}
 
       {showInvite && (
         <section className="section-card invite-panel">
@@ -216,12 +275,30 @@ export const Team = () => {
                 <tr><td colSpan={6} className="table-message">No team members found.</td></tr>
               ) : members.map((member) => (
                 <tr key={member.id}>
-                  <td><div className="member-cell"><div className="avatar"><User size={17} /></div><div><strong>{member.name || 'Unnamed member'}</strong><span>{member.email}</span></div></div></td>
+                  <td>
+                    {editingMemberId === member.id ? (
+                      <div className="member-edit-form">
+                        <input className="input-field" value={editingName} onChange={(event) => setEditingName(event.target.value)} />
+                        <button className="secondary-button" disabled={savingMemberId === member.id} onClick={() => saveMemberName(member)}>{savingMemberId === member.id ? 'Saving...' : 'Save'}</button>
+                        <button className="secondary-button" onClick={() => setEditingMemberId('')}>Cancel</button>
+                      </div>
+                    ) : (
+                      <div className="member-cell"><div className="avatar"><User size={17} /></div><div><strong>{member.name || 'Unnamed member'}</strong><span>{member.email}</span></div></div>
+                    )}
+                  </td>
                   <td><span className={`role-badge ${member.role}`}><Shield size={14} /> {formatRole(member.role)}</span></td>
                   <td><span className={`status-badge ${member.status}`}><i /> {member.status}</span></td>
                   <td>{member.phoneNumber || '—'}</td>
                   <td>{member.createdAt ? format(new Date(member.createdAt), 'd MMM yyyy') : '—'}</td>
-                  <td><button className="secondary-button" onClick={() => resetPassword(member)}><KeyRound size={15} /> Reset</button></td>
+                  <td>
+                    <div className="row-actions">
+                      <button className="secondary-button" disabled={!canEditMember(member)} onClick={() => startEdit(member)}><User size={15} /> Edit</button>
+                      <button className="secondary-button" disabled={!canEditMember(member) || savingMemberId === member.id} onClick={() => toggleMemberStatus(member)}>
+                        {member.status === 'active' ? 'Disable' : 'Enable'}
+                      </button>
+                      <button className="secondary-button" disabled={!canEditMember(member)} onClick={() => resetPassword(member)}><KeyRound size={15} /> Reset</button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>

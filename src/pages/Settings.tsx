@@ -1,86 +1,94 @@
-import { useState, useEffect } from 'react';
-import { User, Building2, Shield, Lock, Save, AlertCircle } from 'lucide-react';
-import { api, getApiErrorMessage } from '../api/client';
-import { useAuth } from '../context/auth';
+import { useEffect, useState } from 'react';
+import { AlertCircle, Building2, Lock, Monitor, Moon, Save, Shield, Sun, User } from 'lucide-react';
 import { sendPasswordResetEmail } from 'firebase/auth';
+import { api, getApiErrorMessage } from '../api/client';
 import { auth } from '../config/firebase';
-import type { ApiResponse, PlatformSettings, PlatformOrganization } from '../types/api';
+import { useAuth } from '../context/auth';
+import { useTheme, type ThemeMode } from '../context/theme';
+import type { ApiResponse, OrganizationDetails, PlatformSettings } from '../types/api';
+
+const defaultOrgSettings: OrganizationDetails['settings'] = {
+  timezone: 'Asia/Kolkata',
+  weeklyReportsEnabled: true,
+  managerCanEditSalesMembers: true,
+};
+
+const themeOptions: Array<{ value: ThemeMode; label: string; icon: typeof Monitor }> = [
+  { value: 'system', label: 'System', icon: Monitor },
+  { value: 'light', label: 'Light', icon: Sun },
+  { value: 'dark', label: 'Dark', icon: Moon },
+];
 
 export const Settings = () => {
   const { user, claims } = useAuth();
+  const { mode, setMode } = useTheme();
 
-  // Profile state
   const [name, setName] = useState(user?.displayName || '');
-  const [avatarUrl, setAvatarUrl] = useState(''); // Will load from backend
+  const [avatarUrl, setAvatarUrl] = useState('');
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMessage, setProfileMessage] = useState('');
 
-  // Org state (org_admin only)
-  const [orgSettings, setOrgSettings] = useState<PlatformOrganization['settings']>({});
+  const [orgSettings, setOrgSettings] = useState<OrganizationDetails['settings']>(defaultOrgSettings);
   const [orgSaving, setOrgSaving] = useState(false);
   const [orgMessage, setOrgMessage] = useState('');
   const [orgLoading, setOrgLoading] = useState(false);
 
-  // Platform state (platform_owner only)
   const [platformSettings, setPlatformSettings] = useState<PlatformSettings | null>(null);
   const [platformSaving, setPlatformSaving] = useState(false);
   const [platformMessage, setPlatformMessage] = useState('');
   const [platformLoading, setPlatformLoading] = useState(false);
 
-  // Load user profile
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        await api.get('/auth/me');
-        // if avatarUrl is returned we would set it here.
-        // The /auth/me route doesn't return avatarUrl currently, but we can get it or just let the user set it.
-      } catch (err) {
-        console.error(err);
+        const response = await api.get<ApiResponse<{ name?: string; avatarUrl?: string }>>('/auth/me');
+        setName(response.data.data.name || user?.displayName || '');
+        setAvatarUrl(response.data.data.avatarUrl || '');
+      } catch {
+        setName(user?.displayName || '');
       }
     };
-    loadProfile();
-  }, []);
+    void loadProfile();
+  }, [user]);
 
-  // Load Org Settings
   useEffect(() => {
-    if (claims.role === 'org_admin' && claims.orgId) {
-      const loadOrg = async () => {
-        setOrgLoading(true);
-        try {
-          // A bit hacky: we can fetch all organizations and find ours, or just use the platform owner route if we had one.
-          // Wait, /admin/organizations/:orgId is platform_owner only. But we have GET /admin/organizations (not for org_admin).
-          // We can fetch org details... Actually we don't have a GET /orgs/:orgId endpoint.
-          // I will assume the admin can just update settings without loading existing ones perfectly, or we just leave defaults.
-        } catch (err) {
-          console.error(err);
-        } finally {
-          setOrgLoading(false);
-        }
-      };
-      loadOrg();
-    }
-  }, [claims]);
+    if (claims.role !== 'org_admin' || !claims.orgId) return;
 
-  // Load Platform Settings
+    const loadOrg = async () => {
+      setOrgLoading(true);
+      try {
+        const response = await api.get<ApiResponse<OrganizationDetails>>(`/orgs/${claims.orgId}`);
+        setOrgSettings({ ...defaultOrgSettings, ...response.data.data.settings });
+      } catch (err) {
+        setOrgMessage(getApiErrorMessage(err, 'Failed to load organization settings.'));
+      } finally {
+        setOrgLoading(false);
+      }
+    };
+
+    void loadOrg();
+  }, [claims.orgId, claims.role]);
+
   useEffect(() => {
-    if (claims.role === 'platform_owner') {
-      const loadPlatform = async () => {
-        setPlatformLoading(true);
-        try {
-          const res = await api.get<ApiResponse<PlatformSettings>>('/admin/settings');
-          setPlatformSettings(res.data.data);
-        } catch (err) {
-          console.error(err);
-        } finally {
-          setPlatformLoading(false);
-        }
-      };
-      loadPlatform();
-    }
-  }, [claims]);
+    if (claims.role !== 'platform_owner') return;
 
-  const handleProfileSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+    const loadPlatform = async () => {
+      setPlatformLoading(true);
+      try {
+        const res = await api.get<ApiResponse<PlatformSettings>>('/admin/settings');
+        setPlatformSettings(res.data.data);
+      } catch (err) {
+        setPlatformMessage(getApiErrorMessage(err, 'Failed to load platform settings.'));
+      } finally {
+        setPlatformLoading(false);
+      }
+    };
+
+    void loadPlatform();
+  }, [claims.role]);
+
+  const handleProfileSave = async (event: React.FormEvent) => {
+    event.preventDefault();
     setProfileSaving(true);
     setProfileMessage('');
     try {
@@ -98,30 +106,28 @@ export const Settings = () => {
     try {
       await sendPasswordResetEmail(auth, user.email);
       setProfileMessage('Password reset email sent. Check your inbox.');
-    } catch (err: any) {
-      setProfileMessage(err.message || 'Failed to send reset email.');
+    } catch (err) {
+      setProfileMessage(err instanceof Error ? err.message : 'Failed to send reset email.');
     }
   };
 
-  const handleOrgSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleOrgSave = async (event: React.FormEvent) => {
+    event.preventDefault();
     if (!claims.orgId) return;
     setOrgSaving(true);
     setOrgMessage('');
     try {
-      await api.patch(`/orgs/${claims.orgId}`, {
-        settings: orgSettings
-      });
+      await api.patch(`/orgs/${claims.orgId}`, { settings: orgSettings });
       setOrgMessage('Organization settings updated.');
     } catch (err) {
-      setOrgMessage(getApiErrorMessage(err, 'Failed to update organization.'));
+      setOrgMessage(getApiErrorMessage(err, 'Failed to update organization settings.'));
     } finally {
       setOrgSaving(false);
     }
   };
 
-  const handlePlatformSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handlePlatformSave = async (event: React.FormEvent) => {
+    event.preventDefault();
     setPlatformSaving(true);
     setPlatformMessage('');
     try {
@@ -134,231 +140,169 @@ export const Settings = () => {
     }
   };
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => setAvatarUrl(reader.result as string);
+    reader.readAsDataURL(file);
   };
 
   return (
-    <div className="page">
+    <div className="page animate-fade-in">
       <header className="page-header">
         <div>
+          <p className="eyebrow">Account</p>
           <h1>Settings</h1>
-          <p className="text-secondary">Manage your account and preferences.</p>
+          <p>Manage your profile, appearance, and role-based controls.</p>
         </div>
       </header>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-
-        {/* PROFILE SETTINGS */}
-        <section className="section-card">
-          <div className="section-heading" style={{ padding: '20px 24px 0', marginBottom: '16px' }}>
+      <div className="settings-stack">
+        <section className="section-card settings-card">
+          <div className="section-heading">
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div className="stat-icon violet" style={{ width: '36px', height: '36px', borderRadius: '10px' }}>
-                <User size={18} />
-              </div>
+              <div className="stat-icon violet"><User size={18} /></div>
               <div>
-                <h2 style={{ fontSize: '18px', margin: 0, color: 'var(--text-primary)' }}>Profile Settings</h2>
-                <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>Update your personal details and avatar</p>
+                <h2>Profile Settings</h2>
+                <p>Personal details used across RevConnect.</p>
               </div>
             </div>
           </div>
 
-          <div style={{ padding: '0 24px 24px' }}>
-            <form onSubmit={handleProfileSave} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ display: 'flex', gap: '32px', alignItems: 'flex-start' }}>
-
-                {/* Custom Avatar Picker */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-                  <label htmlFor="avatar-upload" className="avatar-picker">
-                    {avatarUrl ? (
-                      <img src={avatarUrl} alt="Avatar" />
-                    ) : (
-                      <User size={40} color="rgba(255,255,255,0.4)" />
-                    )}
-                    <div className="overlay">
-                      <span style={{ fontSize: '12px', fontWeight: 600, color: 'white' }}>Change</span>
-                    </div>
-                  </label>
-                  <input
-                    id="avatar-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleAvatarChange}
-                    className="avatar-input"
-                  />
-                  <label htmlFor="avatar-upload" style={{ fontSize: '13px', color: 'var(--accent-primary)', cursor: 'pointer', fontWeight: 500 }}>
-                    Upload Photo
-                  </label>
-                </div>
-
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px', display: 'block' }}>Full Name</label>
-                    <input
-                      type="text"
-                      className="input-field"
-                      value={name}
-                      onChange={e => setName(e.target.value)}
-                      placeholder="Your Name"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px', display: 'block' }}>Email Address</label>
-                    <input
-                      type="text"
-                      className="input-field"
-                      value={user?.email || ''}
-                      disabled
-                      style={{ opacity: 0.6, cursor: 'not-allowed' }}
-                    />
-                  </div>
-                </div>
+          <form onSubmit={handleProfileSave} style={{ display: 'grid', gap: '20px' }}>
+            <div style={{ display: 'flex', gap: '28px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                <label htmlFor="avatar-upload" className="avatar-picker">
+                  {avatarUrl ? <img src={avatarUrl} alt="Avatar" /> : <User size={40} color="rgba(148,163,184,0.72)" />}
+                  <div className="overlay"><span style={{ fontSize: '12px', fontWeight: 700, color: 'white' }}>Change</span></div>
+                </label>
+                <input id="avatar-upload" type="file" accept="image/*" onChange={handleAvatarChange} className="avatar-input" />
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px', paddingTop: '20px', borderTop: '1px solid var(--border)' }}>
-                <button type="button" onClick={handlePasswordReset} className="secondary-button" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
-                  <Lock size={16} /> Reset Password
-                </button>
-
-                <button type="submit" className="btn-primary" disabled={profileSaving}>
-                  {profileSaving ? 'Saving...' : <><Save size={16} /> Save Profile</>}
-                </button>
+              <div className="settings-grid" style={{ flex: 1 }}>
+                <label>Full Name
+                  <input className="input-field" value={name} onChange={(event) => setName(event.target.value)} />
+                </label>
+                <label>Email Address
+                  <input className="input-field" value={user?.email || ''} disabled />
+                </label>
               </div>
-              {profileMessage && (
-                <div className={`notice ${profileMessage.includes('failed') ? 'error-notice' : 'success-notice'}`} style={{ marginBottom: 0, marginTop: '8px' }}>
-                  {profileMessage}
-                </div>
-              )}
-            </form>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap', paddingTop: '18px', borderTop: '1px solid var(--border)' }}>
+              <button type="button" onClick={handlePasswordReset} className="secondary-button"><Lock size={16} /> Reset Password</button>
+              <button type="submit" className="btn-primary" disabled={profileSaving}>{profileSaving ? 'Saving...' : <><Save size={16} /> Save Profile</>}</button>
+            </div>
+            {profileMessage && <div className={`notice ${profileMessage.toLowerCase().includes('fail') ? 'error-notice' : 'success-notice'}`}>{profileMessage}</div>}
+          </form>
+        </section>
+
+        <section className="section-card settings-card">
+          <div className="section-heading">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div className="stat-icon blue"><Monitor size={18} /></div>
+              <div>
+                <h2>Appearance</h2>
+                <p>Theme preference is saved on this device.</p>
+              </div>
+            </div>
+          </div>
+          <div className="segmented-control" role="group" aria-label="Theme mode">
+            {themeOptions.map((option) => (
+              <button key={option.value} className={mode === option.value ? 'active' : ''} onClick={() => setMode(option.value)} type="button">
+                <option.icon size={15} /> {option.label}
+              </button>
+            ))}
           </div>
         </section>
 
-        {/* ORG SETTINGS */}
         {claims.role === 'org_admin' && (
-          <section className="section-card">
-            <div className="section-heading" style={{ padding: '20px 24px 0', marginBottom: '16px' }}>
+          <section className="section-card settings-card">
+            <div className="section-heading">
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div className="stat-icon blue" style={{ width: '36px', height: '36px', borderRadius: '10px' }}>
-                  <Building2 size={18} />
-                </div>
+                <div className="stat-icon blue"><Building2 size={18} /></div>
                 <div>
-                  <h2 style={{ fontSize: '18px', margin: 0, color: 'var(--text-primary)' }}>Organization Settings</h2>
-                  <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>Manage preferences for your team</p>
+                  <h2>Organization Settings</h2>
+                  <p>Controls shared by dashboard and mobile app.</p>
                 </div>
               </div>
             </div>
 
-            <div style={{ padding: '0 24px 24px' }}>
-              {orgLoading ? (
-                <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Loading settings...</div>
-              ) : (
-                <form onSubmit={handleOrgSave} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {orgLoading ? (
+              <div className="empty-state">Loading settings...</div>
+            ) : (
+              <form onSubmit={handleOrgSave} style={{ display: 'grid', gap: '18px' }}>
+                <div className="settings-row">
+                  <div><h3>Weekly Summary Reports</h3><p>Email summaries for managers and admins.</p></div>
+                  <label className="toggle-switch">
+                    <input type="checkbox" checked={orgSettings.weeklyReportsEnabled ?? true} onChange={(event) => setOrgSettings((settings) => ({ ...settings, weeklyReportsEnabled: event.target.checked }))} />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div>
-                      <h3 style={{ fontSize: '15px', color: 'var(--text-primary)', marginBottom: '4px' }}>Weekly Summary Reports</h3>
-                      <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>Automatically send weekly performance emails to managers</p>
-                    </div>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={orgSettings?.weeklyReportsEnabled ?? true}
-                        onChange={e => setOrgSettings(s => ({ ...s, weeklyReportsEnabled: e.target.checked }))}
-                      />
-                      <span className="toggle-slider"></span>
-                    </label>
-                  </div>
+                <div className="settings-row">
+                  <div><h3>Manager Sales Rep Edits</h3><p>Allow managers to edit sales representative profiles and reset passwords.</p></div>
+                  <label className="toggle-switch">
+                    <input type="checkbox" checked={orgSettings.managerCanEditSalesMembers ?? true} onChange={(event) => setOrgSettings((settings) => ({ ...settings, managerCanEditSalesMembers: event.target.checked }))} />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
 
-                  <div className="form-group" style={{ maxWidth: '400px' }}>
-                    <label className="form-label" style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px', display: 'block' }}>Default Timezone</label>
-                    <select
-                      className="input-field"
-                      value={orgSettings?.timezone || 'Asia/Kolkata'}
-                      onChange={e => setOrgSettings(s => ({ ...s, timezone: e.target.value }))}
-                    >
+                <div className="settings-grid">
+                  <label>Default Timezone
+                    <select className="input-field" value={orgSettings.timezone || 'Asia/Kolkata'} onChange={(event) => setOrgSettings((settings) => ({ ...settings, timezone: event.target.value }))}>
                       <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
                       <option value="UTC">UTC</option>
                       <option value="America/New_York">Eastern Time (US)</option>
                       <option value="America/Los_Angeles">Pacific Time (US)</option>
                       <option value="Europe/London">London (GMT/BST)</option>
                     </select>
-                  </div>
+                  </label>
+                </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px', paddingTop: '20px', borderTop: '1px solid var(--border)' }}>
-                    <button type="submit" className="btn-primary" disabled={orgSaving}>
-                      {orgSaving ? 'Saving...' : <><Save size={16} /> Save Organization</>}
-                    </button>
-                  </div>
-                  {orgMessage && (
-                    <div className={`notice ${orgMessage.includes('failed') ? 'error-notice' : 'success-notice'}`} style={{ marginBottom: 0, marginTop: '8px' }}>
-                      {orgMessage}
-                    </div>
-                  )}
-                </form>
-              )}
-            </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
+                  <button type="submit" className="btn-primary" disabled={orgSaving}>{orgSaving ? 'Saving...' : <><Save size={16} /> Save Organization</>}</button>
+                </div>
+                {orgMessage && <div className={`notice ${orgMessage.toLowerCase().includes('fail') ? 'error-notice' : 'success-notice'}`}>{orgMessage}</div>}
+              </form>
+            )}
           </section>
         )}
 
-        {/* PLATFORM SETTINGS */}
         {claims.role === 'platform_owner' && (
-          <section className="section-card">
-            <div className="section-heading" style={{ padding: '20px 24px 0', marginBottom: '16px' }}>
+          <section className="section-card settings-card">
+            <div className="section-heading">
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div className="stat-icon" style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(248, 113, 113, 0.1)', color: 'var(--danger)' }}>
-                  <Shield size={18} />
-                </div>
+                <div className="stat-icon" style={{ color: 'var(--danger)', background: 'rgba(248, 113, 113, 0.1)' }}><Shield size={18} /></div>
                 <div>
-                  <h2 style={{ fontSize: '18px', margin: 0, color: 'var(--danger)' }}>Platform Administration</h2>
-                  <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>Global settings affecting all tenants</p>
+                  <h2>Platform Administration</h2>
+                  <p>Global settings affecting all tenants.</p>
                 </div>
               </div>
             </div>
 
-            <div style={{ padding: '0 24px 24px' }}>
-              {platformLoading ? (
-                <div style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Loading settings...</div>
-              ) : (
-                <form onSubmit={handlePlatformSave} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'rgba(248, 113, 113, 0.05)', borderRadius: '12px', border: '1px solid rgba(248, 113, 113, 0.1)' }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--danger)', marginBottom: '4px' }}>
-                        <AlertCircle size={16} />
-                        <h3 style={{ fontSize: '15px', margin: 0 }}>Global Weekly Reports</h3>
-                      </div>
-                      <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>Master switch to allow or block the cron job from sending any weekly reports</p>
-                    </div>
-                    <label className="toggle-switch">
-                      <input
-                        type="checkbox"
-                        checked={platformSettings?.weeklyReportsEnabled ?? false}
-                        onChange={e => setPlatformSettings(s => s ? { ...s, weeklyReportsEnabled: e.target.checked } : null)}
-                      />
-                      <span className="toggle-slider" style={{ background: platformSettings?.weeklyReportsEnabled ? 'var(--danger)' : '' }}></span>
-                    </label>
+            {platformLoading ? (
+              <div className="empty-state">Loading settings...</div>
+            ) : (
+              <form onSubmit={handlePlatformSave} style={{ display: 'grid', gap: '18px' }}>
+                <div className="settings-row" style={{ background: 'rgba(248, 113, 113, 0.05)' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--danger)', marginBottom: '4px' }}><AlertCircle size={16} /><h3>Global Weekly Reports</h3></div>
+                    <p>Master switch for the weekly report scheduler.</p>
                   </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px', paddingTop: '20px', borderTop: '1px solid var(--border)' }}>
-                    <button type="submit" className="btn-primary" disabled={platformSaving} style={{ background: 'linear-gradient(135deg, #f87171, #dc2626)', boxShadow: '0 8px 24px rgba(220, 38, 38, 0.24)' }}>
-                      {platformSaving ? 'Saving...' : <><Save size={16} /> Save Platform Settings</>}
-                    </button>
-                  </div>
-                  {platformMessage && (
-                    <div className={`notice ${platformMessage.includes('failed') ? 'error-notice' : 'success-notice'}`} style={{ marginBottom: 0, marginTop: '8px' }}>
-                      {platformMessage}
-                    </div>
-                  )}
-                </form>
-              )}
-            </div>
+                  <label className="toggle-switch">
+                    <input type="checkbox" checked={platformSettings?.weeklyReportsEnabled ?? false} onChange={(event) => setPlatformSettings((settings) => settings ? { ...settings, weeklyReportsEnabled: event.target.checked } : null)} />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
+                  <button type="submit" className="btn-primary" disabled={platformSaving}>{platformSaving ? 'Saving...' : <><Save size={16} /> Save Platform</>}</button>
+                </div>
+                {platformMessage && <div className={`notice ${platformMessage.toLowerCase().includes('fail') ? 'error-notice' : 'success-notice'}`}>{platformMessage}</div>}
+              </form>
+            )}
           </section>
         )}
       </div>

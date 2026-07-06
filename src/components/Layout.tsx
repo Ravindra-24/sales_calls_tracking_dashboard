@@ -60,7 +60,7 @@ export const Layout: React.FC = () => {
 
         <div className="sidebar-user">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', padding: '0 0.5rem' }}>
-            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold' }}>
+            <div className="sidebar-avatar">
               {user?.email?.charAt(0).toUpperCase()}
             </div>
             <div style={{ overflow: 'hidden' }}>

@@ -111,6 +111,7 @@ export interface PlatformOrganization {
     workingHoursStart?: string;
     workingHoursEnd?: string;
     weeklyReportsEnabled?: boolean;
+    managerCanEditSalesMembers?: boolean;
   };
   createdAt: string | null;
   updatedAt: string | null;
@@ -126,6 +127,23 @@ export interface PlatformOrganization {
 export interface PlatformSettings {
   weeklyReportsEnabled: boolean;
   updatedAt?: string | null;
+}
+
+export interface OrganizationDetails {
+  id: string;
+  name: string;
+  plan: string;
+  status: 'active' | 'disabled';
+  ownerUserId: string;
+  settings: {
+    timezone?: string;
+    workingHoursStart?: string;
+    workingHoursEnd?: string;
+    weeklyReportsEnabled?: boolean;
+    managerCanEditSalesMembers?: boolean;
+  };
+  createdAt: string | null;
+  updatedAt: string | null;
 }
 
 export interface TenantCreateResult {
