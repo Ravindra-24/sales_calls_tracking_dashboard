@@ -24,7 +24,7 @@ import {
 const apkDownloadUrl = import.meta.env.VITE_APK_DOWNLOAD_URL?.trim() ?? '';
 const configuredSiteUrl = import.meta.env.VITE_PUBLIC_SITE_URL?.trim().replace(/\/$/, '') ?? '';
 const appIcon = '/favicon.svg';
-const shareTitle = 'RevConnect - Sales Call Tracking SaaS';
+const shareTitle = 'LeadWatch - Sales Call Tracking SaaS';
 const shareDescription = 'Track sales calls from Android devices, monitor team performance, and manage your sales operation from one dashboard.';
 
 const highlights = [
@@ -98,9 +98,9 @@ export const ProductPage = () => {
   return (
     <main className="product-page">
       <nav className="product-nav">
-        <Link className="product-brand" to="/" aria-label="RevConnect product home">
+        <Link className="product-brand" to="/" aria-label="LeadWatch product home">
           <span><img src={appIcon} alt="" /></span>
-          RevConnect
+          LeadWatch
         </Link>
         <div className="product-nav-links" aria-label="Product navigation">
           <a href="#product">Product</a>
@@ -112,8 +112,8 @@ export const ProductPage = () => {
 
       <section className="product-hero" id="product">
         <div className="product-hero-copy product-reveal">
-          <p className="product-kicker"><Sparkles size={15} /> Sales tracking SaaS</p>
-          <h1>RevConnect turns every sales call into clear team momentum.</h1>
+          <p className="product-kicker"><Sparkles size={15} /> Sales call tracking SaaS</p>
+          <h1>LeadWatch turns every sales call into clear team momentum.</h1>
           <p>
             A modern call-tracking platform for sales teams that need mobile call sync, manager dashboards,
             tenant controls, and dependable visibility across the full sales floor.
@@ -131,7 +131,7 @@ export const ProductPage = () => {
             <span><CheckCircle2 size={16} /> Role secured</span>
             <span><CheckCircle2 size={16} /> Mobile first</span>
           </div>
-          <div className="share-strip" aria-label="Share RevConnect">
+          <div className="share-strip" aria-label="Share LeadWatch">
             <button type="button" onClick={shareLandingPage}>
               <Share2 size={16} /> Share
             </button>
@@ -162,7 +162,7 @@ export const ProductPage = () => {
           </div>
         </div>
 
-        <div className="product-visual product-reveal" aria-label="RevConnect dashboard and mobile preview">
+        <div className="product-visual product-reveal" aria-label="LeadWatch dashboard and mobile preview">
           <div className="signal-ring" />
           <div className="dashboard-preview">
             <div className="preview-toolbar">
@@ -254,13 +254,13 @@ export const ProductPage = () => {
           <p className="product-kicker"><Building2 size={15} /> Android APK</p>
           <h2>Give your sales team the mobile app in one click.</h2>
           <p>
-            Download the Android app, sign in with your RevConnect account, and let call activity sync securely
+            Download the Android app, sign in with your LeadWatch account, and let call activity sync securely
             to the dashboard for managers and sales teams.
           </p>
         </div>
         <div className="download-panel">
           <div className="download-icon"><Smartphone size={28} /></div>
-          <h3>RevConnect Android</h3>
+          <h3>LeadWatch Android</h3>
           <p>{apkReady ? 'Install the latest Android build for call syncing.' : 'The Android app download will be available soon.'}</p>
           <a
             className={`product-download-button${apkReady ? '' : ' is-disabled'}`}

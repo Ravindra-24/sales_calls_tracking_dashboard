@@ -1,50 +1,46 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">LeadWatch app icon</title>
+  <desc id="desc">A phone handset with an upward sales chart on a purple gradient background.</desc>
   <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#a855f7" />
-      <stop offset="50%" stop-color="#6d28d9" />
-      <stop offset="100%" stop-color="#4c1d95" />
+    <linearGradient id="bg" x1="116" y1="72" x2="908" y2="944" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#a335ff"/>
+      <stop offset="0.47" stop-color="#6d28d9"/>
+      <stop offset="1" stop-color="#43158f"/>
     </linearGradient>
-    <linearGradient id="barGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="rgba(255,255,255,0.7)" />
-      <stop offset="100%" stop-color="rgba(255,255,255,0.1)" />
+    <linearGradient id="bar" x1="0" y1="394" x2="0" y2="826" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9fe7ff"/>
+      <stop offset="0.62" stop-color="#47bfff"/>
+      <stop offset="1" stop-color="#2a7cf6"/>
     </linearGradient>
-    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
-      <feDropShadow dx="10" dy="15" stdDeviation="15" flood-color="#000000" flood-opacity="0.25"/>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="matrix(632 556 -556 632 236 156)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.32"/>
+      <stop offset="0.45" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softShadow" x="-16%" y="-16%" width="132%" height="132%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="26" stdDeviation="28" flood-color="#25005b" flood-opacity="0.38"/>
     </filter>
-    <filter id="lightShadow" x="-10%" y="-10%" width="130%" height="130%">
-      <feDropShadow dx="0" dy="10" stdDeviation="15" flood-color="#000000" flood-opacity="0.15"/>
+    <filter id="markShadow" x="-18%" y="-18%" width="136%" height="136%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="16" stdDeviation="15" flood-color="#180038" flood-opacity="0.32"/>
     </filter>
   </defs>
 
-  <!-- Background squircle -->
-  <rect width="1024" height="1024" rx="280" fill="url(#bgGrad)" />
+  <rect width="1024" height="1024" rx="244" fill="url(#bg)"/>
+  <rect width="1024" height="1024" rx="244" fill="url(#glow)"/>
+  <path d="M111 153c77-82 214-108 369-93 203 20 357 139 428 318 61 154 40 345-48 480 95-88 151-215 151-355 0-276-224-500-500-500-160 0-303 75-400 150Z" fill="#ffffff" opacity="0.1"/>
 
-  <!-- Background Bars -->
-  <!-- Bar 1 -->
-  <rect x="520" y="580" width="80" height="200" rx="15" fill="url(#barGrad)" />
-  <!-- Bar 2 -->
-  <rect x="630" y="470" width="80" height="310" rx="15" fill="url(#barGrad)" />
-  <!-- Bar 3 -->
-  <rect x="740" y="510" width="80" height="270" rx="15" fill="url(#barGrad)" />
+  <g filter="url(#softShadow)" opacity="0.93">
+    <rect x="536" y="571" width="76" height="254" rx="23" fill="url(#bar)"/>
+    <rect x="663" y="478" width="76" height="347" rx="23" fill="url(#bar)"/>
+    <rect x="790" y="394" width="76" height="431" rx="23" fill="url(#bar)"/>
+  </g>
 
-  <!-- Phone to Arrow Graphic (Group with shadow) -->
-  <g filter="url(#shadow)">
-    <path fill="#ffffff" d="M 233,403 
-             C 253,303 393,293 423,373 
-             C 433,403 373,433 343,483 
-             C 323,533 393,653 473,733 
-             C 543,803 663,773 663,683 
-             C 663,633 603,583 583,553 
-             C 553,513 543,473 623,433 
-             L 693,373
-             L 643,303 
-             L 823,283 
-             L 813,443 
-             L 743,353 
-             C 633,463 603,593 693,653 
-             C 743,683 753,793 653,843 
-             C 513,903 333,763 233,603 
-             C 173,493 213,453 233,403 Z" />
+  <g filter="url(#markShadow)">
+    <path d="M340 620 450 506l96 79 132-148 72 54 128-170" fill="none" stroke="#ffffff" stroke-width="57" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="m902 287-46 161-106-80Z" fill="#ffffff"/>
+  </g>
+
+  <g filter="url(#markShadow)">
+    <path fill="#ffffff" d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C10.61 21 3 13.39 3 4c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2Z" transform="translate(86 156) scale(31.8)"/>
   </g>
 </svg>

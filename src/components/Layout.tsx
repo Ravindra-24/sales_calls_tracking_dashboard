@@ -40,7 +40,7 @@ export const Layout: React.FC = () => {
             <div style={{ width: '36px', height: '36px', background: 'var(--accent-primary)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <PhoneCall color="white" size={18} />
             </div>
-            <h2>RevConnect</h2>
+            <h2>LeadWatch</h2>
           </div>
         </div>
 

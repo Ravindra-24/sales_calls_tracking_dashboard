@@ -1,51 +1,74 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
-  <title id="title">RevConnect - Sales Call Tracking SaaS</title>
-  <desc id="desc">A social preview card for RevConnect showing call analytics and Android call sync.</desc>
+  <title id="title">LeadWatch - Sales Call Tracking SaaS</title>
+  <desc id="desc">A social preview card for LeadWatch showing the app icon and sales call analytics dashboard.</desc>
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#111827"/>
-      <stop offset="0.5" stop-color="#25114d"/>
-      <stop offset="1" stop-color="#062b2c"/>
+    <linearGradient id="cardBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#07111f"/>
+      <stop offset="0.55" stop-color="#160b2d"/>
+      <stop offset="1" stop-color="#061b1c"/>
     </linearGradient>
-    <linearGradient id="mark" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#a855f7"/>
-      <stop offset="0.5" stop-color="#6d28d9"/>
-      <stop offset="1" stop-color="#4c1d95"/>
+    <linearGradient id="iconBg" x1="116" y1="72" x2="908" y2="944" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#a335ff"/>
+      <stop offset="0.47" stop-color="#6d28d9"/>
+      <stop offset="1" stop-color="#43158f"/>
+    </linearGradient>
+    <linearGradient id="iconBar" x1="0" y1="394" x2="0" y2="826" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9fe7ff"/>
+      <stop offset="0.62" stop-color="#47bfff"/>
+      <stop offset="1" stop-color="#2a7cf6"/>
     </linearGradient>
     <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#4fd7c5"/>
-      <stop offset="1" stop-color="#f5c85f"/>
+      <stop offset="0" stop-color="#47bfff"/>
+      <stop offset="1" stop-color="#8b5cf6"/>
     </linearGradient>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
-      <feDropShadow dx="0" dy="24" stdDeviation="24" flood-color="#000" flood-opacity="0.35"/>
+      <feDropShadow dx="0" dy="24" stdDeviation="24" flood-color="#000000" flood-opacity="0.35"/>
     </filter>
   </defs>
-  <rect width="1200" height="630" fill="url(#bg)"/>
-  <circle cx="1030" cy="120" r="260" fill="#4fd7c5" opacity="0.12"/>
-  <circle cx="160" cy="540" r="260" fill="#ff8668" opacity="0.14"/>
-  <g filter="url(#shadow)">
-    <rect x="74" y="78" width="150" height="150" rx="42" fill="url(#mark)"/>
-    <path fill="#fff" d="M112 132c8-39 63-43 75-12 4 12-19 23-31 43-8 20 18 66 49 97 27 27 74 16 74-19 0-19-23-38-31-50-12-16-16-31 16-47l27-23-19-27 70-8-4 63-27-35c-43 43-55 94-20 117 20 12 23 55-16 74-55 24-125-31-164-94-24-43-8-59 1-79Z"/>
+
+  <rect width="1200" height="630" fill="url(#cardBg)"/>
+  <path d="M0 122h1200M0 246h1200M0 370h1200M0 494h1200M170 0v630M342 0v630M514 0v630M686 0v630M858 0v630M1030 0v630" stroke="#ffffff" stroke-opacity="0.045"/>
+
+  <g transform="translate(76 74) scale(0.16)" filter="url(#shadow)">
+    <rect width="1024" height="1024" rx="244" fill="url(#iconBg)"/>
+    <path d="M111 153c77-82 214-108 369-93 203 20 357 139 428 318 61 154 40 345-48 480 95-88 151-215 151-355 0-276-224-500-500-500-160 0-303 75-400 150Z" fill="#ffffff" opacity="0.1"/>
+    <g opacity="0.93">
+      <rect x="536" y="571" width="76" height="254" rx="23" fill="url(#iconBar)"/>
+      <rect x="663" y="478" width="76" height="347" rx="23" fill="url(#iconBar)"/>
+      <rect x="790" y="394" width="76" height="431" rx="23" fill="url(#iconBar)"/>
+    </g>
+    <path d="M340 620 450 506l96 79 132-148 72 54 128-170" fill="none" stroke="#ffffff" stroke-width="57" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="m902 287-46 161-106-80Z" fill="#ffffff"/>
+    <path fill="#ffffff" d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C10.61 21 3 13.39 3 4c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2Z" transform="translate(86 156) scale(31.8)"/>
   </g>
-  <text x="74" y="310" fill="#fff" font-family="Inter, Arial, sans-serif" font-size="74" font-weight="800">RevConnect</text>
-  <text x="78" y="368" fill="#d9e8ef" font-family="Inter, Arial, sans-serif" font-size="32" font-weight="600">Sales call tracking SaaS for Android teams</text>
-  <text x="78" y="430" fill="#a9bbc5" font-family="Inter, Arial, sans-serif" font-size="25">Sync calls, monitor team performance, manage tenants,</text>
-  <text x="78" y="466" fill="#a9bbc5" font-family="Inter, Arial, sans-serif" font-size="25">and share your mobile APK from one secure dashboard.</text>
-  <rect x="78" y="522" width="330" height="56" rx="10" fill="url(#accent)"/>
-  <text x="112" y="558" fill="#061114" font-family="Inter, Arial, sans-serif" font-size="23" font-weight="800">Android call sync ready</text>
-  <g transform="translate(708 128)" filter="url(#shadow)">
-    <rect width="390" height="330" rx="22" fill="#0d1620" stroke="#426172"/>
-    <rect x="28" y="34" width="145" height="84" rx="12" fill="#172536"/>
-    <text x="48" y="68" fill="#a9bbc5" font-family="Inter, Arial, sans-serif" font-size="18">Today calls</text>
-    <text x="48" y="104" fill="#fff" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="800">248</text>
-    <rect x="192" y="34" width="145" height="84" rx="12" fill="#172536"/>
-    <text x="212" y="68" fill="#a9bbc5" font-family="Inter, Arial, sans-serif" font-size="18">Connected</text>
-    <text x="212" y="104" fill="#fff" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="800">81%</text>
-    <rect x="30" y="146" width="38" height="126" rx="8" fill="#4fd7c5"/>
-    <rect x="88" y="104" width="38" height="168" rx="8" fill="#f5c85f"/>
-    <rect x="146" y="130" width="38" height="142" rx="8" fill="#6da8ff"/>
-    <rect x="204" y="84" width="38" height="188" rx="8" fill="#4fd7c5"/>
-    <rect x="262" y="118" width="38" height="154" rx="8" fill="#ff8668"/>
-    <rect x="320" y="72" width="38" height="200" rx="8" fill="#f5c85f"/>
+
+  <text x="76" y="306" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="76" font-weight="800">LeadWatch</text>
+  <text x="80" y="366" fill="#dbeafe" font-family="Inter, Arial, sans-serif" font-size="31" font-weight="650">Sales call tracking SaaS for Android teams</text>
+  <text x="80" y="426" fill="#a8b8cb" font-family="Inter, Arial, sans-serif" font-size="25">Sync calls, monitor team performance, manage tenants,</text>
+  <text x="80" y="462" fill="#a8b8cb" font-family="Inter, Arial, sans-serif" font-size="25">and share your mobile APK from one secure dashboard.</text>
+  <rect x="80" y="520" width="336" height="54" rx="8" fill="url(#accent)"/>
+  <text x="114" y="555" fill="#03121b" font-family="Inter, Arial, sans-serif" font-size="23" font-weight="800">Android call sync ready</text>
+
+  <g transform="translate(707 98)" filter="url(#shadow)">
+    <rect width="416" height="404" rx="18" fill="#0d1725" stroke="#314156"/>
+    <rect x="24" y="26" width="368" height="54" rx="10" fill="#121f31"/>
+    <circle cx="52" cy="53" r="9" fill="#47bfff"/>
+    <rect x="78" y="44" width="140" height="18" rx="5" fill="#34465f"/>
+    <rect x="260" y="42" width="104" height="22" rx="7" fill="#1f8efa"/>
+
+    <rect x="30" y="110" width="156" height="86" rx="12" fill="#142337"/>
+    <text x="50" y="144" fill="#9fb0c6" font-family="Inter, Arial, sans-serif" font-size="18">Today calls</text>
+    <text x="50" y="180" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="800">248</text>
+
+    <rect x="206" y="110" width="156" height="86" rx="12" fill="#142337"/>
+    <text x="226" y="144" fill="#9fb0c6" font-family="Inter, Arial, sans-serif" font-size="18">Connected</text>
+    <text x="226" y="180" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="800">81%</text>
+
+    <rect x="34" y="228" width="42" height="112" rx="8" fill="#47bfff"/>
+    <rect x="98" y="188" width="42" height="152" rx="8" fill="#8b5cf6"/>
+    <rect x="162" y="216" width="42" height="124" rx="8" fill="#47bfff"/>
+    <rect x="226" y="172" width="42" height="168" rx="8" fill="#8b5cf6"/>
+    <rect x="290" y="142" width="42" height="198" rx="8" fill="#47bfff"/>
+    <path d="M46 286 116 246l62 28 74-76 76-54" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 </svg>

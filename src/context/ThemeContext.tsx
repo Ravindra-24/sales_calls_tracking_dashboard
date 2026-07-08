@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ThemeContext, type ThemeMode } from './theme';
 
-const storageKey = 'revconnect-theme-mode';
+const storageKey = 'leadwatch-theme-mode';
 
 const getSystemTheme = () =>
   window.matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark';

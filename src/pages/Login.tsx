@@ -66,7 +66,7 @@ export const Login: React.FC = () => {
           <div style={{ width: '56px', height: '56px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', boxShadow: '0 12px 30px rgba(109, 40, 217, 0.32)', overflow: 'hidden' }}>
             <img src={appIcon} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
-          <h2>RevConnect</h2>
+          <h2>LeadWatch</h2>
           <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Sign in to manage sales calls</p>
         </div>
 

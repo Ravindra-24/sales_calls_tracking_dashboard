@@ -52,7 +52,7 @@ export const ClaimAccount = () => {
         <div className="claim-header">
           <div className="success-icon"><Check size={18} /></div>
           <h1>Claim account</h1>
-          <p>Set up your dashboard login for RevConnect.</p>
+          <p>Set up your dashboard login for LeadWatch.</p>
         </div>
 
         {!inviteToken && (

@@ -166,7 +166,7 @@ export const Settings = () => {
               <div className="stat-icon violet"><User size={18} /></div>
               <div>
                 <h2>Profile Settings</h2>
-                <p>Personal details used across RevConnect.</p>
+                <p>Personal details used across LeadWatch.</p>
               </div>
             </div>
           </div>

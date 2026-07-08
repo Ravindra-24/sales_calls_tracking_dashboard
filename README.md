@@ -1,4 +1,4 @@
-# Sales Tracking - Admin Dashboard
+# LeadWatch - Admin Dashboard
 
 A React-based admin dashboard for managing sales calls, teams, and organizations. Built with React, TypeScript, Vite, and Firebase.
 
@@ -18,7 +18,7 @@ A React-based admin dashboard for managing sales calls, teams, and organizations
 
 - 🔐 Secure authentication with Firebase Auth
 - 👥 Organization and team management
-- 📞 Sales call tracking and management
+- 📞 Call history and management
 - 📊 Statistics and analytics dashboard
 - 👤 Role-based access control (Owner, Manager, Rep)
 - 📱 Responsive design
