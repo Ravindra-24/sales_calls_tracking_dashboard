@@ -18,6 +18,7 @@ import {
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { api, BACKEND_URL, getApiErrorMessage } from '../api/client';
+import { ActionMenu } from '../components/ActionMenu';
 import { useAuth } from '../context/auth';
 import type {
   ApiResponse,
@@ -287,7 +288,7 @@ export const Integrations = () => {
           <h1>Integrations</h1>
           <p>Secure API access and event delivery for customer platforms.</p>
         </div>
-        <div className="integration-header-actions">
+        <div className={`integration-header-actions${isPlatformOwner ? ' has-org-select' : ''}`}>
           <Link
             className="secondary-button integration-docs-link"
             to="/docs/integrations"
@@ -308,8 +309,8 @@ export const Integrations = () => {
               ))}
             </select>
           )}
-          <button className="icon-button" type="button" onClick={() => void loadIntegrationData()} title="Refresh" disabled={loading || !orgId}>
-            <RefreshCw size={17} />
+          <button className="secondary-button integration-refresh-button" type="button" onClick={() => void loadIntegrationData()} disabled={loading || !orgId}>
+            <RefreshCw size={16} /> <span>{loading ? 'Refreshing…' : 'Refresh'}</span>
           </button>
         </div>
       </div>
@@ -390,9 +391,11 @@ export const Integrations = () => {
                       <td data-label="Last used">{formatDate(key.lastUsedAt)}</td>
                       <td data-label="Status"><span className={`status-badge ${key.status}`}><i /> {key.status}</span></td>
                       <td data-label="Actions">
-                        <button className="icon-button danger-button" type="button" title="Revoke key" disabled={key.status !== 'active' || busy === `revoke-${key.id}`} onClick={() => void revokeKey(key)}>
-                          <Trash2 size={16} />
-                        </button>
+                        <ActionMenu label={`Actions for ${key.name}`}>
+                          <button className="secondary-button danger-button" type="button" disabled={key.status !== 'active' || busy === `revoke-${key.id}`} onClick={() => void revokeKey(key)}>
+                            <Trash2 size={16} /> Revoke key
+                          </button>
+                        </ActionMenu>
                       </td>
                     </tr>
                   ))}

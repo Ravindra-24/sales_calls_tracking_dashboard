@@ -3,6 +3,7 @@ import { Building2, Check, Copy, Plus, Power, Shield, User } from 'lucide-react'
 import { format } from 'date-fns';
 import { api, getApiErrorMessage } from '../api/client';
 import { useAuth } from '../context/auth';
+import { ActionMenu } from '../components/ActionMenu';
 import type { ApiResponse, PlatformOrganization, TenantCreateResult } from '../types/api';
 
 export const Platform = () => {
@@ -177,14 +178,16 @@ export const Platform = () => {
                   <td data-label="Created">{org.createdAt ? format(new Date(org.createdAt), 'd MMM yyyy') : '—'}</td>
                   <td data-label="Status"><span className={`status-badge ${org.status}`}><i /> {org.status}</span></td>
                   <td data-label="Actions">
-                    <button
-                      className={`secondary-button ${org.status === 'active' ? 'danger-button' : ''}`}
-                      type="button"
-                      disabled={updatingOrgId === org.id}
-                      onClick={() => void updateOrganization(org, { status: org.status === 'active' ? 'disabled' : 'active' })}
-                    >
-                      <Power size={15} /> {org.status === 'active' ? 'Disable' : 'Enable'}
-                    </button>
+                    <ActionMenu label={`Actions for ${org.name}`}>
+                      <button
+                        className={`secondary-button ${org.status === 'active' ? 'danger-button' : ''}`}
+                        type="button"
+                        disabled={updatingOrgId === org.id}
+                        onClick={() => void updateOrganization(org, { status: org.status === 'active' ? 'disabled' : 'active' })}
+                      >
+                        <Power size={15} /> {org.status === 'active' ? 'Disable' : 'Enable'}
+                      </button>
+                    </ActionMenu>
                   </td>
                 </tr>
               ))}

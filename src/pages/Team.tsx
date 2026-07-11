@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Check, Copy, KeyRound, Mail, RefreshCw, Shield, User, UserPlus, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { api, getApiErrorMessage } from '../api/client';
+import { ActionMenu } from '../components/ActionMenu';
 import { useAuth } from '../context/auth';
 import type { ApiResponse, InviteLog, InviteResult, OrganizationDetails, TeamMember } from '../types/api';
 
@@ -291,13 +292,13 @@ export const Team = () => {
                   <td data-label="Phone">{member.phoneNumber || '—'}</td>
                   <td data-label="Joined">{member.createdAt ? format(new Date(member.createdAt), 'd MMM yyyy') : '—'}</td>
                   <td data-label="Actions">
-                    <div className="row-actions">
+                    <ActionMenu label={`Actions for ${member.name || member.email}`}>
                       <button className="secondary-button" disabled={!canEditMember(member)} onClick={() => startEdit(member)}><User size={15} /> Edit</button>
                       <button className="secondary-button" disabled={!canEditMember(member) || savingMemberId === member.id} onClick={() => toggleMemberStatus(member)}>
                         {member.status === 'active' ? 'Disable' : 'Enable'}
                       </button>
                       <button className="secondary-button" disabled={!canEditMember(member)} onClick={() => resetPassword(member)}><KeyRound size={15} /> Reset</button>
-                    </div>
+                    </ActionMenu>
                   </td>
                 </tr>
               ))}
@@ -335,8 +336,9 @@ export const Team = () => {
                   <td data-label="Created">{row.createdAt ? format(new Date(row.createdAt), 'd MMM yyyy') : '—'}</td>
                   <td data-label="Expires">{row.expiresAt ? format(new Date(row.expiresAt), 'd MMM yyyy') : '—'}</td>
                   <td data-label="Actions">
-                    <div className="row-actions">
-                      {row.status === 'pending' && row.inviteLink && (
+                    {row.status === 'pending' ? (
+                      <ActionMenu label={`Actions for invitation to ${row.email}`}>
+                      {row.inviteLink && (
                         <>
                           <button className="secondary-button" onClick={() => copyText(row.inviteLink!, row.id)}>{copied === row.id ? <Check size={15} /> : <Copy size={15} />} Copy Link</button>
                           <button className="secondary-button" onClick={() => {
@@ -346,9 +348,10 @@ export const Team = () => {
                           }}>{copied === `${row.id}-token` ? <Check size={15} /> : <Copy size={15} />} Copy Token</button>
                         </>
                       )}
-                      {row.status === 'pending' && <button className="secondary-button" onClick={() => resendInvite(row.id)}><RefreshCw size={15} /> Resend</button>}
-                      {row.status === 'pending' && <button className="secondary-button danger-button" onClick={() => revokeInvite(row.id)}>Revoke</button>}
-                    </div>
+                        <button className="secondary-button" onClick={() => resendInvite(row.id)}><RefreshCw size={15} /> Resend</button>
+                        <button className="secondary-button danger-button" onClick={() => revokeInvite(row.id)}>Revoke</button>
+                      </ActionMenu>
+                    ) : <span className="action-unavailable">—</span>}
                   </td>
                 </tr>
               ))}
