@@ -156,8 +156,8 @@ export const Platform = () => {
                 <tr><td colSpan={6} className="table-message">No organizations created yet.</td></tr>
               ) : organizations.map((org) => (
                 <tr key={org.id}>
-                  <td><div className="member-cell"><div className="avatar"><Building2 size={17} /></div><div><strong>{org.name}</strong><span>{org.id}</span></div></div></td>
-                  <td>
+                  <td data-label="Organization"><div className="member-cell"><div className="avatar"><Building2 size={17} /></div><div><strong>{org.name}</strong><span>{org.id}</span></div></div></td>
+                  <td data-label="Plan">
                     <div className="platform-plan-control">
                       <Shield size={14} />
                       <select
@@ -173,10 +173,10 @@ export const Platform = () => {
                       </select>
                     </div>
                   </td>
-                  <td>{org.admin ? <div className="member-cell compact-member"><div className="avatar"><User size={15} /></div><div><strong>{org.admin.name}</strong><span>{org.admin.email}</span></div></div> : '—'}</td>
-                  <td>{org.createdAt ? format(new Date(org.createdAt), 'd MMM yyyy') : '—'}</td>
-                  <td><span className={`status-badge ${org.status}`}><i /> {org.status}</span></td>
-                  <td>
+                  <td data-label="Admin">{org.admin ? <div className="member-cell compact-member"><div className="avatar"><User size={15} /></div><div><strong>{org.admin.name}</strong><span>{org.admin.email}</span></div></div> : '—'}</td>
+                  <td data-label="Created">{org.createdAt ? format(new Date(org.createdAt), 'd MMM yyyy') : '—'}</td>
+                  <td data-label="Status"><span className={`status-badge ${org.status}`}><i /> {org.status}</span></td>
+                  <td data-label="Actions">
                     <button
                       className={`secondary-button ${org.status === 'active' ? 'danger-button' : ''}`}
                       type="button"

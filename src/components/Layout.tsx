@@ -1,14 +1,65 @@
-import React from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Building2, LayoutDashboard, PhoneCall, Users, LogOut, Settings, Webhook } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Building2, LayoutDashboard, PhoneCall, Users, LogOut, Menu, Settings, Webhook, X } from 'lucide-react';
 import { auth } from '../config/firebase';
 import { useAuth } from '../context/auth';
 
 export const Layout: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, claims } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const desktopQuery = window.matchMedia('(min-width: 901px)');
+    const closeAtDesktop = (event: MediaQueryListEvent) => {
+      if (event.matches) setMenuOpen(false);
+    };
+    desktopQuery.addEventListener('change', closeAtDesktop);
+    return () => desktopQuery.removeEventListener('change', closeAtDesktop);
+  }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    closeButtonRef.current?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMenuOpen(false);
+        menuButtonRef.current?.focus();
+        return;
+      }
+      if (event.key === 'Tab' && sidebarRef.current) {
+        const focusable = Array.from(sidebarRef.current.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex="0"]'));
+        const first = focusable[0];
+        const last = focusable.at(-1);
+        if (!first || !last) return;
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [menuOpen]);
 
   const handleLogout = async () => {
+    setMenuOpen(false);
     await auth.signOut();
     navigate('/login');
   };
@@ -36,14 +87,52 @@ export const Layout: React.FC = () => {
 
   return (
     <div className="app-shell">
-      <aside className="sidebar glass-panel">
+      <header className="mobile-header glass-panel">
+        <NavLink to="/dashboard" className="mobile-brand" aria-label="LeadWatch dashboard">
+          <span className="brand-mark"><PhoneCall color="white" size={18} /></span>
+          <strong>LeadWatch</strong>
+        </NavLink>
+        <button
+          ref={menuButtonRef}
+          className="mobile-menu-button"
+          type="button"
+          aria-label="Open navigation"
+          aria-expanded={menuOpen}
+          aria-controls="dashboard-navigation"
+          onClick={() => setMenuOpen(true)}
+        >
+          <Menu size={22} />
+        </button>
+      </header>
+
+      <button
+        className={`sidebar-backdrop${menuOpen ? ' visible' : ''}`}
+        type="button"
+        aria-label="Close navigation"
+        tabIndex={menuOpen ? 0 : -1}
+        onClick={() => setMenuOpen(false)}
+      />
+
+      <aside ref={sidebarRef} id="dashboard-navigation" className={`sidebar glass-panel${menuOpen ? ' open' : ''}`} aria-label="Dashboard navigation">
         <div className="brand">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ width: '36px', height: '36px', background: 'var(--accent-primary)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="brand-lockup">
+            <div className="brand-mark">
               <PhoneCall color="white" size={18} />
             </div>
             <h2>LeadWatch</h2>
           </div>
+          <button
+            ref={closeButtonRef}
+            className="sidebar-close"
+            type="button"
+            aria-label="Close navigation"
+            onClick={() => {
+              setMenuOpen(false);
+              window.requestAnimationFrame(() => menuButtonRef.current?.focus());
+            }}
+          >
+            <X size={20} />
+          </button>
         </div>
 
         <nav className="sidebar-nav">
@@ -53,6 +142,7 @@ export const Layout: React.FC = () => {
               to={item.path}
               end={item.end}
               className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+              onClick={() => setMenuOpen(false)}
             >
               <item.icon size={20} color="currentColor" />
               {item.label}
@@ -61,20 +151,18 @@ export const Layout: React.FC = () => {
         </nav>
 
         <div className="sidebar-user">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', padding: '0 0.5rem' }}>
+          <div className="sidebar-user-details">
             <div className="sidebar-avatar">
               {user?.email?.charAt(0).toUpperCase()}
             </div>
-            <div style={{ overflow: 'hidden' }}>
+            <div className="sidebar-user-copy">
               <p className="user-email">{user?.email}</p>
               <p className="user-role">{roleLabel}</p>
             </div>
           </div>
-          <button 
+          <button
+            className="logout-button"
             onClick={handleLogout}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%', padding: '0.75rem 1rem', background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', borderRadius: 'var(--radius-md)', transition: 'var(--transition)' }}
-            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
-            onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
           >
             <LogOut size={18} />
             Logout

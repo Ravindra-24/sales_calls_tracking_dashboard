@@ -242,7 +242,7 @@ export const Team = () => {
               <div className="success-icon"><Check size={18} /></div>
               <div><strong>{invite.createdUser ? 'Account created' : 'Invitation created'} for {invite.email}</strong><p>{invite.createdUser ? 'Share the login link and temporary password securely.' : `The invite expires ${format(new Date(invite.expiresAt), 'd MMM yyyy, h:mm a')}.`}{invite.emailSent === false ? ' Email was not sent; copy and share manually.' : ''}</p></div>
               <code>{invite.createdUser ? `${invite.createdUser.loginLink} | ${invite.createdUser.temporaryPassword}` : invite.inviteLink ?? invite.token}</code>
-              <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+              <div className="invite-result-actions">
                 <button className="secondary-button" type="button" onClick={() => copyText(invite.createdUser ? `${invite.createdUser.loginLink}\nEmail: ${invite.email}\nTemporary password: ${invite.createdUser.temporaryPassword}` : invite.inviteLink ?? invite.token, 'new-invite')}>
                   {copied === 'new-invite' ? <Check size={16} /> : <Copy size={16} />} {copied === 'new-invite' ? 'Copied' : 'Copy Link'}
                 </button>
@@ -275,7 +275,7 @@ export const Team = () => {
                 <tr><td colSpan={6} className="table-message">No team members found.</td></tr>
               ) : members.map((member) => (
                 <tr key={member.id}>
-                  <td>
+                  <td data-label="Member">
                     {editingMemberId === member.id ? (
                       <div className="member-edit-form">
                         <input className="input-field" value={editingName} onChange={(event) => setEditingName(event.target.value)} />
@@ -286,11 +286,11 @@ export const Team = () => {
                       <div className="member-cell"><div className="avatar"><User size={17} /></div><div><strong>{member.name || 'Unnamed member'}</strong><span>{member.email}</span></div></div>
                     )}
                   </td>
-                  <td><span className={`role-badge ${member.role}`}><Shield size={14} /> {formatRole(member.role)}</span></td>
-                  <td><span className={`status-badge ${member.status}`}><i /> {member.status}</span></td>
-                  <td>{member.phoneNumber || '—'}</td>
-                  <td>{member.createdAt ? format(new Date(member.createdAt), 'd MMM yyyy') : '—'}</td>
-                  <td>
+                  <td data-label="Role"><span className={`role-badge ${member.role}`}><Shield size={14} /> {formatRole(member.role)}</span></td>
+                  <td data-label="Status"><span className={`status-badge ${member.status}`}><i /> {member.status}</span></td>
+                  <td data-label="Phone">{member.phoneNumber || '—'}</td>
+                  <td data-label="Joined">{member.createdAt ? format(new Date(member.createdAt), 'd MMM yyyy') : '—'}</td>
+                  <td data-label="Actions">
                     <div className="row-actions">
                       <button className="secondary-button" disabled={!canEditMember(member)} onClick={() => startEdit(member)}><User size={15} /> Edit</button>
                       <button className="secondary-button" disabled={!canEditMember(member) || savingMemberId === member.id} onClick={() => toggleMemberStatus(member)}>
@@ -329,12 +329,12 @@ export const Team = () => {
                 <tr><td colSpan={6} className="table-message">No {inviteStatusFilter === 'all' ? '' : inviteStatusFilter} invites found.</td></tr>
               ) : invites.map((row) => (
                 <tr key={row.id}>
-                  <td>{row.email}</td>
-                  <td><span className={`role-badge ${row.role}`}>{formatRole(row.role)}</span></td>
-                  <td><span className={`status-badge ${row.status}`}><i /> {row.status}</span></td>
-                  <td>{row.createdAt ? format(new Date(row.createdAt), 'd MMM yyyy') : '—'}</td>
-                  <td>{row.expiresAt ? format(new Date(row.expiresAt), 'd MMM yyyy') : '—'}</td>
-                  <td>
+                  <td data-label="Email">{row.email}</td>
+                  <td data-label="Role"><span className={`role-badge ${row.role}`}>{formatRole(row.role)}</span></td>
+                  <td data-label="Status"><span className={`status-badge ${row.status}`}><i /> {row.status}</span></td>
+                  <td data-label="Created">{row.createdAt ? format(new Date(row.createdAt), 'd MMM yyyy') : '—'}</td>
+                  <td data-label="Expires">{row.expiresAt ? format(new Date(row.expiresAt), 'd MMM yyyy') : '—'}</td>
+                  <td data-label="Actions">
                     <div className="row-actions">
                       {row.status === 'pending' && row.inviteLink && (
                         <>

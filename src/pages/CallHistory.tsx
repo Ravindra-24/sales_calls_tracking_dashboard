@@ -134,11 +134,11 @@ export const CallHistory = () => {
                 <tr><td colSpan={5} className="table-message">No calls match these filters.</td></tr>
               ) : calls.map((call) => (
                 <tr key={call.id}>
-                  <td><span className={`direction-badge ${call.direction}`}>{directionIcon(call.direction)} {call.direction}</span></td>
-                  <td>{names.get(call.repId) ?? `Rep ${call.repId.slice(0, 6)}`}</td>
-                  <td className="phone-number">{call.phoneNumber}</td>
-                  <td>{format(new Date(call.startTime), 'd MMM yyyy, h:mm a')}</td>
-                  <td>{formatDuration(call.durationSeconds)}</td>
+                  <td data-label="Direction"><span className={`direction-badge ${call.direction}`}>{directionIcon(call.direction)} {call.direction}</span></td>
+                  <td data-label="Representative">{names.get(call.repId) ?? `Rep ${call.repId.slice(0, 6)}`}</td>
+                  <td data-label="Phone number" className="phone-number">{call.phoneNumber}</td>
+                  <td data-label="Date & time">{format(new Date(call.startTime), 'd MMM yyyy, h:mm a')}</td>
+                  <td data-label="Duration">{formatDuration(call.durationSeconds)}</td>
                 </tr>
               ))}
             </tbody>

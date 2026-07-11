@@ -306,6 +306,23 @@ export const IntegrationDocs = () => {
       </header>
 
       <div className="docs-shell">
+        <label className="docs-mobile-navigation">
+          <span>On this page</span>
+          <select
+            value={`#${activeSection}`}
+            aria-label="Documentation section"
+            onChange={(event) => {
+              const href = event.target.value;
+              const section = document.getElementById(href.slice(1));
+              if (!section) return;
+              setActiveSection(section.id);
+              section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              window.history.replaceState(null, '', `${window.location.pathname}${href}`);
+            }}
+          >
+            {navigation.map((item) => <option key={item.href} value={item.href}>{item.label}</option>)}
+          </select>
+        </label>
         <aside className="docs-sidebar" aria-label="Documentation sections">
           <p>Organizer API</p>
           <nav>

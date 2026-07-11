@@ -162,7 +162,7 @@ export const Settings = () => {
       <div className="settings-stack">
         <section className="section-card settings-card">
           <div className="section-heading">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div className="settings-heading-content">
               <div className="stat-icon violet"><User size={18} /></div>
               <div>
                 <h2>Profile Settings</h2>
@@ -171,17 +171,17 @@ export const Settings = () => {
             </div>
           </div>
 
-          <form onSubmit={handleProfileSave} style={{ display: 'grid', gap: '20px' }}>
-            <div style={{ display: 'flex', gap: '28px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+          <form className="settings-form profile-settings-form" onSubmit={handleProfileSave}>
+            <div className="profile-settings-layout">
+              <div className="avatar-settings">
                 <label htmlFor="avatar-upload" className="avatar-picker">
                   {avatarUrl ? <img src={avatarUrl} alt="Avatar" /> : <User size={40} color="rgba(148,163,184,0.72)" />}
-                  <div className="overlay"><span style={{ fontSize: '12px', fontWeight: 700, color: 'white' }}>Change</span></div>
+                  <div className="overlay"><span>Change</span></div>
                 </label>
                 <input id="avatar-upload" type="file" accept="image/*" onChange={handleAvatarChange} className="avatar-input" />
               </div>
 
-              <div className="settings-grid" style={{ flex: 1 }}>
+              <div className="settings-grid profile-settings-grid">
                 <label>Full Name
                   <input className="input-field" value={name} onChange={(event) => setName(event.target.value)} />
                 </label>
@@ -191,7 +191,7 @@ export const Settings = () => {
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap', paddingTop: '18px', borderTop: '1px solid var(--border)' }}>
+            <div className="settings-actions split-actions">
               <button type="button" onClick={handlePasswordReset} className="secondary-button"><Lock size={16} /> Reset Password</button>
               <button type="submit" className="btn-primary" disabled={profileSaving}>{profileSaving ? 'Saving...' : <><Save size={16} /> Save Profile</>}</button>
             </div>
@@ -201,7 +201,7 @@ export const Settings = () => {
 
         <section className="section-card settings-card">
           <div className="section-heading">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div className="settings-heading-content">
               <div className="stat-icon blue"><Monitor size={18} /></div>
               <div>
                 <h2>Appearance</h2>
@@ -221,7 +221,7 @@ export const Settings = () => {
         {claims.role === 'org_admin' && (
           <section className="section-card settings-card">
             <div className="section-heading">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div className="settings-heading-content">
                 <div className="stat-icon blue"><Building2 size={18} /></div>
                 <div>
                   <h2>Organization Settings</h2>
@@ -233,7 +233,7 @@ export const Settings = () => {
             {orgLoading ? (
               <div className="empty-state">Loading settings...</div>
             ) : (
-              <form onSubmit={handleOrgSave} style={{ display: 'grid', gap: '18px' }}>
+              <form className="settings-form" onSubmit={handleOrgSave}>
                 <div className="settings-row">
                   <div><h3>Weekly Summary Reports</h3><p>Email summaries for managers and admins.</p></div>
                   <label className="toggle-switch">
@@ -262,7 +262,7 @@ export const Settings = () => {
                   </label>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
+                <div className="settings-actions">
                   <button type="submit" className="btn-primary" disabled={orgSaving}>{orgSaving ? 'Saving...' : <><Save size={16} /> Save Organization</>}</button>
                 </div>
                 {orgMessage && <div className={`notice ${orgMessage.toLowerCase().includes('fail') ? 'error-notice' : 'success-notice'}`}>{orgMessage}</div>}
@@ -274,8 +274,8 @@ export const Settings = () => {
         {claims.role === 'platform_owner' && (
           <section className="section-card settings-card">
             <div className="section-heading">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div className="stat-icon" style={{ color: 'var(--danger)', background: 'rgba(248, 113, 113, 0.1)' }}><Shield size={18} /></div>
+              <div className="settings-heading-content">
+                <div className="stat-icon danger"><Shield size={18} /></div>
                 <div>
                   <h2>Platform Administration</h2>
                   <p>Global settings affecting all tenants.</p>
@@ -286,10 +286,10 @@ export const Settings = () => {
             {platformLoading ? (
               <div className="empty-state">Loading settings...</div>
             ) : (
-              <form onSubmit={handlePlatformSave} style={{ display: 'grid', gap: '18px' }}>
-                <div className="settings-row" style={{ background: 'rgba(248, 113, 113, 0.05)' }}>
+              <form className="settings-form" onSubmit={handlePlatformSave}>
+                <div className="settings-row danger-settings-row">
                   <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--danger)', marginBottom: '4px' }}><AlertCircle size={16} /><h3>Global Weekly Reports</h3></div>
+                    <div className="danger-settings-title"><AlertCircle size={16} /><h3>Global Weekly Reports</h3></div>
                     <p>Master switch for the weekly report scheduler.</p>
                   </div>
                   <label className="toggle-switch">
@@ -297,7 +297,7 @@ export const Settings = () => {
                     <span className="toggle-slider" />
                   </label>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '10px', borderTop: '1px solid var(--border)' }}>
+                <div className="settings-actions">
                   <button type="submit" className="btn-primary" disabled={platformSaving}>{platformSaving ? 'Saving...' : <><Save size={16} /> Save Platform</>}</button>
                 </div>
                 {platformMessage && <div className={`notice ${platformMessage.toLowerCase().includes('fail') ? 'error-notice' : 'success-notice'}`}>{platformMessage}</div>}

@@ -384,12 +384,12 @@ export const Integrations = () => {
                     <tr><td colSpan={6} className="table-message">No API keys created.</td></tr>
                   ) : keys.map((key) => (
                     <tr key={key.id}>
-                      <td><strong>{key.name}</strong></td>
-                      <td><code>{key.prefix}…</code></td>
-                      <td><div className="integration-tags">{key.scopes.map((scope) => <span key={scope}>{scope}</span>)}</div></td>
-                      <td>{formatDate(key.lastUsedAt)}</td>
-                      <td><span className={`status-badge ${key.status}`}><i /> {key.status}</span></td>
-                      <td>
+                      <td data-label="Name"><strong>{key.name}</strong></td>
+                      <td data-label="Key"><code>{key.prefix}…</code></td>
+                      <td data-label="Scopes"><div className="integration-tags">{key.scopes.map((scope) => <span key={scope}>{scope}</span>)}</div></td>
+                      <td data-label="Last used">{formatDate(key.lastUsedAt)}</td>
+                      <td data-label="Status"><span className={`status-badge ${key.status}`}><i /> {key.status}</span></td>
+                      <td data-label="Actions">
                         <button className="icon-button danger-button" type="button" title="Revoke key" disabled={key.status !== 'active' || busy === `revoke-${key.id}`} onClick={() => void revokeKey(key)}>
                           <Trash2 size={16} />
                         </button>
