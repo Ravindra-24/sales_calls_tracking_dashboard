@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Building2, LayoutDashboard, PhoneCall, Users, LogOut, Settings } from 'lucide-react';
+import { Building2, LayoutDashboard, PhoneCall, Users, LogOut, Settings, Webhook } from 'lucide-react';
 import { auth } from '../config/firebase';
 import { useAuth } from '../context/auth';
 
@@ -16,12 +16,14 @@ export const Layout: React.FC = () => {
   const isPlatformOwner = claims.role === 'platform_owner';
   const canManageTeam = claims.role === 'org_admin' || claims.role === 'manager';
   const canViewCalls = claims.role === 'org_admin' || claims.role === 'manager' || claims.role === 'sales_member';
+  const canManageIntegrations = isPlatformOwner || claims.role === 'org_admin';
 
   const navItems = [
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', end: true },
     ...(isPlatformOwner ? [{ path: '/dashboard/platform', icon: Building2, label: 'Tenants' }] : []),
     ...(canViewCalls ? [{ path: '/dashboard/calls', icon: PhoneCall, label: 'Call History' }] : []),
     ...(canManageTeam ? [{ path: '/dashboard/team', icon: Users, label: 'Team Management' }] : []),
+    ...(canManageIntegrations ? [{ path: '/dashboard/integrations', icon: Webhook, label: 'Integrations' }] : []),
     { path: '/dashboard/settings', icon: Settings, label: 'Settings' },
   ];
 

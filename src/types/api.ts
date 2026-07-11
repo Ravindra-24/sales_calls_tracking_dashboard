@@ -9,6 +9,9 @@ export interface ApiResponse<T> {
 
 export type UserRole = 'platform_owner' | 'org_admin' | 'manager' | 'sales_member';
 export type UserStatus = 'active' | 'disabled';
+export type OrgPlan = 'free' | 'starter' | 'growth' | 'enterprise';
+export type IntegrationScope = 'read:org' | 'read:team' | 'read:calls' | 'read:stats';
+export type IntegrationEventType = 'call.created' | 'daily_stats.updated';
 
 export interface TeamMember {
   id: string;
@@ -153,4 +156,79 @@ export interface TenantCreateResult {
   temporaryPassword: string;
   emailSent: boolean;
   emailError?: string;
+}
+
+export interface PlanEntitlements {
+  integrationsEnabled: boolean;
+  maxApiKeys: number;
+  maxWebhookEndpoints: number;
+  requestsPerMinute: number;
+  requestsPerMonth: number;
+  webhookDeliveriesPerMonth: number;
+  maxQueryRangeDays: number;
+}
+
+export interface IntegrationOverview {
+  organization: {
+    id: string;
+    name: string;
+    plan: OrgPlan;
+    status: 'active' | 'disabled';
+  };
+  entitlements: PlanEntitlements;
+  usage: {
+    month: string;
+    requestCount: number;
+    webhookDeliveryCount: number;
+  };
+}
+
+export interface IntegrationApiKey {
+  id: string;
+  orgId: string;
+  name: string;
+  prefix: string;
+  scopes: IntegrationScope[];
+  status: 'active' | 'revoked';
+  createdBy: string;
+  createdAt: string | null;
+  lastUsedAt: string | null;
+  revokedAt: string | null;
+  revokedBy: string | null;
+}
+
+export interface CreatedIntegrationApiKey extends IntegrationApiKey {
+  apiKey: string;
+}
+
+export interface IntegrationWebhookEndpoint {
+  id: string;
+  orgId: string;
+  name: string;
+  url: string;
+  events: IntegrationEventType[];
+  status: 'active' | 'disabled';
+  createdBy: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+  lastDeliveryAt: string | null;
+  lastDeliveryStatus: 'pending' | 'delivered' | 'failed' | 'skipped' | null;
+}
+
+export interface CreatedIntegrationWebhook extends IntegrationWebhookEndpoint {
+  signingSecret: string;
+}
+
+export interface IntegrationWebhookDelivery {
+  id: string;
+  endpointId: string;
+  eventId: string;
+  eventType: IntegrationEventType | 'webhook.test';
+  status: 'pending' | 'delivered' | 'failed' | 'skipped';
+  attemptCount: number;
+  responseStatus: number | null;
+  lastError: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  deliveredAt: string | null;
 }

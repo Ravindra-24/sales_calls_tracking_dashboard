@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Building2, Check, Copy, Plus, Shield, User } from 'lucide-react';
+import { Building2, Check, Copy, Plus, Power, Shield, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { api, getApiErrorMessage } from '../api/client';
 import { useAuth } from '../context/auth';
@@ -10,6 +10,7 @@ export const Platform = () => {
   const [organizations, setOrganizations] = useState<PlatformOrganization[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [updatingOrgId, setUpdatingOrgId] = useState('');
   const [error, setError] = useState('');
   const [result, setResult] = useState<TenantCreateResult | null>(null);
   const [copied, setCopied] = useState(false);
@@ -70,6 +71,25 @@ export const Platform = () => {
     window.setTimeout(() => setCopied(false), 1800);
   };
 
+  const updateOrganization = async (
+    organization: PlatformOrganization,
+    updates: { plan?: string; status?: 'active' | 'disabled' },
+  ) => {
+    if (updates.status === 'disabled' && !window.confirm(`Disable ${organization.name}? Its users and integration access will be blocked.`)) return;
+    setUpdatingOrgId(organization.id);
+    setError('');
+    try {
+      await api.patch(`/admin/organizations/${organization.id}`, updates);
+      setOrganizations((current) => current.map((item) => (
+        item.id === organization.id ? { ...item, ...updates } : item
+      )));
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, 'Failed to update organization.'));
+    } finally {
+      setUpdatingOrgId('');
+    }
+  };
+
   if (claims.role !== 'platform_owner') {
     return (
       <div className="page animate-fade-in">
@@ -128,19 +148,44 @@ export const Platform = () => {
         </div>
         <div className="table-scroll">
           <table className="data-table">
-            <thead><tr><th>Organization</th><th>Plan</th><th>Admin</th><th>Created</th><th>Status</th></tr></thead>
+            <thead><tr><th>Organization</th><th>Plan</th><th>Admin</th><th>Created</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={5} className="table-message">Loading organizations…</td></tr>
+                <tr><td colSpan={6} className="table-message">Loading organizations…</td></tr>
               ) : organizations.length === 0 ? (
-                <tr><td colSpan={5} className="table-message">No organizations created yet.</td></tr>
+                <tr><td colSpan={6} className="table-message">No organizations created yet.</td></tr>
               ) : organizations.map((org) => (
                 <tr key={org.id}>
                   <td><div className="member-cell"><div className="avatar"><Building2 size={17} /></div><div><strong>{org.name}</strong><span>{org.id}</span></div></div></td>
-                  <td><span className="role-badge"><Shield size={14} /> {org.plan}</span></td>
+                  <td>
+                    <div className="platform-plan-control">
+                      <Shield size={14} />
+                      <select
+                        value={org.plan}
+                        aria-label={`Plan for ${org.name}`}
+                        disabled={updatingOrgId === org.id}
+                        onChange={(event) => void updateOrganization(org, { plan: event.target.value })}
+                      >
+                        <option value="free">Free</option>
+                        <option value="starter">Starter</option>
+                        <option value="growth">Growth</option>
+                        <option value="enterprise">Enterprise</option>
+                      </select>
+                    </div>
+                  </td>
                   <td>{org.admin ? <div className="member-cell compact-member"><div className="avatar"><User size={15} /></div><div><strong>{org.admin.name}</strong><span>{org.admin.email}</span></div></div> : '—'}</td>
                   <td>{org.createdAt ? format(new Date(org.createdAt), 'd MMM yyyy') : '—'}</td>
-                  <td><span className="status-badge active"><i /> active</span></td>
+                  <td><span className={`status-badge ${org.status}`}><i /> {org.status}</span></td>
+                  <td>
+                    <button
+                      className={`secondary-button ${org.status === 'active' ? 'danger-button' : ''}`}
+                      type="button"
+                      disabled={updatingOrgId === org.id}
+                      onClick={() => void updateOrganization(org, { status: org.status === 'active' ? 'disabled' : 'active' })}
+                    >
+                      <Power size={15} /> {org.status === 'active' ? 'Disable' : 'Enable'}
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

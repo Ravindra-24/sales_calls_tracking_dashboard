@@ -12,6 +12,8 @@ import { Platform } from './pages/Platform';
 import { ClaimAccount } from './pages/ClaimAccount';
 import { Settings } from './pages/Settings';
 import { ProductPage } from './pages/ProductPage';
+import { Integrations } from './pages/Integrations';
+import { IntegrationDocs } from './pages/IntegrationDocs';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, claims } = useAuth();
@@ -32,10 +34,12 @@ function App() {
             <Route path="/product" element={<Navigate to="/" replace />} />
             <Route path="/login" element={<Login />} />
             <Route path="/claim" element={<ClaimAccount />} />
+            <Route path="/docs/integrations" element={<IntegrationDocs />} />
             <Route path="/calls" element={<Navigate to="/dashboard/calls" replace />} />
             <Route path="/team" element={<Navigate to="/dashboard/team" replace />} />
             <Route path="/platform" element={<Navigate to="/dashboard/platform" replace />} />
             <Route path="/settings" element={<Navigate to="/dashboard/settings" replace />} />
+            <Route path="/integrations" element={<Navigate to="/dashboard/integrations" replace />} />
             
             <Route 
               path="/dashboard" 
@@ -50,6 +54,7 @@ function App() {
               <Route path="team" element={<Team />} />
               <Route path="platform" element={<Platform />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="integrations" element={<Integrations />} />
             </Route>
             
             <Route path="*" element={<Navigate to="/" replace />} />

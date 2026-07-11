@@ -1,7 +1,7 @@
 {
   "name": "LeadWatch Sales Tracking",
   "short_name": "LeadWatch",
-  "description": "Sales call tracking SaaS with Android call sync and team dashboards.",
+  "description": "Sales call tracking with Android call sync and team dashboards.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

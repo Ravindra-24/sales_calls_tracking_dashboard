@@ -20,11 +20,12 @@ import {
   Timer,
   Zap,
 } from 'lucide-react';
+import { useAuth } from '../context/auth';
 
 const apkDownloadUrl = import.meta.env.VITE_APK_DOWNLOAD_URL?.trim() ?? '';
 const configuredSiteUrl = import.meta.env.VITE_PUBLIC_SITE_URL?.trim().replace(/\/$/, '') ?? '';
 const appIcon = '/favicon.svg';
-const shareTitle = 'LeadWatch - Sales Call Tracking SaaS';
+const shareTitle = 'LeadWatch - Sales Call Tracking';
 const shareDescription = 'Track sales calls from Android devices, monitor team performance, and manage your sales operation from one dashboard.';
 
 const highlights = [
@@ -52,17 +53,18 @@ const plans = [
     price: 'For growing organizations',
     accent: 'blue',
     featured: true,
-    features: ['Manager and org admin roles', 'Invite and claim account flow', 'Team leaderboard', 'Daily activity trends'],
+    features: ['Manager and org admin roles', 'Organizer API access', 'Signed event webhooks', 'Daily activity trends'],
   },
   {
     name: 'Platform',
-    price: 'For multi-tenant SaaS',
+    price: 'For multi-tenant',
     accent: 'coral',
-    features: ['Tenant management', 'Platform owner console', 'Organization controls', 'Scalable Firebase backend'],
+    features: ['Tenant management', 'Platform owner console', 'Higher integration limits', 'Scalable Firebase backend'],
   },
 ];
 
 export const ProductPage = () => {
+  const { user } = useAuth();
   const apkReady = Boolean(apkDownloadUrl);
   const [shareStatus, setShareStatus] = useState('');
   const shareUrl = useMemo(() => {
@@ -105,14 +107,15 @@ export const ProductPage = () => {
         <div className="product-nav-links" aria-label="Product navigation">
           <a href="#product">Product</a>
           <a href="#plans">Plans</a>
+          <Link to="/docs/integrations">API Docs</Link>
           <a href="#download-app">APK</a>
-          <Link to="/login">Sign in</Link>
+          <Link to={user ? '/dashboard' : '/login'}>{user ? 'Dashboard' : 'Sign in'}</Link>
         </div>
       </nav>
 
       <section className="product-hero" id="product">
         <div className="product-hero-copy product-reveal">
-          <p className="product-kicker"><Sparkles size={15} /> Sales call tracking SaaS</p>
+          <p className="product-kicker"><Sparkles size={15} /> Sales call tracking</p>
           <h1>LeadWatch turns every sales call into clear team momentum.</h1>
           <p>
             A modern call-tracking platform for sales teams that need mobile call sync, manager dashboards,
@@ -122,8 +125,8 @@ export const ProductPage = () => {
             <a className="product-primary-action" href="#download-app">
               <Download size={18} /> Download APK
             </a>
-            <Link className="product-secondary-action" to="/login">
-              Open dashboard <ArrowRight size={18} />
+            <Link className="product-secondary-action" to={user ? '/dashboard' : '/login'}>
+              {user ? 'Return to dashboard' : 'Open dashboard'} <ArrowRight size={18} />
             </Link>
           </div>
           <div className="product-trust-row" aria-label="Product strengths">
