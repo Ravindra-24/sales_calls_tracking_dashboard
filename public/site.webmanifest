@@ -1,12 +1,12 @@
 {
   "name": "LeadWatch Sales Tracking",
   "short_name": "LeadWatch",
-  "description": "Sales call tracking with Android call sync and team dashboards.",
+  "description": "Android call activity, role-aware sales visibility, and team dashboards without manual reporting.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#090d18",
-  "theme_color": "#6d28d9",
+  "theme_color": "#11183a",
   "icons": [
     {
       "src": "/favicon-16x16.png",

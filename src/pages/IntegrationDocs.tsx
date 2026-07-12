@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowLeft,
   ArrowRight,
-  BookOpen,
   Check,
   CheckCircle2,
   Clock3,
@@ -15,9 +13,12 @@ import {
   Webhook,
 } from 'lucide-react';
 import { BACKEND_URL } from '../api/client';
+import { PublicFooter, PublicHeader, usePublicMetadata } from '../components/public';
 import { useAuth } from '../context/auth';
 
 const apiBaseUrl = `${BACKEND_URL}/v1`;
+const docsScrollBehavior = () =>
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
 
 const navigation = [
   { href: '#overview', label: 'Overview' },
@@ -231,19 +232,11 @@ export const IntegrationDocs = () => {
   const [baseCopied, setBaseCopied] = useState(false);
   const [activeSection, setActiveSection] = useState('overview');
 
-  useEffect(() => {
-    const previousTitle = document.title;
-    const description = document.querySelector<HTMLMetaElement>('meta[name="description"]');
-    const previousDescription = description?.content;
-    document.title = 'Organizer API Documentation | LeadWatch';
-    if (description) {
-      description.content = 'Integrate LeadWatch call data, team statistics, and signed webhooks into your organization platform.';
-    }
-    return () => {
-      document.title = previousTitle;
-      if (description && previousDescription) description.content = previousDescription;
-    };
-  }, []);
+  usePublicMetadata({
+    title: 'LeadWatch API Documentation',
+    description: 'Integrate LeadWatch call data, team statistics, and signed webhooks into your organization platform.',
+    path: '/docs/integrations',
+  });
 
   useEffect(() => {
     const updateActiveSection = () => {
@@ -279,7 +272,7 @@ export const IntegrationDocs = () => {
     const section = document.getElementById(href.slice(1));
     if (!section) return;
     setActiveSection(section.id);
-    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    section.scrollIntoView({ behavior: docsScrollBehavior(), block: 'start' });
     window.history.replaceState(null, '', `${window.location.pathname}${href}`);
   };
 
@@ -290,22 +283,10 @@ export const IntegrationDocs = () => {
   };
 
   return (
-    <main className="api-docs-page">
-      <header className="docs-topbar">
-        <Link className="docs-brand" to="/" aria-label="LeadWatch home">
-          <span><img src="/favicon.svg" alt="" /></span>
-          LeadWatch
-        </Link>
-        <div className="docs-topbar-title"><BookOpen size={16} /> Organizer API documentation</div>
-        <nav>
-          <Link to="/"><ArrowLeft size={15} /> Product</Link>
-          <Link className="docs-sign-in" to={user ? '/dashboard' : '/login'}>
-            {user ? 'Dashboard' : 'Sign in'} <ArrowRight size={15} />
-          </Link>
-        </nav>
-      </header>
+    <div className="lw-public lw-docs-page api-docs-page">
+      <PublicHeader contextLabel="API docs" />
 
-      <div className="docs-shell">
+      <main className="docs-shell">
         <label className="docs-mobile-navigation">
           <span>On this page</span>
           <select
@@ -316,7 +297,7 @@ export const IntegrationDocs = () => {
               const section = document.getElementById(href.slice(1));
               if (!section) return;
               setActiveSection(section.id);
-              section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              section.scrollIntoView({ behavior: docsScrollBehavior(), block: 'start' });
               window.history.replaceState(null, '', `${window.location.pathname}${href}`);
             }}
           >
@@ -324,7 +305,7 @@ export const IntegrationDocs = () => {
           </select>
         </label>
         <aside className="docs-sidebar" aria-label="Documentation sections">
-          <p>Organizer API</p>
+          <p>LeadWatch API</p>
           <nav>
             {navigation.map((item) => {
               const sectionId = item.href.slice(1);
@@ -555,13 +536,9 @@ export const IntegrationDocs = () => {
             </Link>
           </section>
         </article>
-      </div>
+      </main>
 
-      <footer className="docs-footer">
-        <Link to="/">LeadWatch</Link>
-        <span>Organizer API v1</span>
-        <Link to={user ? '/dashboard' : '/login'}>{user ? 'Dashboard' : 'Sign in'}</Link>
-      </footer>
-    </main>
+      <PublicFooter />
+    </div>
   );
 };

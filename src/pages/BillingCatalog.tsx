@@ -15,6 +15,7 @@ import {
 import { api, getApiErrorMessage } from '../api/client';
 import { billingPlanName, fetchBillingCatalog, formatBillingDate, formatBillingMoney, newBillingOperationId } from '../api/billing';
 import { useAuth } from '../context/auth';
+import { useFeedback } from '../context/feedback';
 import type { ApiResponse } from '../types/api';
 import type { BillingCatalog as BillingCatalogData, BillingPlanCode, BillingPriceVersion, BillingPromotion, BillingSettings } from '../types/billing';
 
@@ -26,6 +27,7 @@ const extractList = <T,>(value: T[] | { items?: T[] } | null | undefined): T[] =
 
 export const BillingCatalog = () => {
   const { claims } = useAuth();
+  const { confirm, toast } = useFeedback();
   const [catalog, setCatalog] = useState<BillingCatalogData | null>(null);
   const [prices, setPrices] = useState<BillingPriceVersion[]>([]);
   const [promotions, setPromotions] = useState<BillingPromotion[]>([]);
@@ -33,7 +35,6 @@ export const BillingCatalog = () => {
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState('');
   const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
   const [priceForm, setPriceForm] = useState({ planCode: 'pro' as 'pro' | 'max', baseRupees: '1999', taxPercent: '18' });
   const [promotionForm, setPromotionForm] = useState({
     code: '',
@@ -105,10 +106,15 @@ export const BillingCatalog = () => {
       return;
     }
     const plan = priceForm.planCode;
-    if (!window.confirm(`Publish an immutable ${plan} price at ${formatBillingMoney(preview.baseAmountPaise)} plus ${priceForm.taxPercent}% GST? Existing subscribers will remain on their current price.`)) return;
+    const approved = await confirm({
+      title: `Publish a new ${billingPlanName(plan)} price?`,
+      message: `${formatBillingMoney(preview.baseAmountPaise)} plus ${priceForm.taxPercent}% GST will become the active immutable price. Existing subscribers remain on their current price.`,
+      confirmLabel: 'Publish price',
+      variant: 'warning',
+    });
+    if (!approved) return;
     setWorking('price');
     setError('');
-    setMessage('');
     try {
       await api.post('/billing/admin/prices', {
         planCode: plan,
@@ -116,10 +122,12 @@ export const BillingCatalog = () => {
         taxRateBps: preview.taxRateBps,
         operationId: newBillingOperationId(),
       });
-      setMessage('Price version published. Existing subscriptions remain grandfathered.');
+      toast({ title: 'Price version published', message: 'Existing subscriptions remain grandfathered.', variant: 'success' });
       await loadCatalog();
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Price could not be published. No catalog change was made.'));
+      const message = getApiErrorMessage(requestError, 'Price could not be published. No catalog change was made.');
+      setError(message);
+      toast({ title: 'Price not published', message, variant: 'error' });
     } finally {
       setWorking('');
     }
@@ -136,10 +144,15 @@ export const BillingCatalog = () => {
       setError('Percentage discounts cannot exceed 100%.');
       return;
     }
-    if (!window.confirm('Publish this promotion? Its discounted Razorpay plan and redeemed subscription pricing will remain immutable.')) return;
+    const approved = await confirm({
+      title: `Publish promotion ${promotionForm.code.trim().toUpperCase()}?`,
+      message: 'Its discounted Razorpay plan and redeemed subscription pricing will remain immutable.',
+      confirmLabel: 'Publish promotion',
+      variant: 'warning',
+    });
+    if (!approved) return;
     setWorking('promotion');
     setError('');
-    setMessage('');
     try {
       await api.post('/billing/admin/promotions', {
         code: promotionForm.code.trim().toUpperCase(),
@@ -152,25 +165,36 @@ export const BillingCatalog = () => {
         maxRedemptions: promotionForm.maxRedemptions ? Number(promotionForm.maxRedemptions) : undefined,
       });
       setPromotionForm({ code: '', name: '', type: 'percentage', value: '', planCode: '', organizationId: '', validUntil: '', maxRedemptions: '' });
-      setMessage('Promotion published. The code is only shown in masked form after creation.');
+      toast({ title: 'Promotion published', message: 'The code is only shown in masked form after creation.', variant: 'success' });
       await loadCatalog();
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Promotion could not be published.'));
+      const message = getApiErrorMessage(requestError, 'Promotion could not be published.');
+      setError(message);
+      toast({ title: 'Promotion not published', message, variant: 'error' });
     } finally {
       setWorking('');
     }
   };
 
   const disablePromotion = async (promotion: BillingPromotion) => {
-    if (!window.confirm(`Disable ${promotion.name || promotion.codeMasked || promotion.id} for new redemptions? Existing subscribers keep their discount.`)) return;
+    const name = promotion.name || promotion.codeMasked || promotion.id;
+    const approved = await confirm({
+      title: `Disable ${name}?`,
+      message: 'New redemptions will stop immediately. Existing subscribers keep their discount.',
+      confirmLabel: 'Disable promotion',
+      variant: 'danger',
+    });
+    if (!approved) return;
     setWorking(promotion.id);
     setError('');
     try {
       await api.patch(`/billing/admin/promotions/${encodeURIComponent(promotion.id)}`, { status: 'disabled' });
-      setMessage('Promotion disabled for new checkouts.');
+      toast({ title: 'Promotion disabled', message: `${name} is unavailable for new checkouts.`, variant: 'success' });
       await loadCatalog();
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Promotion could not be disabled.'));
+      const message = getApiErrorMessage(requestError, 'Promotion could not be disabled.');
+      setError(message);
+      toast({ title: 'Promotion not disabled', message, variant: 'error' });
     } finally {
       setWorking('');
     }
@@ -179,10 +203,15 @@ export const BillingCatalog = () => {
   const saveBillingSettings = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!settings) return;
-    if (!window.confirm('Save billing readiness and tax identity settings? This action is audited.')) return;
+    const approved = await confirm({
+      title: 'Save billing readiness settings?',
+      message: 'Tax identity and checkout-readiness changes take effect after server validation. This action is audited.',
+      confirmLabel: 'Save settings',
+      variant: 'warning',
+    });
+    if (!approved) return;
     setWorking('settings');
     setError('');
-    setMessage('');
     try {
       await api.patch('/billing/admin/settings', {
         expectedVersion: settings.version,
@@ -202,10 +231,12 @@ export const BillingCatalog = () => {
         },
         alertEmails: settingsForm.alertEmails.split(',').map((email) => email.trim().toLowerCase()).filter(Boolean),
       });
-      setMessage('Billing readiness settings saved with an audit event.');
+      toast({ title: 'Billing settings saved', message: 'The readiness update was recorded with an audit event.', variant: 'success' });
       await loadCatalog();
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Billing readiness settings could not be saved.'));
+      const message = getApiErrorMessage(requestError, 'Billing readiness settings could not be saved.');
+      setError(message);
+      toast({ title: 'Billing settings not saved', message, variant: 'error' });
     } finally {
       setWorking('');
     }
@@ -220,7 +251,6 @@ export const BillingCatalog = () => {
     <div className="page billing-page animate-fade-in">
       <header className="page-header"><div><p className="eyebrow">Platform billing</p><h1>Catalog & promotions</h1><p>Publish immutable organization prices and lifetime subscription discounts.</p></div><button className="secondary-button" onClick={() => void loadCatalog()}><RefreshCw size={16} /> Refresh</button></header>
       {error && <div className="notice error-notice">{error}</div>}
-      {message && <div className="notice success-notice">{message}</div>}
       <div className={`billing-readiness ${catalog?.checkoutAvailable ? 'ready' : 'blocked'}`}>
         {catalog?.checkoutAvailable ? <CheckCircle2 size={21} /> : <AlertTriangle size={21} />}
         <div><strong>{catalog?.checkoutAvailable ? 'Checkout configured' : 'Checkout safely disabled'}</strong><p>Mode: {catalog?.mode || 'unknown'} · Live enabled: {catalog?.liveEnabled ? 'yes' : 'no'} · Provider/tax readiness is enforced by the server.</p></div>

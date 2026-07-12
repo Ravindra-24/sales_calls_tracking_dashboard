@@ -20,6 +20,7 @@ import { format } from 'date-fns';
 import { api, BACKEND_URL, getApiErrorMessage } from '../api/client';
 import { ActionMenu } from '../components/ActionMenu';
 import { useAuth } from '../context/auth';
+import { useFeedback } from '../context/feedback';
 import type {
   ApiResponse,
   CreatedIntegrationApiKey,
@@ -88,6 +89,7 @@ const SecretNotice = ({
 
 export const Integrations = () => {
   const { claims } = useAuth();
+  const { confirm, toast } = useFeedback();
   const isPlatformOwner = claims.role === 'platform_owner';
   const canManage = isPlatformOwner || claims.role === 'org_admin';
   const [organizations, setOrganizations] = useState<PlatformOrganization[]>([]);
@@ -99,7 +101,6 @@ export const Integrations = () => {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [revealedSecret, setRevealedSecret] = useState<{ label: string; value: string } | null>(null);
   const [keyForm, setKeyForm] = useState<{ name: string; scopes: IntegrationScope[] }>({
     name: '',
@@ -177,11 +178,12 @@ export const Integrations = () => {
   const runAction = async (name: string, action: () => Promise<void>) => {
     setBusy(name);
     setError('');
-    setSuccess('');
     try {
       await action();
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Integration action failed.'));
+      const message = getApiErrorMessage(requestError, 'Integration action failed.');
+      setError(message);
+      toast({ title: 'Integration action failed', message, variant: 'error' });
     } finally {
       setBusy('');
     }
@@ -214,16 +216,22 @@ export const Integrations = () => {
       );
       setRevealedSecret({ label: 'API key', value: response.data.data.apiKey });
       setKeyForm({ name: '', scopes: scopeOptions.map((scope) => scope.value) });
-      setSuccess('API key created.');
+      toast({ title: 'API key created', message: 'Copy and store the new key before dismissing it.', variant: 'success' });
       await loadIntegrationData();
     });
   };
 
   const revokeKey = async (key: IntegrationApiKey) => {
-    if (!window.confirm(`Revoke ${key.name}? Requests using this key will stop immediately.`)) return;
+    const approved = await confirm({
+      title: `Revoke ${key.name}?`,
+      message: 'Requests using this key will stop immediately. This action cannot be undone.',
+      confirmLabel: 'Revoke key',
+      variant: 'danger',
+    });
+    if (!approved) return;
     await runAction(`revoke-${key.id}`, async () => {
       await api.patch(`/orgs/${orgId}/integrations/api-keys/${key.id}/revoke`);
-      setSuccess('API key revoked.');
+      toast({ title: 'API key revoked', message: `${key.name} can no longer access the API.`, variant: 'success' });
       await loadIntegrationData();
     });
   };
@@ -244,7 +252,7 @@ export const Integrations = () => {
         url: '',
         events: eventOptions.map((item) => item.value),
       });
-      setSuccess('Webhook endpoint created.');
+      toast({ title: 'Webhook endpoint created', message: 'Copy and store its signing secret before dismissing it.', variant: 'success' });
       await loadIntegrationData();
     });
   };
@@ -255,7 +263,7 @@ export const Integrations = () => {
       await api.patch(`/orgs/${orgId}/integrations/webhooks/${endpoint.id}`, {
         status: nextStatus,
       });
-      setSuccess(`Webhook ${nextStatus}.`);
+      toast({ title: `Webhook ${nextStatus}`, message: `${endpoint.name} is now ${nextStatus}.`, variant: 'success' });
       await loadIntegrationData();
     });
   };
@@ -263,13 +271,17 @@ export const Integrations = () => {
   const testWebhook = async (endpoint: IntegrationWebhookEndpoint) => {
     await runAction(`test-${endpoint.id}`, async () => {
       await api.post(`/orgs/${orgId}/integrations/webhooks/${endpoint.id}/test`);
-      setSuccess(`Test delivered to ${endpoint.name}.`);
+      toast({ title: 'Test delivered', message: `A test event was sent to ${endpoint.name}.`, variant: 'success' });
     });
   };
 
   const copyApiBase = async () => {
-    await navigator.clipboard.writeText(`${BACKEND_URL}/v1`);
-    setSuccess('API base URL copied.');
+    try {
+      await navigator.clipboard.writeText(`${BACKEND_URL}/v1`);
+      toast({ message: 'API base URL copied.', variant: 'success' });
+    } catch {
+      toast({ title: 'Copy unavailable', message: 'Select and copy the API base URL manually.', variant: 'error' });
+    }
   };
 
   if (!canManage) {
@@ -316,7 +328,6 @@ export const Integrations = () => {
       </div>
 
       {error && <div className="notice error-notice">{error}</div>}
-      {success && <div className="notice success-notice">{success}</div>}
       {revealedSecret && (
         <SecretNotice
           label={revealedSecret.label}

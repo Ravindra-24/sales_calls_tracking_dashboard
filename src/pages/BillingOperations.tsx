@@ -19,6 +19,7 @@ import {
 import { api, getApiErrorMessage } from '../api/client';
 import { billingPlanName, formatBillingDate, formatBillingMoney } from '../api/billing';
 import { useAuth } from '../context/auth';
+import { useFeedback } from '../context/feedback';
 import { useSearchParams } from 'react-router-dom';
 import type { ApiResponse } from '../types/api';
 import type { BillingAuditEvent, BillingOperation, BillingPayment, BillingRefund, BillingSubscription, BillingSummary, BillingWebhookEvent } from '../types/billing';
@@ -34,6 +35,7 @@ const includesSearch = (value: unknown, search: string) => !search || JSON.strin
 
 export const BillingOperations = () => {
   const { claims } = useAuth();
+  const { confirm, requestFields, requestText, toast } = useFeedback();
   const [searchParams] = useSearchParams();
   const [payments, setPayments] = useState<BillingPayment[]>([]);
   const [subscriptions, setSubscriptions] = useState<BillingSubscription[]>([]);
@@ -48,7 +50,6 @@ export const BillingOperations = () => {
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState('');
   const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
   const [activeTab, setActiveTab] = useState<OperationsTab>('payments');
   const [filters, setFilters] = useState({ search: searchParams.get('search') || '', status: '', plan: '', from: '', to: '' });
   const [repairForm, setRepairForm] = useState({ orgId: '', eventId: '', mode: 'test', expectedVersion: '', apply: false, reason: '' });
@@ -115,7 +116,9 @@ export const BillingOperations = () => {
         [activeTab]: response.data.meta?.nextCursor || null,
       }));
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Older billing records could not be loaded.'));
+      const message = getApiErrorMessage(requestError, 'Older billing records could not be loaded.');
+      setError(message);
+      toast({ title: 'Older records not loaded', message, variant: 'error' });
     } finally {
       setWorking('');
     }
@@ -187,21 +190,32 @@ export const BillingOperations = () => {
   const runAction = async (key: string, action: () => Promise<unknown>, success: string) => {
     setWorking(key);
     setError('');
-    setMessage('');
     try {
       await action();
-      setMessage(success);
+      toast({ message: success, variant: 'success' });
       await loadOperations();
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Billing operation failed safely. Provider and local state should be reconciled before retrying.'));
+      const message = getApiErrorMessage(requestError, 'Billing operation failed safely. Provider and local state should be reconciled before retrying.');
+      setError(message);
+      toast({ title: 'Billing operation failed', message, variant: 'error' });
     } finally {
       setWorking('');
     }
   };
 
   const rejectRefund = async (refund: BillingRefund) => {
-    const reason = window.prompt('Rejection reason (stored permanently):');
-    if (!reason?.trim()) return;
+    const reason = await requestText({
+      title: 'Reject this refund request?',
+      message: 'The rejection and its reason are stored permanently in the billing audit trail.',
+      label: 'Rejection reason',
+      placeholder: 'Explain why this refund cannot be approved',
+      minLength: 10,
+      maxLength: 500,
+      multiline: true,
+      confirmLabel: 'Reject refund',
+      variant: 'danger',
+    });
+    if (!reason) return;
     await runAction(
       `refund-${refund.id}`,
       () => api.post(`/billing/admin/refunds/${encodeURIComponent(refund.id)}/reject`, {
@@ -212,19 +226,38 @@ export const BillingOperations = () => {
   };
 
   const syncEntity = async (entityType: 'payment' | 'subscription' | 'refund', providerId: string, mode: 'test' | 'live' = 'test') => {
-    if (!window.confirm(`Fetch ${entityType} ${providerId} from Razorpay and reconcile its local projection?`)) return;
-    const reason = window.prompt('Reason for this audited provider sync:');
-    if (!reason || reason.trim().length < 5) return;
-    const expectedVersionInput = mode === 'live'
-      ? window.prompt('Current billing account version (required for a live repair):')
-      : '';
-    if (mode === 'live' && (!expectedVersionInput || !/^\d+$/.test(expectedVersionInput))) return;
+    const values = await requestFields({
+      title: `Sync ${entityType} with Razorpay?`,
+      message: `LeadWatch will fetch ${providerId} in ${mode} mode and reconcile its local projection. The action and reason are audited.`,
+      confirmLabel: 'Run provider sync',
+      variant: 'warning',
+      fields: [
+        {
+          id: 'reason',
+          label: 'Audit reason',
+          placeholder: 'Explain why provider reconciliation is required',
+          minLength: 5,
+          maxLength: 500,
+          multiline: true,
+        },
+        ...(mode === 'live' ? [{
+          id: 'expectedVersion',
+          label: 'Current billing account version',
+          type: 'number' as const,
+          inputMode: 'numeric' as const,
+          helpText: 'Required to protect live data from concurrent updates.',
+          validate: (value: string) => /^\d+$/.test(value.trim()) ? undefined : 'Enter a non-negative whole number.',
+        }] : []),
+      ],
+    });
+    if (!values) return;
+    const expectedVersionInput = values.expectedVersion?.trim() ?? '';
     await runAction(`sync-${providerId}`, () => api.post('/billing/admin/sync', {
       entityType,
       providerId,
       mode,
       dryRun: false,
-      reason: reason.trim(),
+      reason: values.reason.trim(),
       expectedVersion: expectedVersionInput ? Number(expectedVersionInput) : undefined,
     }), `${entityType} sync completed or queued for review.`);
   };
@@ -235,7 +268,15 @@ export const BillingOperations = () => {
       setError('Applied reconciliation requires a specific reason of at least 10 characters.');
       return;
     }
-    if (repairForm.apply && !window.confirm('Apply provider-backed reconciliation repairs? Every change will be audited.')) return;
+    if (repairForm.apply) {
+      const approved = await confirm({
+        title: 'Apply provider-backed repairs?',
+        message: 'Every local change will be audited. Verify the organization, mode, account version, and reason before continuing.',
+        confirmLabel: 'Run and apply',
+        variant: 'warning',
+      });
+      if (!approved) return;
+    }
     await runAction('reconcile', () => api.post('/billing/admin/reconciliation', {
       orgId: repairForm.orgId.trim() || undefined,
       mode: repairForm.mode,
@@ -247,8 +288,18 @@ export const BillingOperations = () => {
 
   const replayWebhook = async () => {
     if (!repairForm.eventId.trim()) return;
-    const reason = window.prompt('Reason for this audited webhook replay:');
-    if (!reason || reason.trim().length < 5) return;
+    const reason = await requestText({
+      title: 'Replay this webhook event?',
+      message: 'The event will be queued for idempotent processing and the reason will be stored in the audit trail.',
+      label: 'Audit reason',
+      placeholder: 'Explain why this webhook needs to be replayed',
+      minLength: 5,
+      maxLength: 500,
+      multiline: true,
+      confirmLabel: 'Replay event',
+      variant: 'warning',
+    });
+    if (!reason) return;
     await runAction('replay', () => api.post(`/billing/admin/webhook-events/${encodeURIComponent(repairForm.eventId.trim())}/replay`, {
       dryRun: false,
       reason: reason.trim(),
@@ -257,7 +308,17 @@ export const BillingOperations = () => {
 
   const grantEnterprise = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (enterpriseForm.reason.trim().length < 10 || !window.confirm(`Activate a manual Enterprise contract for ${enterpriseForm.orgId}?`)) return;
+    if (enterpriseForm.reason.trim().length < 10) {
+      setError('Manual Enterprise activation requires a specific reason of at least 10 characters.');
+      return;
+    }
+    const approved = await confirm({
+      title: `Activate Enterprise for ${enterpriseForm.orgId}?`,
+      message: 'This grants contract-backed access without a Razorpay subscription and records a permanent audit event.',
+      confirmLabel: 'Activate Enterprise',
+      variant: 'warning',
+    });
+    if (!approved) return;
     await runAction('enterprise', () => api.post('/billing/admin/manual-enterprise', {
       orgId: enterpriseForm.orgId.trim(),
       reference: enterpriseForm.contractReference.trim(),
@@ -269,7 +330,17 @@ export const BillingOperations = () => {
 
   const grantOverride = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (overrideForm.reason.trim().length < 10 || !window.confirm(`Grant a time-bounded ${overrideForm.planCode} override to ${overrideForm.orgId}?`)) return;
+    if (overrideForm.reason.trim().length < 10) {
+      setError('Complimentary overrides require a specific reason of at least 10 characters.');
+      return;
+    }
+    const approved = await confirm({
+      title: `Grant ${billingPlanName(overrideForm.planCode)} to ${overrideForm.orgId}?`,
+      message: 'The time-bounded override takes effect immediately and remains in the audit history after expiry.',
+      confirmLabel: 'Grant override',
+      variant: 'warning',
+    });
+    if (!approved) return;
     await runAction('override', () => api.post('/billing/admin/overrides', {
       orgId: overrideForm.orgId.trim(),
       planCode: overrideForm.planCode,
@@ -285,7 +356,6 @@ export const BillingOperations = () => {
     <div className="page billing-page billing-operations-page animate-fade-in">
       <header className="page-header"><div><p className="eyebrow">Platform owner</p><h1>Billing operations</h1><p>Investigate every payment lifecycle and run provider-backed, audited recovery actions.</p></div><button className="secondary-button" onClick={() => void loadOperations()}><RefreshCw size={16} /> Refresh</button></header>
       {error && <div className="notice error-notice">{error}</div>}
-      {message && <div className="notice success-notice">{message}</div>}
 
       <section className="billing-owner-metrics">
         <article className="section-card"><div className="stat-icon green"><IndianRupee size={20} /></div><div><span>Captured gross</span><strong>{formatBillingMoney(metrics.captured)}</strong></div></article>

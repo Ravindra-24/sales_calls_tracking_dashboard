@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import axios from 'axios';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -27,6 +29,7 @@ import {
   createCheckoutSession,
   downloadBillingInvoice,
   fetchActiveCheckoutSession,
+  fetchBillingActivationSnapshot,
   fetchBillingAccount,
   fetchBillingCatalog,
   fetchBillingInvoices,
@@ -40,16 +43,39 @@ import {
   verifyCheckoutSession,
 } from '../api/billing';
 import { openRazorpaySubscriptionCheckout, RazorpayCheckoutDismissedError } from '../api/razorpay';
+import { BillingCelebration, type BillingCelebrationData } from '../components/billing/BillingCelebration';
+import {
+  BILLING_ACTIVATION_POLL_LIMIT_MS,
+  SELECTED_BILLING_PLAN_KEY,
+  billingActivationPollDelay,
+  billingActivationStorageKey,
+  billingCelebratedStorageKey,
+  findTerminalActivationPayment,
+  matchBillingActivation,
+  parseBillingActivationAttempt,
+  readBillingStorage,
+  removeBillingStorage,
+  resolveCheckoutActivationAction,
+  shouldTrackRecoveryActivation,
+  writeBillingStorage,
+  verificationFailureIsDeterministic,
+  type BillingActivationAction,
+  type BillingActivationAttempt,
+} from '../components/billing/billingActivation';
 import { useAuth } from '../context/auth';
+import { useFeedback } from '../context/feedback';
 import type {
   BillingAccount,
+  BillingActivationSnapshot,
   BillingCatalog,
   BillingCatalogPlan,
   BillingCheckoutSession,
   BillingInvoice,
   BillingPayment,
+  BillingPlanCode,
   BillingSubscription,
 } from '../types/billing';
+import '../styles/billing-celebration.css';
 
 const planFeatures: Record<BillingCatalogPlan['code'], string[]> = {
   lite: ['Call tracking essentials', 'Team activity dashboard', 'No payment method required'],
@@ -72,20 +98,48 @@ const isCheckoutSession = (value: unknown): value is BillingCheckoutSession => {
 
 const checkoutOperationKey = (orgId: string, priceVersionId: string) => `leadwatch.checkoutOperation.${orgId}.${priceVersionId}`;
 
+const readCheckoutSessionStorage = (key: string) => {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+const writeCheckoutSessionStorage = (key: string, value: string) => {
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {
+    // The operation ID remains valid in memory when browser storage is blocked.
+  }
+};
+
+const removeCheckoutSessionStorage = (key: string) => {
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    // Checkout completion must not depend on browser storage availability.
+  }
+};
+
 const getCheckoutOperationId = (orgId: string, priceVersionId: string) => {
   const key = checkoutOperationKey(orgId, priceVersionId);
-  const existing = sessionStorage.getItem(key);
+  const existing = readCheckoutSessionStorage(key);
   if (existing) return existing;
   const operationId = newBillingOperationId();
-  sessionStorage.setItem(key, operationId);
+  writeCheckoutSessionStorage(key, operationId);
   return operationId;
 };
 
 const clearCheckoutOperationIds = (orgId: string) => {
   const prefix = `leadwatch.checkoutOperation.${orgId}.`;
-  for (let index = sessionStorage.length - 1; index >= 0; index -= 1) {
-    const key = sessionStorage.key(index);
-    if (key?.startsWith(prefix)) sessionStorage.removeItem(key);
+  try {
+    for (let index = sessionStorage.length - 1; index >= 0; index -= 1) {
+      const key = sessionStorage.key(index);
+      if (key?.startsWith(prefix)) removeCheckoutSessionStorage(key);
+    }
+  } catch {
+    // Nothing else in checkout completion depends on this optional cleanup.
   }
 };
 
@@ -107,8 +161,43 @@ const billingContactForm = (value: BillingAccount | null) => ({
   postalCode: value?.billingContact?.address?.postalCode || '',
 });
 
+const requestedBillingPlan = (value: string | null): BillingPlanCode | null => (
+  value === 'pro' || value === 'max' ? value : null
+);
+
+const apiErrorCode = (error: unknown) => {
+  if (!axios.isAxiosError(error)) return null;
+  const code = error.response?.data?.error?.code;
+  return typeof code === 'string' ? code : null;
+};
+
+const isDeterministicVerificationFailure = (error: unknown) => verificationFailureIsDeterministic({
+  status: axios.isAxiosError(error) ? error.response?.status ?? null : null,
+  code: apiErrorCode(error),
+});
+
+const mutationOutcomeIsAmbiguous = (error: unknown) => (
+  !axios.isAxiosError(error)
+  || !error.response
+  || error.response.status === 408
+  || error.response.status >= 500
+);
+
+const safeAuthorizationUrl = (value: string | null | undefined) => {
+  if (!value) return null;
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === 'https:' ? parsed.toString() : null;
+  } catch {
+    return null;
+  }
+};
+
 export const Billing = () => {
   const { claims, user } = useAuth();
+  const { confirm, toast } = useFeedback();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [catalog, setCatalog] = useState<BillingCatalog | null>(null);
   const [account, setAccount] = useState<BillingAccount | null>(null);
   const [subscription, setSubscription] = useState<BillingSubscription | null>(null);
@@ -121,6 +210,19 @@ export const Billing = () => {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [contactForm, setContactForm] = useState(emptyBillingContact);
+  const [pendingActivation, setPendingActivation] = useState<BillingActivationAttempt | null>(null);
+  const [activationPhase, setActivationPhase] = useState<'idle' | 'processing' | 'timed_out'>('idle');
+  const [activationPollRun, setActivationPollRun] = useState(0);
+  const [celebration, setCelebration] = useState<BillingCelebrationData | null>(null);
+  const [highlightedPlan, setHighlightedPlan] = useState<BillingPlanCode | null>(() => (
+    requestedBillingPlan(searchParams.get('plan'))
+      ?? requestedBillingPlan(readBillingStorage(SELECTED_BILLING_PLAN_KEY))
+  ));
+  const [authorizationUrl, setAuthorizationUrl] = useState<string | null>(null);
+  const planSectionRef = useRef<HTMLElement>(null);
+  const paymentHistoryRef = useRef<HTMLElement>(null);
+  const highlightedPlanScrolled = useRef(false);
+  const celebratedAttempts = useRef(new Set<string>());
 
   const canManageBilling = claims.role === 'org_admin' || claims.role === 'manager';
 
@@ -176,7 +278,228 @@ export const Billing = () => {
   const checkoutIsCancellable = (session: BillingCheckoutSession) => session.cancellable === true
     || (session.cancellable === undefined && session.status === 'awaiting_customer');
 
-  const completeCheckout = async (session: BillingCheckoutSession, planName: string) => {
+  useEffect(() => {
+    const queryPlan = requestedBillingPlan(searchParams.get('plan'));
+    if (!queryPlan) return;
+    setHighlightedPlan(queryPlan);
+    highlightedPlanScrolled.current = false;
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!catalog || !highlightedPlan || highlightedPlanScrolled.current) return;
+    highlightedPlanScrolled.current = true;
+    const frame = requestAnimationFrame(() => {
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      document.getElementById(`billing-plan-${highlightedPlan}`)?.scrollIntoView({
+        behavior: reduceMotion ? 'auto' : 'smooth',
+        block: 'center',
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [catalog, highlightedPlan]);
+
+  useEffect(() => {
+    if (!claims.orgId) return;
+    const storageKey = billingActivationStorageKey(claims.orgId);
+    const serialized = readBillingStorage(storageKey);
+    const restored = parseBillingActivationAttempt(serialized, claims.orgId);
+    if (!restored) {
+      if (serialized) removeBillingStorage(storageKey);
+      setPendingActivation(null);
+      setActivationPhase('idle');
+      return;
+    }
+    if (readBillingStorage(billingCelebratedStorageKey(claims.orgId)) === restored.attemptId) {
+      removeBillingStorage(storageKey);
+      setPendingActivation(null);
+      setActivationPhase('idle');
+      return;
+    }
+    setPendingActivation(restored);
+    setActivationPhase('processing');
+  }, [claims.orgId]);
+
+  useEffect(() => {
+    const selectedPlan = requestedBillingPlan(readBillingStorage(SELECTED_BILLING_PLAN_KEY));
+    if (selectedPlan && selectedPlan === activePlan && effectiveAccount.accessMode === 'full') {
+      removeBillingStorage(SELECTED_BILLING_PLAN_KEY);
+    }
+  }, [activePlan, effectiveAccount.accessMode]);
+
+  const applyActivationSnapshot = useCallback((snapshot: BillingActivationSnapshot) => {
+    setAccount(normalizeAccount(snapshot.account));
+    setSubscription(snapshot.subscription);
+    setPayments(snapshot.payments);
+  }, []);
+
+  const refreshActivationSnapshot = useCallback(async () => {
+    const snapshot = await fetchBillingActivationSnapshot();
+    applyActivationSnapshot(snapshot);
+    return snapshot;
+  }, [applyActivationSnapshot]);
+
+  const persistActivationAttempt = useCallback((attempt: BillingActivationAttempt) => {
+    writeBillingStorage(billingActivationStorageKey(attempt.orgId), JSON.stringify(attempt));
+    setPendingActivation(attempt);
+    setActivationPhase('processing');
+    setActivationPollRun((current) => current + 1);
+  }, []);
+
+  const stageActivationAttempt = useCallback((attempt: BillingActivationAttempt) => {
+    writeBillingStorage(billingActivationStorageKey(attempt.orgId), JSON.stringify(attempt));
+  }, []);
+
+  const clearActivationAttempt = useCallback((attempt: BillingActivationAttempt) => {
+    removeBillingStorage(billingActivationStorageKey(attempt.orgId));
+    setPendingActivation((current) => current?.attemptId === attempt.attemptId ? null : current);
+    setActivationPhase('idle');
+  }, []);
+
+  const completeActivation = useCallback((
+    attempt: BillingActivationAttempt,
+    snapshot: BillingActivationSnapshot,
+  ) => {
+    removeBillingStorage(billingActivationStorageKey(attempt.orgId));
+    removeBillingStorage(SELECTED_BILLING_PLAN_KEY);
+    clearCheckoutOperationIds(attempt.orgId);
+    setPendingActivation(null);
+    setActivationPhase('idle');
+    setActiveCheckout(null);
+    setHighlightedPlan(null);
+    setAuthorizationUrl(null);
+    setMessage('');
+
+    const celebratedKey = billingCelebratedStorageKey(attempt.orgId);
+    if (celebratedAttempts.current.has(attempt.attemptId)
+      || readBillingStorage(celebratedKey) === attempt.attemptId) return;
+    celebratedAttempts.current.add(attempt.attemptId);
+    writeBillingStorage(celebratedKey, attempt.attemptId);
+    setCelebration({
+      action: attempt.action,
+      targetPlan: attempt.targetPlan,
+      previousAccessMode: attempt.previousAccessMode,
+      renewalDate: snapshot.subscription?.nextChargeAt || snapshot.subscription?.currentPeriodEnd,
+      benefits: planFeatures[attempt.targetPlan],
+      showPaymentHistory: true,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!pendingActivation || !canManageBilling) return;
+    let cancelled = false;
+    let checking = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let elapsedVisibleMs = 0;
+    let visibleSince = document.hidden ? null : Date.now();
+
+    const activeElapsed = () => elapsedVisibleMs + (visibleSince === null ? 0 : Date.now() - visibleSince);
+    const clearTimer = () => {
+      if (timer !== null) clearTimeout(timer);
+      timer = null;
+    };
+    const timeout = () => {
+      clearTimer();
+      setActivationPhase('timed_out');
+    };
+    const schedule = (poll: () => Promise<void>) => {
+      if (cancelled || document.hidden) return;
+      const elapsed = activeElapsed();
+      if (elapsed >= BILLING_ACTIVATION_POLL_LIMIT_MS) {
+        timeout();
+        return;
+      }
+      const delay = billingActivationPollDelay(elapsed);
+      if (delay === null) {
+        timeout();
+        return;
+      }
+      timer = setTimeout(() => void poll(), delay);
+    };
+
+    const poll = async () => {
+      if (cancelled || checking || document.hidden) return;
+      if (activeElapsed() >= BILLING_ACTIVATION_POLL_LIMIT_MS) {
+        timeout();
+        return;
+      }
+      checking = true;
+      try {
+        const snapshot = await refreshActivationSnapshot();
+        if (cancelled) return;
+        const terminalPayment = findTerminalActivationPayment(pendingActivation, snapshot);
+        if (terminalPayment) {
+          cancelled = true;
+          clearActivationAttempt(pendingActivation);
+          setAuthorizationUrl(null);
+          toast({
+            variant: 'error',
+            title: terminalPayment.status === 'refunded' ? 'Payment was refunded' : 'Payment failed',
+            message: terminalPayment.failureDescription
+              || 'Razorpay reported a terminal payment status. Your existing plan and access remain unchanged.',
+          });
+          return;
+        }
+        const match = matchBillingActivation(pendingActivation, snapshot);
+        if (match.confirmed) {
+          cancelled = true;
+          completeActivation(pendingActivation, snapshot);
+          return;
+        }
+      } catch {
+        // A transient read failure is retried within the bounded activation window.
+      } finally {
+        checking = false;
+      }
+      schedule(poll);
+    };
+
+    const handleVisibilityChange = () => {
+      clearTimer();
+      if (document.hidden) {
+        if (visibleSince !== null) elapsedVisibleMs += Date.now() - visibleSince;
+        visibleSince = null;
+        return;
+      }
+      visibleSince = Date.now();
+      void poll();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    setActivationPhase('processing');
+    void poll();
+    return () => {
+      cancelled = true;
+      clearTimer();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [activationPollRun, canManageBilling, clearActivationAttempt, completeActivation, pendingActivation, refreshActivationSnapshot, toast]);
+
+  const newActivationAttempt = (
+    action: BillingActivationAction,
+    attemptId: string,
+    checkoutSessionId: string | null,
+    targetPlan: BillingPlanCode,
+    targetPriceVersionId: string,
+    correlatedPaymentId: string | null = null,
+  ): BillingActivationAttempt => ({
+    version: 1,
+    orgId: claims.orgId,
+    attemptId,
+    checkoutSessionId,
+    correlatedPaymentId,
+    action,
+    previousPlan: activePlan,
+    previousAccessMode: effectiveAccount.accessMode,
+    targetPlan,
+    targetPriceVersionId,
+    startedAt: Date.now(),
+  });
+
+  const completeCheckout = async (
+    session: BillingCheckoutSession,
+    planName: string,
+    requestedAction?: BillingActivationAction | null,
+  ) => {
     setActiveCheckout(session);
     if (!session.keyId || !session.providerSubscriptionId) {
       throw new Error('Secure checkout is not configured for this plan yet. No payment was started.');
@@ -192,18 +515,80 @@ export const Billing = () => {
       },
     });
     setActiveCheckout({ ...session, status: 'client_verified', resumable: false, cancellable: false });
+    const targetPlan = requestedBillingPlan(checkoutPlanCode(session) ?? null);
+    const activationAction = resolveCheckoutActivationAction({
+      purpose: session.purpose,
+      requestedAction,
+      accessMode: effectiveAccount.accessMode,
+    });
+    const activationAttempt = activationAction && targetPlan && session.priceVersionId
+      ? newActivationAttempt(activationAction, session.id, session.id, targetPlan, session.priceVersionId)
+      : null;
+    if (activationAttempt) stageActivationAttempt(activationAttempt);
     try {
       await verifyCheckoutSession(session.id, checkoutResult);
     } catch (verificationError) {
-      await loadBilling(true);
-      throw verificationError;
+      if (!activationAttempt) {
+        await loadBilling(true);
+        throw verificationError;
+      }
+      let snapshot: BillingActivationSnapshot | null = null;
+      try {
+        snapshot = await refreshActivationSnapshot();
+      } catch {
+        // Network and server failures remain ambiguous; bounded polling continues.
+      }
+      if (snapshot) {
+        const terminalPayment = findTerminalActivationPayment(activationAttempt, snapshot);
+        if (terminalPayment) {
+          clearActivationAttempt(activationAttempt);
+          await loadBilling(true);
+          throw new Error(terminalPayment.failureDescription || 'Razorpay reported that the payment failed.');
+        }
+        const match = matchBillingActivation(activationAttempt, snapshot);
+        if (match.confirmed) {
+          completeActivation(activationAttempt, snapshot);
+          return;
+        }
+        const correlatedPayment = snapshot.payments.find((payment) => (
+          payment.checkoutSessionId === activationAttempt.checkoutSessionId
+        ));
+        if (correlatedPayment && (correlatedPayment.status === 'authorized' || correlatedPayment.status === 'captured')) {
+          persistActivationAttempt(activationAttempt);
+          toast({
+            variant: 'info',
+            title: 'Activation check continues',
+            message: 'Razorpay has the payment, and LeadWatch is still confirming the subscription and full access.',
+            duration: 7_000,
+          });
+          return;
+        }
+      }
+      if (isDeterministicVerificationFailure(verificationError)) {
+        clearActivationAttempt(activationAttempt);
+        await loadBilling(true);
+        throw verificationError;
+      }
+      toast({
+        variant: 'info',
+        title: 'Verification response delayed',
+        message: 'LeadWatch could not confirm the callback response yet. Your payment is not being marked failed; authoritative checks will continue for up to one minute.',
+        duration: 7_000,
+      });
+      persistActivationAttempt(activationAttempt);
+      return;
     }
     setActiveCheckout(null);
-    clearCheckoutOperationIds(claims.orgId);
-    setMessage(session.purpose === 'replacement_downgrade'
-      ? 'Replacement mandate verified. The downgrade is scheduled only after Razorpay confirms authorization.'
-      : 'Payment response verified. Paid access will activate after Razorpay confirms the captured payment.');
-    await loadBilling(true);
+    if (activationAttempt) {
+      persistActivationAttempt(activationAttempt);
+      setMessage('');
+    } else {
+      clearCheckoutOperationIds(claims.orgId);
+      setMessage(session.purpose === 'replacement_downgrade'
+        ? 'Replacement mandate verified. The downgrade is scheduled only after Razorpay confirms authorization.'
+        : 'Payment response verified. Billing status will update after Razorpay confirms the result.');
+      await loadBilling(true);
+    }
   };
 
   const abandonPendingCheckout = async (session: BillingCheckoutSession) => {
@@ -230,9 +615,13 @@ export const Billing = () => {
     if (!checkoutIsCancellable(activeCheckout)) {
       throw new Error(`${checkoutPlanName(activeCheckout)} payment is already authorized or processing. A ${plan.name} checkout cannot start yet.`);
     }
-    const confirmed = window.confirm(
-      `You already have a ${checkoutPlanName(activeCheckout)} checkout awaiting payment. Cancel it and start a ${plan.name} checkout?`,
-    );
+    const confirmed = await confirm({
+      title: `Switch to ${plan.name}?`,
+      description: `You already have a ${checkoutPlanName(activeCheckout)} checkout awaiting payment. It must be cancelled before a new checkout can start.`,
+      confirmLabel: `Cancel and start ${plan.name}`,
+      cancelLabel: 'Keep current checkout',
+      variant: 'warning',
+    });
     if (!confirmed) return { proceed: false, switchConfirmed: false };
     await abandonPendingCheckout(activeCheckout);
     return { proceed: true, switchConfirmed: true };
@@ -247,6 +636,7 @@ export const Billing = () => {
     setWorkingAction(plan.code);
     setError('');
     setMessage('');
+    setAuthorizationUrl(null);
     try {
       const preparation = await prepareCheckoutForPlan(plan);
       if (!preparation.proceed) return;
@@ -258,23 +648,24 @@ export const Billing = () => {
         operationId,
       });
       if (session.status === 'expired' || session.status === 'failed') {
-        sessionStorage.removeItem(operationStorageKey);
+        removeCheckoutSessionStorage(operationStorageKey);
         operationId = getCheckoutOperationId(claims.orgId, price.id);
         const replacement = await createCheckoutSession({
           priceVersionId: price.id,
           couponCode: couponCode.trim() || undefined,
           operationId,
         });
-        await completeCheckout(replacement, plan.name);
+        await completeCheckout(replacement, plan.name, 'initial');
       } else {
-        await completeCheckout(session, plan.name);
+        await completeCheckout(session, plan.name, 'initial');
       }
-      sessionStorage.removeItem(operationStorageKey);
+      removeCheckoutSessionStorage(operationStorageKey);
     } catch (requestError) {
       if (requestError instanceof RazorpayCheckoutDismissedError) {
         setMessage('Checkout saved. Resume payment from Payment history, or cancel it before choosing another plan.');
       } else {
-        setError(getApiErrorMessage(requestError, requestError instanceof Error ? requestError.message : 'Checkout could not be started.'));
+        const errorMessage = getApiErrorMessage(requestError, requestError instanceof Error ? requestError.message : 'Checkout could not be started.');
+        toast({ variant: 'error', title: 'Checkout not started', message: errorMessage });
       }
     } finally {
       setWorkingAction('');
@@ -291,16 +682,53 @@ export const Billing = () => {
     setWorkingAction(plan.code);
     setError('');
     setMessage('');
+    setAuthorizationUrl(null);
+    let provisionalAttempt: BillingActivationAttempt | null = null;
     try {
       const preparation = await prepareCheckoutForPlan(plan);
       if (!preparation.proceed) return;
-      if (!preparation.switchConfirmed && !window.confirm(`Do you want to ${changeLabel}?`)) return;
-      const result = await changeBillingPlan(price.id, newBillingOperationId());
-      const nestedCheckout = result && typeof result === 'object' && 'checkoutSession' in result
-        ? (result as { checkoutSession?: unknown }).checkoutSession
-        : result;
+      if (!preparation.switchConfirmed && !await confirm({
+        title: activePlan === 'max' && plan.code === 'pro' ? 'Schedule downgrade?' : `Change to ${plan.name}?`,
+        description: activePlan === 'max' && plan.code === 'pro'
+          ? 'The change is scheduled for the end of your current paid cycle. Your Max access continues until then.'
+          : `LeadWatch will ask Razorpay to ${changeLabel}. Paid access changes only after provider confirmation.`,
+        confirmLabel: activePlan === 'max' && plan.code === 'pro' ? 'Schedule downgrade' : `Change to ${plan.name}`,
+        variant: activePlan === 'max' && plan.code === 'pro' ? 'warning' : 'default',
+      })) return;
+      const operationId = newBillingOperationId();
+      if (activePlan === 'pro' && plan.code === 'max') {
+        provisionalAttempt = newActivationAttempt(
+          'upgrade',
+          operationId,
+          null,
+          plan.code,
+          price.id,
+        );
+        persistActivationAttempt(provisionalAttempt);
+      }
+      const result = await changeBillingPlan(price.id, operationId);
+      setAuthorizationUrl(result.status === 'awaiting_customer' || result.status === 'awaiting_payment'
+        ? safeAuthorizationUrl(result.authorizationUrl)
+        : null);
+      const nestedCheckout = result.checkoutSession;
       if (isCheckoutSession(nestedCheckout) && nestedCheckout.keyId && nestedCheckout.providerSubscriptionId) {
-        await completeCheckout(nestedCheckout, plan.name);
+        if (provisionalAttempt) {
+          clearActivationAttempt(provisionalAttempt);
+          provisionalAttempt = null;
+        }
+        await completeCheckout(
+          nestedCheckout,
+          plan.name,
+          activePlan === 'max' && plan.code === 'pro' ? null : 'upgrade',
+        );
+      } else if (activePlan === 'pro' && plan.code === 'max') {
+        provisionalAttempt = {
+          ...provisionalAttempt!,
+          attemptId: result.activationOperationId,
+          targetPriceVersionId: result.targetPriceVersionId,
+        };
+        persistActivationAttempt(provisionalAttempt);
+        setMessage('');
       } else {
         setMessage(activePlan === 'max' && plan.code === 'pro'
           ? 'Downgrade requested. It will take effect at the current paid-cycle end after authorization is complete.'
@@ -311,7 +739,17 @@ export const Billing = () => {
       if (requestError instanceof RazorpayCheckoutDismissedError) {
         setMessage('Checkout saved. Resume payment from Payment history, or cancel it before choosing another plan.');
       } else {
-        setError(getApiErrorMessage(requestError, 'Plan change could not be completed. Your current plan remains active.'));
+        if (provisionalAttempt && !mutationOutcomeIsAmbiguous(requestError)) {
+          clearActivationAttempt(provisionalAttempt);
+          provisionalAttempt = null;
+        }
+        toast({
+          variant: provisionalAttempt ? 'info' : 'error',
+          title: provisionalAttempt ? 'Upgrade outcome is being checked' : 'Plan unchanged',
+          message: provisionalAttempt
+            ? 'The server response was interrupted. LeadWatch will check for the exact upgrade operation before changing what you see.'
+            : getApiErrorMessage(requestError, 'Plan change could not be completed. Your current plan remains active.'),
+        });
       }
     } finally {
       setWorkingAction('');
@@ -333,7 +771,7 @@ export const Billing = () => {
       if (requestError instanceof RazorpayCheckoutDismissedError) {
         setMessage('Checkout saved. You can resume it again when you are ready.');
       } else {
-        setError(getApiErrorMessage(requestError, 'Checkout could not be resumed.'));
+        toast({ variant: 'error', title: 'Checkout not resumed', message: getApiErrorMessage(requestError, 'Checkout could not be resumed.') });
       }
     } finally {
       setWorkingAction('');
@@ -341,32 +779,46 @@ export const Billing = () => {
   };
 
   const cancelActiveCheckout = async () => {
-    if (!activeCheckout || !window.confirm(`Cancel the pending ${checkoutPlanName(activeCheckout)} checkout? No payment will be started.`)) return;
+    if (!activeCheckout || !await confirm({
+      title: `Cancel ${checkoutPlanName(activeCheckout)} checkout?`,
+      description: 'No payment will be started. You can choose this plan again later.',
+      confirmLabel: 'Cancel checkout',
+      cancelLabel: 'Keep checkout',
+      variant: 'danger',
+    })) return;
     setWorkingAction('cancel-checkout');
     setError('');
     setMessage('');
     try {
       await abandonPendingCheckout(activeCheckout);
       setMessage('Pending checkout cancelled. You can now choose another plan.');
+      toast({ variant: 'success', message: 'Pending checkout cancelled.' });
       await loadBilling(true);
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Checkout could not be cancelled. No new checkout was started.'));
+      toast({ variant: 'error', title: 'Checkout not cancelled', message: getApiErrorMessage(requestError, 'Checkout could not be cancelled. No new checkout was started.') });
     } finally {
       setWorkingAction('');
     }
   };
 
   const cancelSubscription = async () => {
-    if (!window.confirm('Schedule cancellation at the end of the current paid cycle? This cannot be reversed in place.')) return;
+    if (!await confirm({
+      title: 'Schedule subscription cancellation?',
+      description: `Your ${billingPlanName(activePlan)} access continues through ${formatBillingDate(subscription?.currentPeriodEnd)}. Future renewals stop at the cycle end, and no refund is created.`,
+      confirmLabel: 'Schedule cancellation',
+      cancelLabel: 'Keep subscription',
+      variant: 'danger',
+    })) return;
     setWorkingAction('cancel');
     setError('');
     setMessage('');
     try {
       await cancelBillingSubscription(newBillingOperationId());
       setMessage('Cancellation is scheduled for the end of the current paid cycle. No automatic refund was created.');
+      toast({ variant: 'success', message: 'Cancellation scheduled for the cycle end.' });
       await loadBilling(true);
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Cancellation could not be scheduled.')); 
+      toast({ variant: 'error', title: 'Cancellation not scheduled', message: getApiErrorMessage(requestError, 'Cancellation could not be scheduled.') });
     } finally {
       setWorkingAction('');
     }
@@ -376,22 +828,62 @@ export const Billing = () => {
     setWorkingAction('recover');
     setError('');
     setMessage('');
+    setAuthorizationUrl(null);
+    const resumableAttempt = pendingActivation?.action === 'recovery'
+      && !pendingActivation.correlatedPaymentId ? pendingActivation : null;
+    const targetPlan = requestedBillingPlan(activePlan);
+    const targetPriceVersionId = subscription?.priceVersionId || effectiveAccount.currentPriceVersionId;
+    const operationId = resumableAttempt?.attemptId ?? newBillingOperationId();
+    const provisionalAttempt = resumableAttempt ?? (targetPlan && targetPriceVersionId
+      ? newActivationAttempt(
+        'recovery',
+        operationId,
+        null,
+        targetPlan,
+        targetPriceVersionId,
+      )
+      : null);
+    if (provisionalAttempt) stageActivationAttempt(provisionalAttempt);
     try {
-      const result = await recoverBillingSubscription(newBillingOperationId());
-      const nestedCheckout = result && typeof result === 'object' && 'checkoutSession' in result
-        ? (result as { checkoutSession?: unknown }).checkoutSession
-        : result;
-      if (isCheckoutSession(nestedCheckout) && nestedCheckout.keyId && nestedCheckout.providerSubscriptionId) {
-        await completeCheckout(nestedCheckout, `${activePlan} recovery`);
+      const result = await recoverBillingSubscription(operationId);
+      setAuthorizationUrl(result.status === 'recovered'
+        ? null
+        : safeAuthorizationUrl(result.authorizationUrl));
+      if (shouldTrackRecoveryActivation(result.status)) {
+        persistActivationAttempt({
+          ...(provisionalAttempt ?? newActivationAttempt(
+            'recovery',
+            operationId,
+            null,
+            result.targetPlan,
+            result.targetPriceVersionId,
+          )),
+          targetPlan: result.targetPlan,
+          targetPriceVersionId: result.targetPriceVersionId,
+          correlatedPaymentId: result.correlatedPaymentId,
+        });
+        setMessage('');
       } else {
-        setMessage('Payment recovery started. Access returns only after a captured payment covers the new service period.');
+        if (provisionalAttempt) clearActivationAttempt(provisionalAttempt);
+        setMessage(result.status === 'replacement_required'
+          ? 'A replacement payment mandate is required before full access can return.'
+          : 'Payment is still required. Full access returns only after Razorpay confirms a captured payment for the new service period.');
         await loadBilling(true);
       }
     } catch (requestError) {
       if (requestError instanceof RazorpayCheckoutDismissedError) {
         setMessage('Checkout saved. Resume payment from Payment history when you are ready.');
       } else {
-        setError(getApiErrorMessage(requestError, 'Payment recovery could not be started.'));
+        const ambiguous = mutationOutcomeIsAmbiguous(requestError);
+        if (provisionalAttempt && ambiguous) persistActivationAttempt(provisionalAttempt);
+        else if (provisionalAttempt) clearActivationAttempt(provisionalAttempt);
+        toast({
+          variant: ambiguous ? 'info' : 'error',
+          title: ambiguous ? 'Recovery outcome is being checked' : 'Recovery not started',
+          message: ambiguous
+            ? 'The response was interrupted. LeadWatch will check the exact recovery operation, and Retry will reuse the same operation ID.'
+            : getApiErrorMessage(requestError, 'Payment recovery could not be started.'),
+        });
       }
     } finally {
       setWorkingAction('');
@@ -412,7 +904,7 @@ export const Billing = () => {
       anchor.remove();
       URL.revokeObjectURL(url);
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Billing document could not be downloaded.'));
+      toast({ variant: 'error', title: 'Download unavailable', message: getApiErrorMessage(requestError, 'Billing document could not be downloaded.') });
     } finally {
       setWorkingAction('');
     }
@@ -444,9 +936,10 @@ export const Billing = () => {
       });
       setAccount(updated);
       setContactForm(billingContactForm(updated));
-      setMessage('Billing contact and place-of-supply details updated.');
+      setMessage('');
+      toast({ variant: 'success', message: 'Billing contact and tax address updated.' });
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Billing contact could not be updated.'));
+      toast({ variant: 'error', title: 'Billing details not saved', message: getApiErrorMessage(requestError, 'Billing contact could not be updated.') });
     } finally {
       setWorkingAction('');
     }
@@ -466,6 +959,53 @@ export const Billing = () => {
         <div><p className="eyebrow">Organization billing</p><h1>Plan & subscription</h1><p>Manage access, automatic renewals, invoices, payments, and cancellation.</p></div>
         <button className="secondary-button" type="button" onClick={() => void loadBilling()}><RefreshCw size={16} /> Refresh</button>
       </header>
+
+      {pendingActivation && (
+        <div className={`billing-activation-banner${activationPhase === 'timed_out' ? ' timed-out' : ''}`} role="status" aria-live="polite">
+          {activationPhase === 'timed_out' ? <Clock3 size={22} /> : <LoaderCircle className="spin" size={22} />}
+          <div>
+            <strong>{activationPhase === 'timed_out'
+              ? 'Your plan is still processing'
+              : pendingActivation.checkoutSessionId
+                ? 'Payment confirmed—activating your plan.'
+                : pendingActivation.action === 'recovery'
+                  ? !pendingActivation.correlatedPaymentId
+                    ? 'Recovery outcome is being checked.'
+                    : pendingActivation.previousAccessMode === 'read_only'
+                      ? 'Restoring full organization access.'
+                      : 'Payment recovered—confirming continued full access.'
+                  : 'Upgrade requested—confirming your payment and plan.'}</strong>
+            <p>{activationPhase === 'timed_out'
+              ? 'This is not a payment failure. Razorpay confirmation can take longer than usual; refresh to check the authoritative status again.'
+              : pendingActivation.action === 'recovery' && !pendingActivation.correlatedPaymentId
+                ? 'LeadWatch is checking the exact recovery operation before changing your plan or access status.'
+                : `LeadWatch is confirming the ${billingPlanName(pendingActivation.targetPlan)} subscription, captured payment, and full organization access.`}</p>
+          </div>
+          {activationPhase === 'timed_out' && (
+            <button className="secondary-button" type="button" disabled={workingAction === 'recover'} onClick={() => {
+              if (pendingActivation.action === 'recovery' && !pendingActivation.correlatedPaymentId) {
+                void recoverSubscription();
+                return;
+              }
+              setActivationPhase('processing');
+              setActivationPollRun((current) => current + 1);
+            }}><RefreshCw size={16} /> {pendingActivation.action === 'recovery' && !pendingActivation.correlatedPaymentId ? 'Retry recovery' : 'Refresh status'}</button>
+          )}
+        </div>
+      )}
+
+      {authorizationUrl && (
+        <div className="billing-activation-banner authorization-required">
+          <CreditCard size={22} />
+          <div>
+            <strong>Complete the payment step with Razorpay</strong>
+            <p>Use the secure provider page to authorize or complete payment, then return here and refresh your billing status.</p>
+          </div>
+          <a className="secondary-button billing-action-link" href={authorizationUrl} target="_blank" rel="noreferrer">
+            Continue securely <ArrowUpRight size={16} />
+          </a>
+        </div>
+      )}
 
       {effectiveAccount.accessMode === 'read_only' && (
         <div className="billing-critical-banner"><LockKeyhole size={22} /><div><strong>Billing read-only mode is active</strong><p>Reads and payment recovery remain available, but organization changes and mobile sync are blocked until payment recovery or downgrade.</p></div><button className="btn-primary" onClick={() => void recoverSubscription()} disabled={workingAction === 'recover'}>Recover payment</button></div>
@@ -508,7 +1048,7 @@ export const Billing = () => {
         </form>
       </section>
 
-      <section className="section-card billing-plan-section">
+      <section ref={planSectionRef} className="section-card billing-plan-section">
         <div className="section-heading billing-plan-heading"><div><h2>Available plans</h2><p>Prices are flat per organization. Discounts apply before configured GST.</p></div><label>Coupon or private deal<input className="input-field" value={couponCode} onChange={(event) => setCouponCode(event.target.value.toUpperCase())} placeholder="Optional code" /></label></div>
         <div className="billing-plan-grid">
           {catalog?.plans.map((plan) => {
@@ -520,9 +1060,10 @@ export const Billing = () => {
             const switchesPendingCheckout = Boolean(activeCheckout && !checkoutIsForPlan(activeCheckout, plan) && checkoutIsCancellable(activeCheckout));
             const checkoutProcessing = Boolean(activeCheckout && !checkoutIsResumable(activeCheckout) && !checkoutIsCancellable(activeCheckout));
             const actionDisabled = Boolean(workingAction) || checkoutProcessing || (paidTarget && (!catalog.checkoutAvailable || !price?.providerReady));
+            const requested = highlightedPlan === plan.code && !current;
             return (
-              <article className={`billing-plan-card${current ? ' current' : ''}`} key={plan.code}>
-                <div className="billing-plan-card-head"><div><span>{current ? 'Current plan' : plan.code === 'max' ? 'Best value' : 'Plan'}</span><h3>{plan.name}</h3></div>{current && <CheckCircle2 size={21} />}</div>
+              <article id={`billing-plan-${plan.code}`} className={`billing-plan-card${current ? ' current' : ''}${requested ? ' requested' : ''}`} key={plan.code}>
+                <div className="billing-plan-card-head"><div><span>{current ? 'Current plan' : requested ? 'Selected plan' : plan.code === 'max' ? 'Best value' : 'Plan'}</span><h3>{plan.name}</h3></div>{current && <CheckCircle2 size={21} />}</div>
                 <div className="billing-plan-price">
                   {plan.code === 'lite' ? <><strong>₹0</strong><span>free forever</span></> : isEnterprise ? <><strong>Custom</strong><span>contact sales</span></> : <><strong>{formatBillingMoney(price?.baseAmountPaise)}</strong><span>{billingCycleLabel(plan.code, price?.billingPeriod, price?.interval)} + applicable GST</span></>}
                 </div>
@@ -563,7 +1104,7 @@ export const Billing = () => {
         </section>
       )}
 
-      <section className="billing-history-grid">
+      <section ref={paymentHistoryRef} id="billing-payment-history" className="billing-history-grid">
         <article className="section-card table-card">
           <div className="section-heading table-heading"><div><h2>Payment history</h2><p>Pending checkout, captured, failed, and renewal activity.</p></div><CreditCard size={20} /></div>
           <div className="table-scroll"><table className="data-table billing-table"><thead><tr><th>Date</th><th>Payment</th><th>Amount</th><th>Status</th><th>Method</th><th>Actions</th></tr></thead><tbody>
@@ -612,6 +1153,24 @@ export const Billing = () => {
       </section>
 
       <section className="section-card billing-policy-card"><div><ShieldCheck size={21} /><div><h2>No-refund and cancellation policy</h2><p>All paid plan purchases and renewals are final and non-refundable. Cancellation stops future renewals at the end of the current paid cycle; it does not return any amount already paid.</p></div></div></section>
+
+      {celebration && (
+        <BillingCelebration
+          celebration={celebration}
+          onClose={() => setCelebration(null)}
+          onOpenDashboard={() => {
+            setCelebration(null);
+            navigate('/dashboard');
+          }}
+          onViewPaymentHistory={() => {
+            setCelebration(null);
+            requestAnimationFrame(() => paymentHistoryRef.current?.scrollIntoView({
+              behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+              block: 'start',
+            }));
+          }}
+        />
+      )}
     </div>
   );
 };

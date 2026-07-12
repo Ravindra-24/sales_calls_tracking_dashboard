@@ -3,23 +3,25 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { useAuth } from './context/auth';
-import { Layout } from './components/Layout';
-import { Login } from './pages/Login';
-import { Dashboard } from './pages/Dashboard';
-import { CallHistory } from './pages/CallHistory';
-import { Team } from './pages/Team';
-import { Platform } from './pages/Platform';
-import { ClaimAccount } from './pages/ClaimAccount';
-import { Settings } from './pages/Settings';
-import { ProductPage } from './pages/ProductPage';
-import { Integrations } from './pages/Integrations';
-import { IntegrationDocs } from './pages/IntegrationDocs';
-import { Signup } from './pages/Signup';
-import { Billing } from './pages/Billing';
-import { BillingOperations } from './pages/BillingOperations';
-import { BillingCatalog } from './pages/BillingCatalog';
-import { BillingPolicy } from './pages/BillingPolicy';
+import { FeedbackProvider } from './context/FeedbackProvider';
 import type { DashboardRole } from './context/auth';
+
+const Layout = React.lazy(() => import('./components/Layout').then((module) => ({ default: module.Layout })));
+const Login = React.lazy(() => import('./pages/Login').then((module) => ({ default: module.Login })));
+const Dashboard = React.lazy(() => import('./pages/Dashboard').then((module) => ({ default: module.Dashboard })));
+const CallHistory = React.lazy(() => import('./pages/CallHistory').then((module) => ({ default: module.CallHistory })));
+const Team = React.lazy(() => import('./pages/Team').then((module) => ({ default: module.Team })));
+const Platform = React.lazy(() => import('./pages/Platform').then((module) => ({ default: module.Platform })));
+const ClaimAccount = React.lazy(() => import('./pages/ClaimAccount').then((module) => ({ default: module.ClaimAccount })));
+const Settings = React.lazy(() => import('./pages/Settings').then((module) => ({ default: module.Settings })));
+const ProductPage = React.lazy(() => import('./pages/ProductPage').then((module) => ({ default: module.ProductPage })));
+const Integrations = React.lazy(() => import('./pages/Integrations').then((module) => ({ default: module.Integrations })));
+const IntegrationDocs = React.lazy(() => import('./pages/IntegrationDocs').then((module) => ({ default: module.IntegrationDocs })));
+const Signup = React.lazy(() => import('./pages/Signup').then((module) => ({ default: module.Signup })));
+const Billing = React.lazy(() => import('./pages/Billing').then((module) => ({ default: module.Billing })));
+const BillingOperations = React.lazy(() => import('./pages/BillingOperations').then((module) => ({ default: module.BillingOperations })));
+const BillingCatalog = React.lazy(() => import('./pages/BillingCatalog').then((module) => ({ default: module.BillingCatalog })));
+const BillingPolicy = React.lazy(() => import('./pages/BillingPolicy').then((module) => ({ default: module.BillingPolicy })));
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, claims } = useAuth();
@@ -38,47 +40,51 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<ProductPage />} />
-            <Route path="/home" element={<ProductPage />} />
-            <Route path="/product" element={<Navigate to="/" replace />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/claim" element={<ClaimAccount />} />
-            <Route path="/docs/integrations" element={<IntegrationDocs />} />
-            <Route path="/terms" element={<BillingPolicy kind="terms" />} />
-            <Route path="/refund-policy" element={<BillingPolicy kind="refund" />} />
-            <Route path="/cancellation-policy" element={<BillingPolicy kind="cancellation" />} />
-            <Route path="/calls" element={<Navigate to="/dashboard/calls" replace />} />
-            <Route path="/team" element={<Navigate to="/dashboard/team" replace />} />
-            <Route path="/platform" element={<Navigate to="/dashboard/platform" replace />} />
-            <Route path="/settings" element={<Navigate to="/dashboard/settings" replace />} />
-            <Route path="/integrations" element={<Navigate to="/dashboard/integrations" replace />} />
-            <Route path="/billing" element={<Navigate to="/dashboard/billing" replace />} />
-            
-            <Route 
-              path="/dashboard" 
-              element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Dashboard />} />
-              <Route path="calls" element={<CallHistory />} />
-              <Route path="team" element={<Team />} />
-              <Route path="platform" element={<Platform />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="integrations" element={<Integrations />} />
-              <Route path="billing" element={<RoleRoute allowed={['org_admin', 'manager']}><Billing /></RoleRoute>} />
-              <Route path="billing-operations" element={<RoleRoute allowed={['platform_owner']}><BillingOperations /></RoleRoute>} />
-              <Route path="billing-catalog" element={<RoleRoute allowed={['platform_owner']}><BillingCatalog /></RoleRoute>} />
-            </Route>
-            
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
+        <FeedbackProvider>
+          <BrowserRouter>
+            <React.Suspense fallback={<div className="app-loader">Loading LeadWatch…</div>}>
+              <Routes>
+                <Route path="/" element={<ProductPage />} />
+                <Route path="/home" element={<Navigate to="/" replace />} />
+                <Route path="/product" element={<Navigate to="/" replace />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/claim" element={<ClaimAccount />} />
+                <Route path="/docs/integrations" element={<IntegrationDocs />} />
+                <Route path="/terms" element={<BillingPolicy kind="terms" />} />
+                <Route path="/refund-policy" element={<BillingPolicy kind="refund" />} />
+                <Route path="/cancellation-policy" element={<BillingPolicy kind="cancellation" />} />
+                <Route path="/calls" element={<Navigate to="/dashboard/calls" replace />} />
+                <Route path="/team" element={<Navigate to="/dashboard/team" replace />} />
+                <Route path="/platform" element={<Navigate to="/dashboard/platform" replace />} />
+                <Route path="/settings" element={<Navigate to="/dashboard/settings" replace />} />
+                <Route path="/integrations" element={<Navigate to="/dashboard/integrations" replace />} />
+                <Route path="/billing" element={<Navigate to="/dashboard/billing" replace />} />
+
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <Layout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<Dashboard />} />
+                  <Route path="calls" element={<CallHistory />} />
+                  <Route path="team" element={<Team />} />
+                  <Route path="platform" element={<Platform />} />
+                  <Route path="settings" element={<Settings />} />
+                  <Route path="integrations" element={<Integrations />} />
+                  <Route path="billing" element={<RoleRoute allowed={['org_admin', 'manager']}><Billing /></RoleRoute>} />
+                  <Route path="billing-operations" element={<RoleRoute allowed={['platform_owner']}><BillingOperations /></RoleRoute>} />
+                  <Route path="billing-catalog" element={<RoleRoute allowed={['platform_owner']}><BillingCatalog /></RoleRoute>} />
+                </Route>
+
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </React.Suspense>
+          </BrowserRouter>
+        </FeedbackProvider>
       </AuthProvider>
     </ThemeProvider>
   );

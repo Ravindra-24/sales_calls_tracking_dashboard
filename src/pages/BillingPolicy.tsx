@@ -1,5 +1,6 @@
-import { ArrowLeft, ShieldCheck } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { PublicFooter, PublicHeader, Reveal, usePublicMetadata } from '../components/public';
 
 type PolicyKind = 'terms' | 'refund' | 'cancellation';
 
@@ -44,31 +45,45 @@ const content: Record<PolicyKind, { title: string; intro: string; sections: Arra
 
 export const BillingPolicy = ({ kind }: { kind: PolicyKind }) => {
   const policy = content[kind];
+  const policyPath = kind === 'terms' ? '/terms' : kind === 'refund' ? '/refund-policy' : '/cancellation-policy';
+
+  usePublicMetadata({
+    title: `${policy.title} | LeadWatch`,
+    description: policy.intro,
+    path: policyPath,
+  });
+
   return (
-    <main className="policy-page">
-      <div className="policy-shell">
-        <Link className="onboarding-back" to="/"><ArrowLeft size={17} /> Back to LeadWatch</Link>
-        <header className="policy-header glass-panel">
-          <span className="billing-card-icon"><ShieldCheck size={21} /></span>
-          <p className="eyebrow">LeadWatch policy · version {policyVersions[kind]}</p>
-          <h1>{policy.title}</h1>
-          <p>{policy.intro}</p>
-        </header>
-        <nav className="policy-tabs" aria-label="Billing policies">
-          <Link className={kind === 'terms' ? 'active' : ''} to="/terms">Terms</Link>
-          <Link className={kind === 'refund' ? 'active' : ''} to="/refund-policy">Refunds</Link>
-          <Link className={kind === 'cancellation' ? 'active' : ''} to="/cancellation-policy">Cancellation</Link>
-        </nav>
-        <section className="policy-sections">
-          {policy.sections.map((section) => (
-            <article className="section-card" key={section.title}>
-              <h2>{section.title}</h2>
-              <p>{section.body}</p>
-            </article>
-          ))}
-        </section>
-        <p className="policy-contact">Questions about these policies can be sent to <a href="mailto:support@leadwatch.app">support@leadwatch.app</a>.</p>
-      </div>
-    </main>
+    <div className="lw-public lw-policy-page">
+      <PublicHeader contextLabel="Policies" />
+      <main>
+        <div className="lw-policy-shell">
+          <Reveal as="section" className="lw-policy-hero">
+            <span className="lw-policy-icon"><ShieldCheck size={22} /></span>
+            <p className="lw-eyebrow">LeadWatch policy · version {policyVersions[kind]}</p>
+            <h1>{policy.title}</h1>
+            <p>{policy.intro}</p>
+          </Reveal>
+
+          <nav className="lw-policy-tabs" aria-label="Billing policies">
+            <Link className={kind === 'terms' ? 'is-active' : ''} aria-current={kind === 'terms' ? 'page' : undefined} to="/terms">Terms</Link>
+            <Link className={kind === 'refund' ? 'is-active' : ''} aria-current={kind === 'refund' ? 'page' : undefined} to="/refund-policy">Refunds</Link>
+            <Link className={kind === 'cancellation' ? 'is-active' : ''} aria-current={kind === 'cancellation' ? 'page' : undefined} to="/cancellation-policy">Cancellation</Link>
+          </nav>
+
+          <section className="lw-policy-sections" aria-label={`${policy.title} details`}>
+            {policy.sections.map((section, index) => (
+              <Reveal as="article" className="lw-policy-card" delay={index * 55} key={section.title}>
+                <span>{String(index + 1).padStart(2, '0')}</span>
+                <div><h2>{section.title}</h2><p>{section.body}</p></div>
+              </Reveal>
+            ))}
+          </section>
+
+          <p className="lw-policy-contact">Questions about these policies can be sent to <a href="mailto:support@leadwatch.app">support@leadwatch.app</a>.</p>
+        </div>
+      </main>
+      <PublicFooter />
+    </div>
   );
 };

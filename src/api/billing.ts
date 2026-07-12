@@ -3,12 +3,15 @@ import { api } from './client';
 import type { ApiResponse } from '../types/api';
 import type {
   BillingAccount,
+  BillingActivationSnapshot,
   BillingCatalog,
   BillingCheckoutSession,
   BillingInvoice,
   BillingListResponse,
   BillingPayment,
   BillingPlanCode,
+  BillingPlanChangeResult,
+  BillingRecoveryResult,
   BillingSubscription,
 } from '../types/billing';
 
@@ -114,6 +117,15 @@ export const fetchBillingInvoices = async (config?: AxiosRequestConfig) => {
   return response.data;
 };
 
+export const fetchBillingActivationSnapshot = async (): Promise<BillingActivationSnapshot> => {
+  const [account, subscription, paymentResponse] = await Promise.all([
+    fetchBillingAccount(),
+    fetchBillingSubscription(),
+    fetchBillingPayments({ params: { limit: 20 } }),
+  ]);
+  return { account, subscription, payments: paymentResponse.data };
+};
+
 export const downloadBillingInvoice = async (invoiceId: string) => {
   const response = await api.get<Blob>(
     `/billing/invoices/${encodeURIComponent(invoiceId)}/download`,
@@ -157,7 +169,7 @@ export const abandonCheckoutSession = async (sessionId: string) => {
 };
 
 export const changeBillingPlan = async (targetPriceVersionId: string, operationId: string) => {
-  const response = await api.post<ApiResponse<unknown>>('/billing/subscription/change', {
+  const response = await api.post<ApiResponse<BillingPlanChangeResult>>('/billing/subscription/change', {
     targetPriceVersionId,
     operationId,
   });
@@ -170,7 +182,7 @@ export const cancelBillingSubscription = async (operationId: string) => {
 };
 
 export const recoverBillingSubscription = async (operationId: string) => {
-  const response = await api.post<ApiResponse<unknown>>('/billing/subscription/recover', { operationId });
+  const response = await api.post<ApiResponse<BillingRecoveryResult>>('/billing/subscription/recover', { operationId });
   return response.data.data;
 };
 

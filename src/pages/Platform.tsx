@@ -4,11 +4,13 @@ import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { api, getApiErrorMessage } from '../api/client';
 import { useAuth } from '../context/auth';
+import { useFeedback } from '../context/feedback';
 import { ActionMenu } from '../components/ActionMenu';
 import type { ApiResponse, PlatformOrganization, TenantCreateResult } from '../types/api';
 
 export const Platform = () => {
   const { claims } = useAuth();
+  const { confirm, toast } = useFeedback();
   const [organizations, setOrganizations] = useState<PlatformOrganization[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -52,9 +54,12 @@ export const Platform = () => {
       });
       setResult(response.data.data);
       setForm({ orgName: '', adminName: '', adminEmail: '', temporaryPassword: '', timezone: 'Asia/Kolkata' });
+      toast({ title: 'Organization created', message: `${response.data.data.org.name} is ready for its first admin.`, variant: 'success' });
       await loadOrganizations();
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Failed to create organization.'));
+      const message = getApiErrorMessage(requestError, 'Failed to create organization.');
+      setError(message);
+      toast({ title: 'Organization not created', message, variant: 'error' });
     } finally {
       setSubmitting(false);
     }
@@ -76,7 +81,15 @@ export const Platform = () => {
     organization: PlatformOrganization,
     updates: { status: 'active' | 'disabled' },
   ) => {
-    if (updates.status === 'disabled' && !window.confirm(`Disable ${organization.name}? Its users and integration access will be blocked.`)) return;
+    if (updates.status === 'disabled') {
+      const approved = await confirm({
+        title: `Disable ${organization.name}?`,
+        message: 'Its users and integration access will be blocked until the organization is enabled again.',
+        confirmLabel: 'Disable organization',
+        variant: 'danger',
+      });
+      if (!approved) return;
+    }
     setUpdatingOrgId(organization.id);
     setError('');
     try {
@@ -84,8 +97,15 @@ export const Platform = () => {
       setOrganizations((current) => current.map((item) => (
         item.id === organization.id ? { ...item, ...updates } : item
       )));
+      toast({
+        title: `Organization ${updates.status === 'active' ? 'enabled' : 'disabled'}`,
+        message: `${organization.name} is now ${updates.status}.`,
+        variant: 'success',
+      });
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Failed to update organization.'));
+      const message = getApiErrorMessage(requestError, 'Failed to update organization.');
+      setError(message);
+      toast({ title: 'Organization not updated', message, variant: 'error' });
     } finally {
       setUpdatingOrgId('');
     }

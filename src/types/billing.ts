@@ -164,9 +164,13 @@ export interface BillingPayment {
   orgId?: string;
   organizationName?: string;
   subscriptionId?: string | null;
+  checkoutSessionId?: string | null;
   invoiceId?: string | null;
   providerPaymentId?: string | null;
   planCode?: BillingPlanCode;
+  priceVersionId?: string;
+  activationOperationId?: string | null;
+  recoveryOperationId?: string | null;
   kind?: 'initial' | 'renewal' | 'upgrade' | string;
   status: 'created' | 'authorized' | 'captured' | 'failed' | 'refunded' | 'partially_refunded' | string;
   baseAmountPaise?: number;
@@ -299,6 +303,38 @@ export interface BillingCheckoutSession {
   purpose?: 'initial' | 'replacement_upgrade' | 'replacement_downgrade';
   resumable?: boolean;
   cancellable?: boolean;
+}
+
+export interface BillingPlanChangeResult {
+  operationId: string;
+  activationOperationId: string;
+  status: BillingOperationStatus | 'scheduled' | 'awaiting_customer' | 'awaiting_payment';
+  targetPlan: Extract<BillingPlanCode, 'pro' | 'max'>;
+  targetPriceVersionId: string;
+  effectiveAt?: string | null;
+  authorizationUrl?: string | null;
+  duplicate?: boolean;
+  checkoutSession?: BillingCheckoutSession | null;
+}
+
+interface BillingRecoveryResultBase {
+  operationId: string;
+  authorizationUrl: string | null;
+  duplicate?: boolean;
+  subscriptionId: string;
+  targetPlan: BillingPlanCode;
+  targetPriceVersionId: string;
+}
+
+export type BillingRecoveryResult = BillingRecoveryResultBase & (
+  | { status: 'recovered'; correlatedPaymentId: string }
+  | { status: 'replacement_required' | 'payment_required'; correlatedPaymentId: null }
+);
+
+export interface BillingActivationSnapshot {
+  account: BillingAccount | null;
+  subscription: BillingSubscription | null;
+  payments: BillingPayment[];
 }
 
 export interface BillingListMeta {
