@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Building2, Check, Copy, Plus, Power, Shield, User } from 'lucide-react';
+import { Building2, Check, Copy, CreditCard, Plus, Power, User } from 'lucide-react';
 import { format } from 'date-fns';
+import { Link } from 'react-router-dom';
 import { api, getApiErrorMessage } from '../api/client';
 import { useAuth } from '../context/auth';
 import { ActionMenu } from '../components/ActionMenu';
@@ -20,7 +21,6 @@ export const Platform = () => {
     adminName: '',
     adminEmail: '',
     temporaryPassword: '',
-    plan: 'free',
     timezone: 'Asia/Kolkata',
   });
 
@@ -51,7 +51,7 @@ export const Platform = () => {
         temporaryPassword: form.temporaryPassword.trim() || undefined,
       });
       setResult(response.data.data);
-      setForm({ orgName: '', adminName: '', adminEmail: '', temporaryPassword: '', plan: 'free', timezone: 'Asia/Kolkata' });
+      setForm({ orgName: '', adminName: '', adminEmail: '', temporaryPassword: '', timezone: 'Asia/Kolkata' });
       await loadOrganizations();
     } catch (requestError) {
       setError(getApiErrorMessage(requestError, 'Failed to create organization.'));
@@ -74,7 +74,7 @@ export const Platform = () => {
 
   const updateOrganization = async (
     organization: PlatformOrganization,
-    updates: { plan?: string; status?: 'active' | 'disabled' },
+    updates: { status: 'active' | 'disabled' },
   ) => {
     if (updates.status === 'disabled' && !window.confirm(`Disable ${organization.name}? Its users and integration access will be blocked.`)) return;
     setUpdatingOrgId(organization.id);
@@ -123,12 +123,6 @@ export const Platform = () => {
           <label>Admin name<input className="input-field" value={form.adminName} onChange={(event) => setForm((current) => ({ ...current, adminName: event.target.value }))} required /></label>
           <label>Admin email<input className="input-field" type="email" value={form.adminEmail} onChange={(event) => setForm((current) => ({ ...current, adminEmail: event.target.value }))} required /></label>
           <label>Temporary password<input className="input-field" value={form.temporaryPassword} onChange={(event) => setForm((current) => ({ ...current, temporaryPassword: event.target.value }))} placeholder="Auto-generate if blank" minLength={6} /></label>
-          <label>Plan<select className="input-field" value={form.plan} onChange={(event) => setForm((current) => ({ ...current, plan: event.target.value }))}>
-            <option value="free">Free</option>
-            <option value="starter">Starter</option>
-            <option value="growth">Growth</option>
-            <option value="enterprise">Enterprise</option>
-          </select></label>
           <label>Timezone<input className="input-field" value={form.timezone} onChange={(event) => setForm((current) => ({ ...current, timezone: event.target.value }))} required /></label>
           <button className="btn-primary" disabled={submitting}><Plus size={17} /> {submitting ? 'Creating…' : 'Create tenant'}</button>
         </form>
@@ -159,19 +153,9 @@ export const Platform = () => {
                 <tr key={org.id}>
                   <td data-label="Organization"><div className="member-cell"><div className="avatar"><Building2 size={17} /></div><div><strong>{org.name}</strong><span>{org.id}</span></div></div></td>
                   <td data-label="Plan">
-                    <div className="platform-plan-control">
-                      <Shield size={14} />
-                      <select
-                        value={org.plan}
-                        aria-label={`Plan for ${org.name}`}
-                        disabled={updatingOrgId === org.id}
-                        onChange={(event) => void updateOrganization(org, { plan: event.target.value })}
-                      >
-                        <option value="free">Free</option>
-                        <option value="starter">Starter</option>
-                        <option value="growth">Growth</option>
-                        <option value="enterprise">Enterprise</option>
-                      </select>
+                    <div className="platform-billing-summary">
+                      <span className="role-badge">{org.plan}</span>
+                      <Link to={`/dashboard/billing-operations?search=${encodeURIComponent(org.id)}`} aria-label={`Open billing operations for ${org.name}`}><CreditCard size={14} /> Billing</Link>
                     </div>
                   </td>
                   <td data-label="Admin">{org.admin ? <div className="member-cell compact-member"><div className="avatar"><User size={15} /></div><div><strong>{org.admin.name}</strong><span>{org.admin.email}</span></div></div> : '—'}</td>

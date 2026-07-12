@@ -28,11 +28,12 @@ export const Login: React.FC = () => {
       await signInWithEmailAndPassword(auth, email.trim(), password);
       const claims = await refreshClaims();
       if (!claims.role) {
-        await auth.signOut();
-        setError('This account is not linked to dashboard access yet.');
+        const selectedPlan = new URLSearchParams(location.search).get('plan') || localStorage.getItem('leadwatch.selectedBillingPlan') || 'lite';
+        navigate(`/signup?plan=${selectedPlan}`, { replace: true });
         return;
       }
-      navigate('/dashboard');
+      const selectedPlan = new URLSearchParams(location.search).get('plan');
+      navigate(selectedPlan && selectedPlan !== 'lite' && (claims.role === 'org_admin' || claims.role === 'manager') ? '/dashboard/billing' : '/dashboard');
     } catch (error) {
       if (error instanceof FirebaseError && error.code.includes('api-key')) {
         setError('Dashboard Firebase configuration is invalid. Set the VITE_FIREBASE_* variables in Vercel and redeploy.');

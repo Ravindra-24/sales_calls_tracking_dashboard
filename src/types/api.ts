@@ -9,7 +9,7 @@ export interface ApiResponse<T> {
 
 export type UserRole = 'platform_owner' | 'org_admin' | 'manager' | 'sales_member';
 export type UserStatus = 'active' | 'disabled';
-export type OrgPlan = 'free' | 'starter' | 'growth' | 'enterprise';
+export type OrgPlan = 'lite' | 'pro' | 'max' | 'enterprise';
 export type IntegrationScope = 'read:org' | 'read:team' | 'read:calls' | 'read:stats';
 export type IntegrationEventType = 'call.created' | 'daily_stats.updated';
 

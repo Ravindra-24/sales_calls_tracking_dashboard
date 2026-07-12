@@ -42,7 +42,7 @@ const organizationResponse = `{
   "data": {
     "id": "org_01JZ...",
     "name": "Northstar Sales",
-    "plan": "growth",
+    "plan": "max",
     "status": "active",
     "settings": {
       "timezone": "Asia/Kolkata",
@@ -369,7 +369,7 @@ export const IntegrationDocs = () => {
             <h2>Quick start</h2>
             <p>Make your first request in three steps.</p>
             <ol className="docs-steps">
-              <li><span>1</span><div><strong>Confirm plan access</strong><p>Your organization must use the Growth or Enterprise plan.</p></div></li>
+              <li><span>1</span><div><strong>Confirm plan access</strong><p>Your organization must use the Max or Enterprise plan.</p></div></li>
               <li><span>2</span><div><strong>Create an API key</strong><p>Sign in as an organization admin, open <b>Dashboard → Integrations</b>, choose the required scopes, and create a key.</p></div></li>
               <li><span>3</span><div><strong>Call the API from your backend</strong><p>Send the key in the Authorization header. The key automatically identifies your organization.</p></div></li>
             </ol>
@@ -385,8 +385,8 @@ export const IntegrationDocs = () => {
                 <thead><tr><th>Plan</th><th>API keys</th><th>Webhooks</th><th>Requests/min</th><th>Requests/month</th><th>Query range</th></tr></thead>
                 <tbody>
                   <tr><td>Free</td><td colSpan={5}>Integration access is not included</td></tr>
-                  <tr><td>Starter</td><td colSpan={5}>Integration access is not included</td></tr>
-                  <tr className="highlight"><td>Growth</td><td>2</td><td>2</td><td>60</td><td>50,000</td><td>90 days</td></tr>
+                  <tr><td>Lite / Pro</td><td colSpan={5}>Integration access is not included</td></tr>
+                  <tr className="highlight"><td>Max</td><td>2</td><td>2</td><td>60</td><td>50,000</td><td>90 days</td></tr>
                   <tr><td>Enterprise</td><td>10</td><td>10</td><td>300</td><td>1,000,000</td><td>365 days</td></tr>
                 </tbody>
               </table>

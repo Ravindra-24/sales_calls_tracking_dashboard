@@ -3,6 +3,7 @@ Allow: /
 Disallow: /dashboard
 Disallow: /dashboard/
 Disallow: /login
+Disallow: /signup
 Disallow: /claim
 
 Sitemap: https://saleconnect.vercel.app/sitemap.xml

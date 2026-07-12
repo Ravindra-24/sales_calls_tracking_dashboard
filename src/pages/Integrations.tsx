@@ -339,7 +339,7 @@ export const Integrations = () => {
               <div>
                 <span>{overview.organization.name}</span>
                 <strong>{overview.organization.plan} plan</strong>
-                <p>{planEnabled ? 'Organizer API and webhooks are active.' : 'Upgrade to Growth or Enterprise to enable integrations.'}</p>
+                <p>{planEnabled ? 'Organizer API and webhooks are active.' : 'Upgrade to Max or Enterprise to enable integrations.'}</p>
               </div>
             </div>
             <div className="integration-limits">

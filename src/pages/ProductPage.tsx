@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
@@ -21,6 +21,13 @@ import {
   Zap,
 } from 'lucide-react';
 import { useAuth } from '../context/auth';
+import {
+  billingCycleLabel,
+  FALLBACK_BILLING_CATALOG,
+  fetchBillingCatalog,
+  formatBillingMoney,
+} from '../api/billing';
+import type { BillingCatalogPlan, BillingPlanCode } from '../types/billing';
 
 const apkDownloadUrl = import.meta.env.VITE_APK_DOWNLOAD_URL?.trim() ?? '';
 const configuredSiteUrl = import.meta.env.VITE_PUBLIC_SITE_URL?.trim().replace(/\/$/, '') ?? '';
@@ -41,32 +48,30 @@ const workflow = [
   { icon: Gauge, title: 'Track performance', copy: 'Managers monitor call volume, duration, missed calls, and rep consistency.' },
 ];
 
-const plans = [
-  {
-    name: 'Starter',
-    price: 'For small sales teams',
+const publicPlanDetails: Record<BillingPlanCode, { accent: string; features: string[] }> = {
+  lite: {
     accent: 'mint',
-    features: ['Call history dashboard', 'Team member access', 'Basic performance summary', 'APK download support'],
+    features: ['Call history dashboard', 'Team member access', 'Basic performance summary', 'No payment method required'],
   },
-  {
-    name: 'Growth',
-    price: 'For growing organizations',
+  pro: {
     accent: 'blue',
-    featured: true,
-    features: ['Manager and org admin roles', 'Organizer API access', 'Signed event webhooks', 'Daily activity trends'],
+    features: ['Manager and org admin roles', 'Quarterly organization billing', 'Team reporting and controls', 'Payment recovery grace'],
   },
-  {
-    name: 'Platform',
-    price: 'For multi-tenant',
+  max: {
     accent: 'coral',
-    features: ['Tenant management', 'Platform owner console', 'Higher integration limits', 'Scalable Firebase backend'],
+    features: ['Organizer API access', 'Signed event webhooks', 'Growth integration limits', 'Annual organization billing'],
   },
-];
+  enterprise: {
+    accent: 'gold',
+    features: ['Custom commercial terms', 'Enterprise integration limits', 'Audited manual activation', 'Dedicated sales conversation'],
+  },
+};
 
 export const ProductPage = () => {
-  const { user } = useAuth();
+  const { user, claims } = useAuth();
   const apkReady = Boolean(apkDownloadUrl);
   const [shareStatus, setShareStatus] = useState('');
+  const [billingCatalog, setBillingCatalog] = useState(FALLBACK_BILLING_CATALOG);
   const shareUrl = useMemo(() => {
     if (configuredSiteUrl) return `${configuredSiteUrl}/`;
     if (typeof window !== 'undefined') return `${window.location.origin}/`;
@@ -74,6 +79,22 @@ export const ProductPage = () => {
   }, []);
   const encodedShareUrl = encodeURIComponent(shareUrl);
   const encodedShareText = encodeURIComponent(`${shareTitle} - ${shareDescription}`);
+
+  useEffect(() => {
+    let active = true;
+    void fetchBillingCatalog().then((catalog) => {
+      if (active) setBillingCatalog(catalog);
+    });
+    return () => { active = false; };
+  }, []);
+
+  const planDestination = (plan: BillingCatalogPlan) => {
+    if (plan.code === 'enterprise') return 'mailto:sales@leadwatch.app?subject=LeadWatch%20Enterprise';
+    if (claims.role === 'org_admin' || claims.role === 'manager') return '/dashboard/billing';
+    if (claims.role === 'platform_owner') return '/dashboard/billing-catalog';
+    if (claims.role) return '/dashboard';
+    return `/signup?plan=${plan.code}`;
+  };
 
   const copyShareLink = async () => {
     try {
@@ -234,21 +255,43 @@ export const ProductPage = () => {
       <section className="product-section product-scroll-reveal" id="plans">
         <div className="product-section-heading">
           <p className="product-kicker">Plans</p>
-          <h2>Start focused, then scale to a complete multi-tenant platform.</h2>
+          <h2>Simple organization pricing that grows with your sales operation.</h2>
         </div>
+        {!billingCatalog.checkoutAvailable && (
+          <div className="product-billing-notice">
+            Plan purchase is temporarily unavailable while secure payment and tax configuration is completed. You can still create a Lite account.
+          </div>
+        )}
         <div className="plan-grid">
-          {plans.map((plan) => (
-            <article className={`plan-card product-scroll-reveal ${plan.accent}${plan.featured ? ' featured' : ''}`} key={plan.name}>
-              {plan.featured && <div className="plan-badge">Recommended</div>}
+          {billingCatalog.plans.map((plan) => {
+            const details = publicPlanDetails[plan.code];
+            const price = plan.currentPrice;
+            const planReady = plan.code === 'lite' || plan.code === 'enterprise' || (billingCatalog.checkoutAvailable && Boolean(price?.providerReady));
+            return (
+            <article className={`plan-card product-scroll-reveal ${details.accent}${plan.code === 'pro' ? ' featured' : ''}`} key={plan.code}>
+              {plan.code === 'pro' && <div className="plan-badge">Recommended</div>}
               <h3>{plan.name}</h3>
-              <p>{plan.price}</p>
+              <div className="public-plan-price">
+                <strong>{plan.code === 'lite' ? '₹0' : plan.code === 'enterprise' ? 'Custom' : formatBillingMoney(price?.baseAmountPaise)}</strong>
+                <span>{plan.code === 'lite' ? 'free forever' : plan.code === 'enterprise' ? 'contact sales' : `${billingCycleLabel(plan.code, price?.billingPeriod, price?.interval)} + GST`}</span>
+              </div>
+              <p>{plan.description}</p>
               <ul>
-                {plan.features.map((feature) => (
+                {details.features.map((feature) => (
                   <li key={feature}><CheckCircle2 size={16} /> {feature}</li>
                 ))}
               </ul>
+              {plan.code === 'enterprise' ? (
+                <a className="public-plan-action" href={planDestination(plan)}>Contact sales <ArrowRight size={16} /></a>
+              ) : (
+                <Link className="public-plan-action" to={planDestination(plan)}>
+                  {claims.role === 'sales_member' ? 'Return to dashboard' : planReady ? (user ? 'Manage plan' : plan.code === 'lite' ? 'Start free' : `Choose ${plan.name}`) : (user ? 'View billing status' : 'Start on Lite')}
+                  <ArrowRight size={16} />
+                </Link>
+              )}
             </article>
-          ))}
+            );
+          })}
         </div>
       </section>
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Building2, LayoutDashboard, PhoneCall, Users, LogOut, Menu, Settings, Webhook, X } from 'lucide-react';
+import { Activity, BadgePercent, Building2, CreditCard, LayoutDashboard, PhoneCall, Users, LogOut, Menu, Settings, Webhook, X } from 'lucide-react';
 import { auth } from '../config/firebase';
 import { useAuth } from '../context/auth';
 
@@ -75,6 +75,11 @@ export const Layout: React.FC = () => {
     ...(canViewCalls ? [{ path: '/dashboard/calls', icon: PhoneCall, label: 'Call History' }] : []),
     ...(canManageTeam ? [{ path: '/dashboard/team', icon: Users, label: 'Team Management' }] : []),
     ...(canManageIntegrations ? [{ path: '/dashboard/integrations', icon: Webhook, label: 'Integrations' }] : []),
+    ...(canManageTeam ? [{ path: '/dashboard/billing', icon: CreditCard, label: 'Billing' }] : []),
+    ...(isPlatformOwner ? [
+      { path: '/dashboard/billing-operations', icon: Activity, label: 'Billing Operations' },
+      { path: '/dashboard/billing-catalog', icon: BadgePercent, label: 'Billing Catalog' },
+    ] : []),
     { path: '/dashboard/settings', icon: Settings, label: 'Settings' },
   ];
 
