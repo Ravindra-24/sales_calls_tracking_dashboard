@@ -22,9 +22,11 @@ import {
   billingCycleLabel,
   billingPlanName,
   cancelBillingSubscription,
+  abandonCheckoutSession,
   changeBillingPlan,
   createCheckoutSession,
   downloadBillingInvoice,
+  fetchActiveCheckoutSession,
   fetchBillingAccount,
   fetchBillingCatalog,
   fetchBillingInvoices,
@@ -37,7 +39,7 @@ import {
   updateBillingContact,
   verifyCheckoutSession,
 } from '../api/billing';
-import { openRazorpaySubscriptionCheckout } from '../api/razorpay';
+import { openRazorpaySubscriptionCheckout, RazorpayCheckoutDismissedError } from '../api/razorpay';
 import { useAuth } from '../context/auth';
 import type {
   BillingAccount,
@@ -79,6 +81,14 @@ const getCheckoutOperationId = (orgId: string, priceVersionId: string) => {
   return operationId;
 };
 
+const clearCheckoutOperationIds = (orgId: string) => {
+  const prefix = `leadwatch.checkoutOperation.${orgId}.`;
+  for (let index = sessionStorage.length - 1; index >= 0; index -= 1) {
+    const key = sessionStorage.key(index);
+    if (key?.startsWith(prefix)) sessionStorage.removeItem(key);
+  }
+};
+
 const emptyBillingContact = {
   name: '', email: '', phone: '', legalName: '', gstin: '', line1: '', line2: '',
   city: '', state: '', postalCode: '',
@@ -102,6 +112,7 @@ export const Billing = () => {
   const [catalog, setCatalog] = useState<BillingCatalog | null>(null);
   const [account, setAccount] = useState<BillingAccount | null>(null);
   const [subscription, setSubscription] = useState<BillingSubscription | null>(null);
+  const [activeCheckout, setActiveCheckout] = useState<BillingCheckoutSession | null>(null);
   const [payments, setPayments] = useState<BillingPayment[]>([]);
   const [invoices, setInvoices] = useState<BillingInvoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -117,10 +128,11 @@ export const Billing = () => {
     if (!canManageBilling) return;
     if (!quiet) setLoading(true);
     setError('');
-    const [catalogResult, accountResult, subscriptionResult, paymentResult, invoiceResult] = await Promise.allSettled([
+    const [catalogResult, accountResult, subscriptionResult, activeCheckoutResult, paymentResult, invoiceResult] = await Promise.allSettled([
       fetchBillingCatalog(),
       fetchBillingAccount(),
       fetchBillingSubscription(),
+      fetchActiveCheckoutSession(),
       fetchBillingPayments({ params: { limit: 50 } }),
       fetchBillingInvoices({ params: { limit: 50 } }),
     ]);
@@ -132,11 +144,12 @@ export const Billing = () => {
       setContactForm(billingContactForm(nextAccount));
     }
     if (subscriptionResult.status === 'fulfilled') setSubscription(subscriptionResult.value);
+    if (activeCheckoutResult.status === 'fulfilled') setActiveCheckout(activeCheckoutResult.value);
     if (paymentResult.status === 'fulfilled') setPayments(paymentResult.value.data);
     if (invoiceResult.status === 'fulfilled') setInvoices(invoiceResult.value.data);
 
-    const failed = [accountResult, subscriptionResult, paymentResult, invoiceResult].filter((result) => result.status === 'rejected');
-    if (failed.length === 4) {
+    const failed = [accountResult, subscriptionResult, activeCheckoutResult, paymentResult, invoiceResult].filter((result) => result.status === 'rejected');
+    if (failed.length === 5) {
       const reason = failed[0].status === 'rejected' ? failed[0].reason : null;
       setError(getApiErrorMessage(reason, 'Billing details are temporarily unavailable. Your current access is unchanged.'));
     } else if (failed.length > 0) {
@@ -152,8 +165,19 @@ export const Billing = () => {
   const capturedPayments = useMemo(() => payments.filter((payment) => payment.status === 'captured' || payment.status === 'partially_refunded'), [payments]);
   const graceActive = Boolean(effectiveAccount.graceUntil && new Date(effectiveAccount.graceUntil).valueOf() > Date.now());
   const checkoutUnavailable = !catalog?.checkoutAvailable;
+  const checkoutPlanCode = (session: BillingCheckoutSession) => session.planCode
+    ?? catalog?.plans.find((plan) => plan.currentPrice?.id === session.priceVersionId)?.code;
+  const checkoutPlanName = (session: BillingCheckoutSession) => billingPlanName(checkoutPlanCode(session));
+  const checkoutIsForPlan = (session: BillingCheckoutSession, plan: BillingCatalogPlan) => (
+    checkoutPlanCode(session) === plan.code || session.priceVersionId === plan.currentPrice?.id
+  );
+  const checkoutIsResumable = (session: BillingCheckoutSession) => session.resumable === true
+    || (session.resumable === undefined && session.status === 'awaiting_customer');
+  const checkoutIsCancellable = (session: BillingCheckoutSession) => session.cancellable === true
+    || (session.cancellable === undefined && session.status === 'awaiting_customer');
 
   const completeCheckout = async (session: BillingCheckoutSession, planName: string) => {
+    setActiveCheckout(session);
     if (!session.keyId || !session.providerSubscriptionId) {
       throw new Error('Secure checkout is not configured for this plan yet. No payment was started.');
     }
@@ -167,11 +191,51 @@ export const Billing = () => {
         phone: effectiveAccount.billingContact?.phone,
       },
     });
-    await verifyCheckoutSession(session.id, checkoutResult);
+    setActiveCheckout({ ...session, status: 'client_verified', resumable: false, cancellable: false });
+    try {
+      await verifyCheckoutSession(session.id, checkoutResult);
+    } catch (verificationError) {
+      await loadBilling(true);
+      throw verificationError;
+    }
+    setActiveCheckout(null);
+    clearCheckoutOperationIds(claims.orgId);
     setMessage(session.purpose === 'replacement_downgrade'
       ? 'Replacement mandate verified. The downgrade is scheduled only after Razorpay confirms authorization.'
       : 'Payment response verified. Paid access will activate after Razorpay confirms the captured payment.');
     await loadBilling(true);
+  };
+
+  const abandonPendingCheckout = async (session: BillingCheckoutSession) => {
+    if (!checkoutIsCancellable(session)) {
+      throw new Error(`${checkoutPlanName(session)} payment is already authorized or processing. Refresh billing before taking another action.`);
+    }
+    const abandoned = await abandonCheckoutSession(session.id);
+    if (!['failed', 'expired', 'cancelled'].includes(abandoned.status)) {
+      throw new Error('The pending checkout could not be cancelled. No new checkout was started.');
+    }
+    clearCheckoutOperationIds(claims.orgId);
+    setActiveCheckout(null);
+  };
+
+  const prepareCheckoutForPlan = async (plan: BillingCatalogPlan) => {
+    if (!activeCheckout) return { proceed: true, switchConfirmed: false };
+    if (checkoutIsForPlan(activeCheckout, plan)) {
+      if (!checkoutIsResumable(activeCheckout)) {
+        throw new Error(`${checkoutPlanName(activeCheckout)} payment is already authorized or processing. Refresh billing to see its latest status.`);
+      }
+      await completeCheckout(activeCheckout, plan.name);
+      return { proceed: false, switchConfirmed: false };
+    }
+    if (!checkoutIsCancellable(activeCheckout)) {
+      throw new Error(`${checkoutPlanName(activeCheckout)} payment is already authorized or processing. A ${plan.name} checkout cannot start yet.`);
+    }
+    const confirmed = window.confirm(
+      `You already have a ${checkoutPlanName(activeCheckout)} checkout awaiting payment. Cancel it and start a ${plan.name} checkout?`,
+    );
+    if (!confirmed) return { proceed: false, switchConfirmed: false };
+    await abandonPendingCheckout(activeCheckout);
+    return { proceed: true, switchConfirmed: true };
   };
 
   const purchasePlan = async (plan: BillingCatalogPlan) => {
@@ -184,6 +248,8 @@ export const Billing = () => {
     setError('');
     setMessage('');
     try {
+      const preparation = await prepareCheckoutForPlan(plan);
+      if (!preparation.proceed) return;
       const operationStorageKey = checkoutOperationKey(claims.orgId, price.id);
       let operationId = getCheckoutOperationId(claims.orgId, price.id);
       const session = await createCheckoutSession({
@@ -205,7 +271,11 @@ export const Billing = () => {
       }
       sessionStorage.removeItem(operationStorageKey);
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, requestError instanceof Error ? requestError.message : 'Checkout could not be started.'));
+      if (requestError instanceof RazorpayCheckoutDismissedError) {
+        setMessage('Checkout saved. Resume payment from Payment history, or cancel it before choosing another plan.');
+      } else {
+        setError(getApiErrorMessage(requestError, requestError instanceof Error ? requestError.message : 'Checkout could not be started.'));
+      }
     } finally {
       setWorkingAction('');
     }
@@ -218,11 +288,13 @@ export const Billing = () => {
       return;
     }
     const changeLabel = activePlan === 'max' && plan.code === 'pro' ? 'schedule this downgrade at the cycle end' : `change to ${plan.name}`;
-    if (!window.confirm(`Do you want to ${changeLabel}?`)) return;
     setWorkingAction(plan.code);
     setError('');
     setMessage('');
     try {
+      const preparation = await prepareCheckoutForPlan(plan);
+      if (!preparation.proceed) return;
+      if (!preparation.switchConfirmed && !window.confirm(`Do you want to ${changeLabel}?`)) return;
       const result = await changeBillingPlan(price.id, newBillingOperationId());
       const nestedCheckout = result && typeof result === 'object' && 'checkoutSession' in result
         ? (result as { checkoutSession?: unknown }).checkoutSession
@@ -236,7 +308,49 @@ export const Billing = () => {
         await loadBilling(true);
       }
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Plan change could not be completed. Your current plan remains active.'));
+      if (requestError instanceof RazorpayCheckoutDismissedError) {
+        setMessage('Checkout saved. Resume payment from Payment history, or cancel it before choosing another plan.');
+      } else {
+        setError(getApiErrorMessage(requestError, 'Plan change could not be completed. Your current plan remains active.'));
+      }
+    } finally {
+      setWorkingAction('');
+    }
+  };
+
+  const resumeActiveCheckout = async () => {
+    if (!activeCheckout) return;
+    if (!checkoutIsResumable(activeCheckout)) {
+      setError(`${checkoutPlanName(activeCheckout)} payment is already authorized or processing. Refresh billing to see its latest status.`);
+      return;
+    }
+    setWorkingAction('resume-checkout');
+    setError('');
+    setMessage('');
+    try {
+      await completeCheckout(activeCheckout, checkoutPlanName(activeCheckout));
+    } catch (requestError) {
+      if (requestError instanceof RazorpayCheckoutDismissedError) {
+        setMessage('Checkout saved. You can resume it again when you are ready.');
+      } else {
+        setError(getApiErrorMessage(requestError, 'Checkout could not be resumed.'));
+      }
+    } finally {
+      setWorkingAction('');
+    }
+  };
+
+  const cancelActiveCheckout = async () => {
+    if (!activeCheckout || !window.confirm(`Cancel the pending ${checkoutPlanName(activeCheckout)} checkout? No payment will be started.`)) return;
+    setWorkingAction('cancel-checkout');
+    setError('');
+    setMessage('');
+    try {
+      await abandonPendingCheckout(activeCheckout);
+      setMessage('Pending checkout cancelled. You can now choose another plan.');
+      await loadBilling(true);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, 'Checkout could not be cancelled. No new checkout was started.'));
     } finally {
       setWorkingAction('');
     }
@@ -274,7 +388,11 @@ export const Billing = () => {
         await loadBilling(true);
       }
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Payment recovery could not be started.'));
+      if (requestError instanceof RazorpayCheckoutDismissedError) {
+        setMessage('Checkout saved. Resume payment from Payment history when you are ready.');
+      } else {
+        setError(getApiErrorMessage(requestError, 'Payment recovery could not be started.'));
+      }
     } finally {
       setWorkingAction('');
     }
@@ -398,7 +516,10 @@ export const Billing = () => {
             const price = plan.currentPrice;
             const isEnterprise = plan.code === 'enterprise';
             const paidTarget = plan.code === 'pro' || plan.code === 'max';
-            const actionDisabled = Boolean(workingAction) || (paidTarget && (!catalog.checkoutAvailable || !price?.providerReady));
+            const resumesPendingCheckout = Boolean(activeCheckout && checkoutIsForPlan(activeCheckout, plan) && checkoutIsResumable(activeCheckout));
+            const switchesPendingCheckout = Boolean(activeCheckout && !checkoutIsForPlan(activeCheckout, plan) && checkoutIsCancellable(activeCheckout));
+            const checkoutProcessing = Boolean(activeCheckout && !checkoutIsResumable(activeCheckout) && !checkoutIsCancellable(activeCheckout));
+            const actionDisabled = Boolean(workingAction) || checkoutProcessing || (paidTarget && (!catalog.checkoutAvailable || !price?.providerReady));
             return (
               <article className={`billing-plan-card${current ? ' current' : ''}`} key={plan.code}>
                 <div className="billing-plan-card-head"><div><span>{current ? 'Current plan' : plan.code === 'max' ? 'Best value' : 'Plan'}</span><h3>{plan.name}</h3></div>{current && <CheckCircle2 size={21} />}</div>
@@ -415,9 +536,9 @@ export const Billing = () => {
                 ) : isEnterprise ? (
                   <a className="secondary-button billing-action-link" href="mailto:sales@leadwatch.app?subject=LeadWatch%20Enterprise">Contact sales <ArrowUpRight size={15} /></a>
                 ) : activePlan === 'lite' || !subscription ? (
-                  <button className="btn-primary" type="button" onClick={() => void purchasePlan(plan)} disabled={actionDisabled}>{workingAction === plan.code ? 'Opening checkout…' : catalog.checkoutAvailable && price?.providerReady ? `Choose ${plan.name}` : 'Checkout unavailable'}</button>
+                  <button className="btn-primary" type="button" onClick={() => void purchasePlan(plan)} disabled={actionDisabled}>{workingAction === plan.code ? 'Opening checkout…' : resumesPendingCheckout ? `Resume ${plan.name}` : switchesPendingCheckout ? `Switch to ${plan.name}` : catalog.checkoutAvailable && price?.providerReady ? `Choose ${plan.name}` : 'Checkout unavailable'}</button>
                 ) : (
-                  <button className="btn-primary" type="button" onClick={() => void changePlan(plan)} disabled={actionDisabled}>{workingAction === plan.code ? 'Starting change…' : activePlan === 'max' && plan.code === 'pro' ? 'Schedule downgrade' : `Change to ${plan.name}`}</button>
+                  <button className="btn-primary" type="button" onClick={() => void changePlan(plan)} disabled={actionDisabled}>{workingAction === plan.code ? 'Starting change…' : resumesPendingCheckout ? `Resume ${plan.name}` : switchesPendingCheckout ? `Switch to ${plan.name}` : activePlan === 'max' && plan.code === 'pro' ? 'Schedule downgrade' : `Change to ${plan.name}`}</button>
                 )}
               </article>
             );
@@ -444,15 +565,30 @@ export const Billing = () => {
 
       <section className="billing-history-grid">
         <article className="section-card table-card">
-          <div className="section-heading table-heading"><div><h2>Payment history</h2><p>Captured, failed, and renewal activity.</p></div><CreditCard size={20} /></div>
-          <div className="table-scroll"><table className="data-table billing-table"><thead><tr><th>Date</th><th>Payment</th><th>Amount</th><th>Status</th><th>Method</th></tr></thead><tbody>
-            {payments.length === 0 ? <tr><td colSpan={5} className="table-message">No payments yet.</td></tr> : payments.map((payment) => (
+          <div className="section-heading table-heading"><div><h2>Payment history</h2><p>Pending checkout, captured, failed, and renewal activity.</p></div><CreditCard size={20} /></div>
+          <div className="table-scroll"><table className="data-table billing-table"><thead><tr><th>Date</th><th>Payment</th><th>Amount</th><th>Status</th><th>Method</th><th>Actions</th></tr></thead><tbody>
+            {activeCheckout && (
+              <tr className="billing-checkout-row">
+                <td data-label="Date">{formatBillingDate(activeCheckout.createdAt, true)}{activeCheckout.expiresAt && <small>Expires {formatBillingDate(activeCheckout.expiresAt, true)}</small>}</td>
+                <td data-label="Payment"><strong>{checkoutIsResumable(activeCheckout) ? 'Pending' : 'Processing'} {checkoutPlanName(activeCheckout)} checkout</strong><small>{activeCheckout.providerSubscriptionId || activeCheckout.id}</small></td>
+                <td data-label="Amount">{formatBillingMoney(activeCheckout.amountPaise, activeCheckout.currency)}</td>
+                <td data-label="Status"><span className={`billing-status ${checkoutIsResumable(activeCheckout) ? 'awaiting_customer' : 'in_progress'}`}>{checkoutIsResumable(activeCheckout) ? 'awaiting customer' : 'processing'}</span></td>
+                <td data-label="Method">Razorpay</td>
+                <td data-label="Actions"><div className="row-actions billing-checkout-actions">
+                  {checkoutIsResumable(activeCheckout) && <button className="billing-link-button" type="button" disabled={Boolean(workingAction)} onClick={() => void resumeActiveCheckout()}><RotateCcw size={15} /> {workingAction === 'resume-checkout' ? 'Opening…' : 'Resume payment'}</button>}
+                  {checkoutIsCancellable(activeCheckout) && <button className="billing-link-button danger-button" type="button" disabled={Boolean(workingAction)} onClick={() => void cancelActiveCheckout()}><XCircle size={15} /> {workingAction === 'cancel-checkout' ? 'Cancelling…' : 'Cancel checkout'}</button>}
+                  {!checkoutIsResumable(activeCheckout) && !checkoutIsCancellable(activeCheckout) && <button className="billing-link-button" type="button" onClick={() => void loadBilling(true)}><RefreshCw size={15} /> Refresh status</button>}
+                </div></td>
+              </tr>
+            )}
+            {payments.length === 0 && !activeCheckout ? <tr><td colSpan={6} className="table-message">No payments yet.</td></tr> : payments.map((payment) => (
               <tr key={payment.id}>
                 <td data-label="Date">{formatBillingDate(payment.capturedAt || payment.createdAt)}</td>
                 <td data-label="Payment"><strong>{payment.kind || 'payment'}</strong><small>{payment.providerPaymentId || payment.id}</small></td>
                 <td data-label="Amount">{formatBillingMoney(payment.grossAmountPaise, payment.currency)}</td>
                 <td data-label="Status"><span className={`billing-status ${payment.status}`}>{payment.status.replaceAll('_', ' ')}</span>{payment.failureDescription && <small className="billing-failure-copy">{payment.failureDescription}</small>}</td>
                 <td data-label="Method">{payment.method?.type ? `${payment.method.type}${payment.method.last4 ? ` •••• ${payment.method.last4}` : ''}` : '—'}</td>
+                <td data-label="Actions">—</td>
               </tr>
             ))}
           </tbody></table></div>

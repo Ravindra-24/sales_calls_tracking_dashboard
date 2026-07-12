@@ -131,6 +131,13 @@ export const createCheckoutSession = async (body: {
   return response.data.data;
 };
 
+export const fetchActiveCheckoutSession = async () => {
+  const response = await api.get<ApiResponse<BillingCheckoutSession | null>>(
+    '/billing/checkout-sessions/active',
+  );
+  return response.data.data;
+};
+
 export const verifyCheckoutSession = async (
   sessionId: string,
   body: { razorpay_payment_id: string; razorpay_signature: string },
@@ -138,6 +145,13 @@ export const verifyCheckoutSession = async (
   const response = await api.post<ApiResponse<BillingCheckoutSession>>(
     `/billing/checkout-sessions/${encodeURIComponent(sessionId)}/verify`,
     body,
+  );
+  return response.data.data;
+};
+
+export const abandonCheckoutSession = async (sessionId: string) => {
+  const response = await api.post<ApiResponse<BillingCheckoutSession>>(
+    `/billing/checkout-sessions/${encodeURIComponent(sessionId)}/abandon`,
   );
   return response.data.data;
 };

@@ -283,14 +283,22 @@ export interface BillingPromotion {
 
 export interface BillingCheckoutSession {
   id: string;
+  orgId?: string;
   status: string;
-  providerSubscriptionId?: string;
-  keyId?: string;
+  priceVersionId?: string;
+  planCode?: BillingPlanCode;
+  providerSubscriptionId?: string | null;
+  providerStatus?: string | null;
+  keyId?: string | null;
   amountPaise?: number;
   currency?: string;
+  checkoutUrl?: string | null;
   expiresAt?: string | null;
+  createdAt?: string | null;
   operationId?: string;
   purpose?: 'initial' | 'replacement_upgrade' | 'replacement_downgrade';
+  resumable?: boolean;
+  cancellable?: boolean;
 }
 
 export interface BillingListMeta {

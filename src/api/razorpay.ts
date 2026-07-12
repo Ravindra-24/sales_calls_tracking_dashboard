@@ -43,6 +43,13 @@ declare global {
 
 let razorpayLoader: Promise<RazorpayConstructor> | null = null;
 
+export class RazorpayCheckoutDismissedError extends Error {
+  constructor() {
+    super('Checkout was closed before payment was completed.');
+    this.name = 'RazorpayCheckoutDismissedError';
+  }
+}
+
 const loadRazorpay = () => {
   if (window.Razorpay) return Promise.resolve(window.Razorpay);
   if (razorpayLoader) return razorpayLoader;
@@ -101,7 +108,7 @@ export const openRazorpaySubscriptionCheckout = async (options: {
       },
       modal: {
         ondismiss: () => {
-          if (!completed) reject(new Error('Checkout was closed. Your Lite access is unchanged.'));
+          if (!completed) reject(new RazorpayCheckoutDismissedError());
         },
       },
     });
