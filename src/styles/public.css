@@ -2279,11 +2279,100 @@
     font-size: 7px;
   }
 
-  .lw-outcome-grid,
-  .lw-integration-grid,
-  .lw-plan-grid,
+  /* ---- Mobile snap-scroll sliders ---- */
+  .lw-slider-wrapper {
+    position: relative;
+    min-width: 0;
+  }
+
+  .lw-slider-track {
+    display: flex !important;
+    gap: 14px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 16px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-inline: 4px;
+    padding-bottom: 4px;
+  }
+
+  .lw-slider-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .lw-slider-track > * {
+    scroll-snap-align: center;
+  }
+
+  .lw-slider-dots {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding-top: 18px;
+  }
+
+  .lw-slider-dots button {
+    width: 8px;
+    height: 8px;
+    padding: 0;
+    border: 1.5px solid rgba(98, 107, 130, .4);
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+    transition: background-color 200ms ease, border-color 200ms ease, transform 200ms ease;
+  }
+
+  .lw-slider-dots button.is-active {
+    background: var(--lw-violet);
+    border-color: var(--lw-violet);
+    transform: scale(1.25);
+  }
+
+  /* Dark-section dot overrides */
+  .lw-integrations-section .lw-slider-dots button {
+    border-color: rgba(200, 208, 231, .35);
+  }
+
+  .lw-integrations-section .lw-slider-dots button.is-active {
+    background: var(--lw-cyan);
+    border-color: var(--lw-cyan);
+  }
+
+  /* Per-section card sizing */
+  .lw-outcome-grid.lw-slider-track > * {
+    flex: 0 0 82vw;
+    min-width: 260px;
+  }
+
+  .lw-plan-grid.lw-slider-track > * {
+    flex: 0 0 85vw;
+    min-width: 280px;
+  }
+
+  .lw-integration-grid.lw-slider-track > * {
+    flex: 0 0 78vw;
+    min-width: 240px;
+  }
+
+  .lw-security-grid.lw-slider-track > * {
+    flex: 0 0 85vw;
+    min-width: 260px;
+  }
+
+  .lw-role-grid.lw-slider-track > * {
+    flex: 0 0 88vw;
+    min-width: 280px;
+  }
+
+  /* Footer: two-column Explore + Policies */
   .lw-footer-main {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .lw-footer-intro {
+    grid-column: 1 / -1;
   }
 
   .lw-outcome-card {
@@ -2338,7 +2427,7 @@
   }
 
   .lw-footer-share {
-    grid-column: auto;
+    grid-column: 1 / -1;
   }
 
   .lw-footer-bottom {

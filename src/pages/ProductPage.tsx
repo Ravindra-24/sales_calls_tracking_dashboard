@@ -29,7 +29,7 @@ import {
   formatBillingMoney,
 } from '../api/billing';
 import { GoogleOneTap } from '../components/auth/GoogleOneTap';
-import { PublicFooter, PublicHeader, Reveal, usePublicMetadata } from '../components/public';
+import { MobileSlider, PublicFooter, PublicHeader, Reveal, usePublicMetadata } from '../components/public';
 import { useAuth } from '../context/auth';
 import type { BillingCatalogPlan, BillingPlanCode } from '../types/billing';
 
@@ -367,7 +367,7 @@ export const ProductPage = () => {
               <h2>Less chasing for updates. More useful conversations.</h2>
               <p>LeadWatch gives managers a consistent view of sales call activity while keeping the day-to-day experience practical for the rep.</p>
             </div>
-            <div className="lw-outcome-grid">
+            <MobileSlider className="lw-outcome-grid" count={outcomes.length} label="What changes with LeadWatch">
               {outcomes.map((outcome, index) => (
                 <Reveal as="article" className="lw-outcome-card" delay={index * 70} key={outcome.title}>
                   <span className="lw-icon-tile"><outcome.icon size={21} /></span>
@@ -375,7 +375,7 @@ export const ProductPage = () => {
                   <p>{outcome.copy}</p>
                 </Reveal>
               ))}
-            </div>
+            </MobileSlider>
           </div>
         </Reveal>
 
@@ -408,7 +408,7 @@ export const ProductPage = () => {
               <h2>Useful for managers. Lightweight for representatives.</h2>
               <p>The product works when it creates clarity for leadership without turning every sales member into a data-entry operator.</p>
             </div>
-            <div className="lw-role-grid">
+            <MobileSlider className="lw-role-grid" count={2} label="Role benefits">
               <Reveal as="article" className="lw-role-card lw-role-manager">
                 <div className="lw-role-card-heading"><span className="lw-icon-tile"><BriefcaseBusiness size={22} /></span><div><small>For owners and managers</small><h3>Coach with a clearer view</h3></div></div>
                 <p>Bring call activity into the same place you manage people, follow-up, and performance conversations.</p>
@@ -419,7 +419,7 @@ export const ProductPage = () => {
                 <p>Use the Android companion to keep eligible activity connected to the organization account with less repetitive admin.</p>
                 <ul>{representativeBenefits.map((benefit) => <li key={benefit}><CheckCircle2 size={17} /> {benefit}</li>)}</ul>
               </Reveal>
-            </div>
+            </MobileSlider>
           </div>
         </Reveal>
 
@@ -430,7 +430,7 @@ export const ProductPage = () => {
               <h2>Clear about what the product uses—and what it does not.</h2>
               <p>Teams should understand the data path before they adopt a call-visibility tool. LeadWatch keeps the product experience centered on permitted metadata and authenticated, role-aware access.</p>
             </div>
-            <div className="lw-security-grid">
+            <MobileSlider className="lw-security-grid" count={securityPoints.length} label="Security features">
               {securityPoints.map((point, index) => (
                 <Reveal as="article" className="lw-security-card" delay={index * 70} key={point.title}>
                   <point.icon size={21} />
@@ -438,7 +438,7 @@ export const ProductPage = () => {
                   <p>{point.copy}</p>
                 </Reveal>
               ))}
-            </div>
+            </MobileSlider>
           </div>
         </Reveal>
 
@@ -451,7 +451,7 @@ export const ProductPage = () => {
               </div>
               <Link className="lw-button lw-button-light" to="/docs/integrations">Explore API docs <ArrowRight size={17} /></Link>
             </div>
-            <div className="lw-integration-grid">
+            <MobileSlider className="lw-integration-grid" count={integrations.length} label="Integration options">
               {integrations.map((item, index) => (
                 <Reveal as="article" className="lw-integration-card" delay={index * 75} key={item.title}>
                   <span className="lw-icon-tile"><item.icon size={21} /></span>
@@ -459,7 +459,7 @@ export const ProductPage = () => {
                   <p>{item.copy}</p>
                 </Reveal>
               ))}
-            </div>
+            </MobileSlider>
             <p className="lw-integration-note"><Cloud size={15} /> Integration access and limits depend on the organization plan.</p>
           </div>
         </Reveal>
@@ -477,7 +477,7 @@ export const ProductPage = () => {
                 <p><strong>Paid checkout is temporarily unavailable.</strong> You can still create a Lite account today and return when paid plans reopen.</p>
               </div>
             )}
-            <div className="lw-plan-grid">
+            <MobileSlider className="lw-plan-grid" count={billingCatalog.plans.length} label="Pricing plans">
               {billingCatalog.plans.map((plan, index) => {
                 const details = publicPlanDetails[plan.code];
                 const price = plan.currentPrice;
@@ -522,7 +522,7 @@ export const ProductPage = () => {
                   </Reveal>
                 );
               })}
-            </div>
+            </MobileSlider>
           </div>
         </Reveal>
 
