@@ -33,6 +33,70 @@ export interface CallRecord {
   startTime: string;
   endTime: string | null;
   durationSeconds: number;
+  notes?: string;
+  tags?: string[];
+  followUpAt?: string | null;
+  followUpStatus?: 'none' | 'open' | 'completed';
+  nextAction?: string;
+  notesUpdatedAt?: string | null;
+}
+
+export interface OnboardingItem {
+  id: string;
+  label: string;
+  status: 'done' | 'pending';
+  source: 'system' | 'manual';
+}
+
+export interface OnboardingState {
+  role: UserRole;
+  dismissedAt: string | null;
+  completedItems: Record<string, boolean>;
+  items: OnboardingItem[];
+  completedCount: number;
+  totalCount: number;
+  complete: boolean;
+}
+
+export interface SyncHealthRecord {
+  id: string;
+  userId: string;
+  name?: string;
+  email?: string;
+  trackingEnabled: boolean;
+  batteryOptimized: boolean;
+  pendingUploadCount: number;
+  hasPendingWork: boolean;
+  billingReadOnly: boolean;
+  billingReadOnlyMessage: string | null;
+  lastAttemptAt: string | null;
+  lastSuccessAt: string | null;
+  lastFailureAt: string | null;
+  lastFailureReason: string | null;
+  appVersion: string | null;
+  platform: 'android' | 'ios' | 'web';
+  manufacturer: string | null;
+  updatedAt: string | null;
+}
+
+export interface AppNotification {
+  id: string;
+  type: 'sync_health' | 'invite_reminder' | 'weekly_nudge' | 'account_issue';
+  severity: 'info' | 'warning' | 'critical';
+  title: string;
+  message: string;
+  actionUrl: string | null;
+  readAt: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface SavedCallFilter {
+  id: string;
+  name: string;
+  filters: Record<string, string | number | undefined>;
+  createdAt: string | null;
+  updatedAt: string | null;
 }
 
 export interface DailyBreakdown {

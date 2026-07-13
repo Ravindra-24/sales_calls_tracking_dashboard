@@ -12,6 +12,7 @@ import { api, getApiErrorMessage } from '../api/client';
 import { fetchBillingCatalog, FALLBACK_BILLING_CATALOG } from '../api/billing';
 import { auth } from '../config/firebase';
 import { useAuth } from '../context/auth';
+import { GoogleOneTap } from '../components/auth/GoogleOneTap';
 import type { ApiResponse } from '../types/api';
 import type { BillingPlanCode } from '../types/billing';
 
@@ -214,6 +215,34 @@ export const Signup = () => {
     setMessage('');
   };
 
+  const continueWithGoogle = async () => {
+    setError('');
+    setMessage('');
+    const nextClaims = await refreshClaims();
+    if (nextClaims.role === 'org_admin' || nextClaims.role === 'manager') {
+      navigate('/dashboard/billing', { replace: true });
+      return;
+    }
+    if (nextClaims.role) {
+      navigate('/dashboard', { replace: true });
+      return;
+    }
+
+    const currentUser = auth.currentUser;
+    setAccount((current) => ({
+      ...current,
+      email: currentUser?.email || current.email,
+      name: currentUser?.displayName || current.name,
+    }));
+    setOrganization((current) => ({
+      ...current,
+      billingName: current.billingName || currentUser?.displayName || '',
+      billingEmail: current.billingEmail || currentUser?.email || '',
+    }));
+    setStep(currentUser?.emailVerified ? 'organization' : 'verify');
+    setMessage(currentUser?.emailVerified ? 'Google sign-in complete. Set up your organization.' : 'Google sign-in complete. Verify your email to continue.');
+  };
+
   return (
     <main className="onboarding-page">
       <Link className="onboarding-back" to="/"><ArrowLeft size={17} /> Back to LeadWatch</Link>
@@ -238,6 +267,13 @@ export const Signup = () => {
           {step === 'account' && (
             <form className="billing-form" onSubmit={createAccount}>
               <div className="billing-form-heading"><p className="eyebrow">Step 1 of 3</p><h2>Create your account</h2><p>Use the email that should own your organization.</p></div>
+              <GoogleOneTap
+                context="signup"
+                buttonText="signup_with"
+                onSuccess={continueWithGoogle}
+                onError={setError}
+              />
+              <div className="auth-divider"><span>or create with email</span></div>
               <label>Full name<input className="input-field" autoComplete="name" value={account.name} onChange={(event) => setAccount((current) => ({ ...current, name: event.target.value }))} required /></label>
               <label>Work email<input className="input-field" type="email" autoComplete="email" value={account.email} onChange={(event) => setAccount((current) => ({ ...current, email: event.target.value }))} required /></label>
               <label>Password<input className="input-field" type="password" autoComplete="new-password" minLength={6} value={account.password} onChange={(event) => setAccount((current) => ({ ...current, password: event.target.value }))} required /></label>

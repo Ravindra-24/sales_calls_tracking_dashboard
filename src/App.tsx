@@ -14,6 +14,7 @@ const Team = React.lazy(() => import('./pages/Team').then((module) => ({ default
 const Platform = React.lazy(() => import('./pages/Platform').then((module) => ({ default: module.Platform })));
 const ClaimAccount = React.lazy(() => import('./pages/ClaimAccount').then((module) => ({ default: module.ClaimAccount })));
 const Settings = React.lazy(() => import('./pages/Settings').then((module) => ({ default: module.Settings })));
+const Notifications = React.lazy(() => import('./pages/Notifications').then((module) => ({ default: module.Notifications })));
 const ProductPage = React.lazy(() => import('./pages/ProductPage').then((module) => ({ default: module.ProductPage })));
 const Integrations = React.lazy(() => import('./pages/Integrations').then((module) => ({ default: module.Integrations })));
 const IntegrationDocs = React.lazy(() => import('./pages/IntegrationDocs').then((module) => ({ default: module.IntegrationDocs })));
@@ -58,6 +59,7 @@ function App() {
                 <Route path="/team" element={<Navigate to="/dashboard/team" replace />} />
                 <Route path="/platform" element={<Navigate to="/dashboard/platform" replace />} />
                 <Route path="/settings" element={<Navigate to="/dashboard/settings" replace />} />
+                <Route path="/notifications" element={<Navigate to="/dashboard/notifications" replace />} />
                 <Route path="/integrations" element={<Navigate to="/dashboard/integrations" replace />} />
                 <Route path="/billing" element={<Navigate to="/dashboard/billing" replace />} />
 
@@ -73,6 +75,7 @@ function App() {
                   <Route path="calls" element={<CallHistory />} />
                   <Route path="team" element={<Team />} />
                   <Route path="platform" element={<Platform />} />
+                  <Route path="notifications" element={<Notifications />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="integrations" element={<Integrations />} />
                   <Route path="billing" element={<RoleRoute allowed={['org_admin', 'manager']}><Billing /></RoleRoute>} />

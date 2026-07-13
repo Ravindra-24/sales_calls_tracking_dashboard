@@ -5,6 +5,8 @@ import { eachDayOfInterval, format, parseISO, subDays } from 'date-fns';
 import { api, getApiErrorMessage } from '../api/client';
 import { useAuth } from '../context/auth';
 import type { ApiResponse, PlatformAnalytics, TeamMember, TeamStats } from '../types/api';
+import { OnboardingChecklist } from '../components/OnboardingChecklist';
+import { SyncHealthPanel } from '../components/SyncHealthPanel';
 
 const today = format(new Date(), 'yyyy-MM-dd');
 
@@ -165,6 +167,8 @@ export const Dashboard = () => {
 
       {error && <div className="notice error-notice">{error}</div>}
 
+      <OnboardingChecklist />
+
       <div className="stats-grid" aria-busy={loading}>
         <StatCard title="Total calls" value={loading ? '—' : totals?.totalCalls ?? 0} icon={<PhoneCall />} tone="blue" />
         <StatCard title="Talk time" value={loading ? '—' : formatDuration(totals?.totalDurationSeconds ?? 0)} icon={<Clock />} tone="violet" />
@@ -176,6 +180,8 @@ export const Dashboard = () => {
         />
         <StatCard title="Missed calls" value={loading ? '—' : totals?.missedCount ?? 0} icon={<PhoneMissed />} tone="orange" />
       </div>
+
+      <SyncHealthPanel />
 
       <div className="dashboard-grid">
         <section className="section-card chart-card">

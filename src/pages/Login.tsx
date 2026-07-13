@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { FirebaseError } from 'firebase/app';
-import { sendPasswordResetEmail, signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../config/firebase';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/auth';
+import { api, getApiErrorMessage } from '../api/client';
+import { GoogleOneTap } from '../components/auth/GoogleOneTap';
 
 const appIcon = '/favicon.svg';
 
@@ -19,6 +21,17 @@ export const Login: React.FC = () => {
   const { refreshClaims } = useAuth();
   const accessDenied = Boolean((location.state as { accessDenied?: boolean } | null)?.accessDenied);
 
+  const routeAfterAuth = useCallback(async () => {
+    const claims = await refreshClaims();
+    if (!claims.role) {
+      const selectedPlan = new URLSearchParams(location.search).get('plan') || localStorage.getItem('leadwatch.selectedBillingPlan') || 'lite';
+      navigate(`/signup?plan=${selectedPlan}`, { replace: true });
+      return;
+    }
+    const selectedPlan = new URLSearchParams(location.search).get('plan');
+    navigate(selectedPlan && selectedPlan !== 'lite' && (claims.role === 'org_admin' || claims.role === 'manager') ? '/dashboard/billing' : '/dashboard');
+  }, [location.search, navigate, refreshClaims]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -26,14 +39,7 @@ export const Login: React.FC = () => {
 
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
-      const claims = await refreshClaims();
-      if (!claims.role) {
-        const selectedPlan = new URLSearchParams(location.search).get('plan') || localStorage.getItem('leadwatch.selectedBillingPlan') || 'lite';
-        navigate(`/signup?plan=${selectedPlan}`, { replace: true });
-        return;
-      }
-      const selectedPlan = new URLSearchParams(location.search).get('plan');
-      navigate(selectedPlan && selectedPlan !== 'lite' && (claims.role === 'org_admin' || claims.role === 'manager') ? '/dashboard/billing' : '/dashboard');
+      await routeAfterAuth();
     } catch (error) {
       if (error instanceof FirebaseError && error.code.includes('api-key')) {
         setError('Dashboard Firebase configuration is invalid. Set the VITE_FIREBASE_* variables in Vercel and redeploy.');
@@ -53,10 +59,10 @@ export const Login: React.FC = () => {
     setError('');
     setResetSent(false);
     try {
-      await sendPasswordResetEmail(auth, email.trim());
+      await api.post('/auth/password/reset', { email: email.trim() });
       setResetSent(true);
-    } catch {
-      setResetSent(true);
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, 'Failed to request a reset link.'));
     }
   };
 
@@ -83,6 +89,15 @@ export const Login: React.FC = () => {
             If an account exists for this email, a reset link has been sent.
           </div>
         )}
+
+        <GoogleOneTap
+          context="signin"
+          buttonText="continue_with"
+          onSuccess={routeAfterAuth}
+          onError={setError}
+        />
+
+        <div className="auth-divider"><span>or use email</span></div>
 
         <form className="auth-form" onSubmit={handleLogin}>
           <div>

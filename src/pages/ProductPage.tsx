@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   BarChart3,
@@ -28,6 +28,7 @@ import {
   fetchBillingCatalog,
   formatBillingMoney,
 } from '../api/billing';
+import { GoogleOneTap } from '../components/auth/GoogleOneTap';
 import { PublicFooter, PublicHeader, Reveal, usePublicMetadata } from '../components/public';
 import { useAuth } from '../context/auth';
 import type { BillingCatalogPlan, BillingPlanCode } from '../types/billing';
@@ -206,9 +207,11 @@ const usePublicScrollSpy = () => {
 };
 
 export const ProductPage = () => {
-  const { user, claims } = useAuth();
+  const navigate = useNavigate();
+  const { user, claims, refreshClaims } = useAuth();
   const [billingCatalog, setBillingCatalog] = useState(FALLBACK_BILLING_CATALOG);
   const [screenshotFailed, setScreenshotFailed] = useState(false);
+  const [googleError, setGoogleError] = useState('');
   const activeSection = usePublicScrollSpy();
   const apkDownloadUrl = import.meta.env.VITE_APK_DOWNLOAD_URL?.trim() ?? '';
   const apkScreenshotUrl = import.meta.env.VITE_APK_SCREENSHOT_URL?.trim() ?? '';
@@ -261,6 +264,17 @@ export const ProductPage = () => {
     window.history.replaceState(null, '', '/#product-tour');
   };
 
+  const routeAfterGoogleAuth = useCallback(async () => {
+    setGoogleError('');
+    const nextClaims = await refreshClaims();
+    if (!nextClaims.role) {
+      const selectedPlan = localStorage.getItem('leadwatch.selectedBillingPlan') || 'lite';
+      navigate(`/signup?plan=${selectedPlan}`, { replace: true });
+      return;
+    }
+    navigate('/dashboard', { replace: true });
+  }, [navigate, refreshClaims]);
+
   return (
     <div className="lw-public lw-home">
       <PublicHeader activeSection={activeSection} />
@@ -283,6 +297,17 @@ export const ProductPage = () => {
                   See the product tour
                 </a>
               </div>
+              {!user && (
+                <div className="lw-hero-google-auth">
+                  <GoogleOneTap
+                    context="signin"
+                    buttonText="continue_with"
+                    onSuccess={routeAfterGoogleAuth}
+                    onError={setGoogleError}
+                  />
+                  {googleError && <div className="lw-hero-google-error" role="alert">{googleError}</div>}
+                </div>
+              )}
               <div className="lw-hero-assurances" aria-label="LeadWatch product assurances">
                 <span><CheckCircle2 size={15} /> Call metadata—not recordings</span>
                 <span><CheckCircle2 size={15} /> Role-aware access</span>

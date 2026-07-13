@@ -344,6 +344,25 @@
   margin-top: 32px;
 }
 
+.lw-hero-google-auth {
+  width: min(360px, 100%);
+  margin-top: 16px;
+}
+
+.lw-hero-google-auth .google-auth-button,
+.lw-hero-google-auth .google-auth-fallback {
+  justify-items: start;
+  margin-bottom: 0;
+}
+
+.lw-hero-google-error {
+  margin-top: 10px;
+  color: #fecaca;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
 .lw-hero-assurances {
   display: flex;
   flex-wrap: wrap;

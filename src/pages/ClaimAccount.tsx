@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
-import { signInWithCustomToken } from 'firebase/auth';
+import { signInWithCustomToken, signOut } from 'firebase/auth';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertCircle, Check, Lock, Phone, User } from 'lucide-react';
 import { api, getApiErrorMessage } from '../api/client';
 import { auth } from '../config/firebase';
 import { useAuth } from '../context/auth';
 import type { ApiResponse } from '../types/api';
+import { GoogleOneTap } from '../components/auth/GoogleOneTap';
 
 interface ClaimResult {
   customToken: string;
@@ -46,6 +47,32 @@ export const ClaimAccount = () => {
     }
   };
 
+  const claimWithGoogle = async () => {
+    if (!inviteToken) {
+      setError('This claim link is missing an invite token.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const currentUser = auth.currentUser;
+      const displayName = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'LeadWatch user';
+      await api.post('/auth/invite/accept', {
+        token: inviteToken,
+        name: displayName,
+        phoneNumber: phoneNumber.trim() || undefined,
+      });
+      await currentUser?.getIdToken(true);
+      await refreshClaims();
+      navigate('/dashboard');
+    } catch (requestError) {
+      await signOut(auth).catch(() => undefined);
+      setError(getApiErrorMessage(requestError, 'Failed to claim this invite with Google.'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="claim-page">
       <div className="glass-panel claim-card animate-fade-in">
@@ -62,6 +89,18 @@ export const ClaimAccount = () => {
         )}
 
         {error && <div className="notice error-notice">{error}</div>}
+
+        <div className="claim-google-section">
+          <GoogleOneTap
+            context="signup"
+            buttonText="continue_with"
+            disabled={!inviteToken || loading}
+            onSuccess={claimWithGoogle}
+            onError={setError}
+          />
+        </div>
+
+        <div className="auth-divider"><span>or set a password</span></div>
 
         <form className="claim-form" onSubmit={submitClaim}>
           <label>Your name<div className="input-with-icon"><User size={17} /><input className="input-field" value={name} onChange={(event) => setName(event.target.value)} required /></div></label>
