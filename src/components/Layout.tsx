@@ -4,6 +4,8 @@ import { Activity, BadgePercent, Bell, Building2, CreditCard, LayoutDashboard, P
 import { auth } from '../config/firebase';
 import { useAuth } from '../context/auth';
 
+const appIcon = '/favicon.svg';
+
 export const Layout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -95,7 +97,7 @@ export const Layout: React.FC = () => {
     <div className="app-shell">
       <header className="mobile-header glass-panel">
         <NavLink to="/dashboard" className="mobile-brand" aria-label="Smartly Manage dashboard">
-          <span className="brand-mark"><PhoneCall color="white" size={18} /></span>
+          <span className="brand-mark"><img src={appIcon} alt="" /></span>
           <strong>Smartly Manage</strong>
         </NavLink>
         <button
@@ -123,7 +125,7 @@ export const Layout: React.FC = () => {
         <div className="brand">
           <div className="brand-lockup">
             <div className="brand-mark">
-              <PhoneCall color="white" size={18} />
+              <img src={appIcon} alt="" />
             </div>
             <h2>Smartly Manage</h2>
           </div>

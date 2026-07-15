@@ -1075,7 +1075,7 @@ export const Billing = () => {
                 ) : plan.code === 'lite' ? (
                   <button className="secondary-button" type="button" onClick={() => void cancelSubscription()} disabled={!subscription || Boolean(workingAction)}>{workingAction === 'cancel' ? 'Scheduling…' : 'Cancel to Lite at cycle end'}</button>
                 ) : isEnterprise ? (
-                  <a className="secondary-button billing-action-link" href="mailto:sales@leadwatch.app?subject=Smartly%20Manage%20Enterprise">Contact sales <ArrowUpRight size={15} /></a>
+                  <a className="secondary-button billing-action-link" href="mailto:info@smartlymanage.com?subject=Smartly%20Manage%20Enterprise">Contact sales <ArrowUpRight size={15} /></a>
                 ) : activePlan === 'lite' || !subscription ? (
                   <button className="btn-primary" type="button" onClick={() => void purchasePlan(plan)} disabled={actionDisabled}>{workingAction === plan.code ? 'Opening checkout…' : resumesPendingCheckout ? `Resume ${plan.name}` : switchesPendingCheckout ? `Switch to ${plan.name}` : catalog.checkoutAvailable && price?.providerReady ? `Choose ${plan.name}` : 'Checkout unavailable'}</button>
                 ) : (

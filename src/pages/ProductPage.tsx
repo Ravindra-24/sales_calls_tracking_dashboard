@@ -245,7 +245,7 @@ export const ProductPage = () => {
   }, []);
 
   const planDestination = (plan: BillingCatalogPlan) => {
-    if (plan.code === 'enterprise') return 'mailto:sales@leadwatch.app?subject=Smartly%20Manage%20Enterprise';
+    if (plan.code === 'enterprise') return 'mailto:info@smartlymanage.com?subject=Smartly%20Manage%20Enterprise';
     if (claims.role === 'platform_owner') return '/dashboard/billing-catalog';
     if (claims.role === 'org_admin' || claims.role === 'manager') {
       return plan.code === 'pro' || plan.code === 'max'
