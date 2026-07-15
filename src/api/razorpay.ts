@@ -93,7 +93,7 @@ export const openRazorpaySubscriptionCheckout = async (options: {
     const checkout = new Razorpay({
       key: options.keyId,
       subscription_id: options.providerSubscriptionId,
-      name: 'LeadWatch',
+      name: 'Smartly Manage',
       description: `${options.planName} subscription`,
       image: '/favicon.svg',
       prefill: {

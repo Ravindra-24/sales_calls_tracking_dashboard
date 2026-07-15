@@ -228,7 +228,7 @@ export const BillingOperations = () => {
   const syncEntity = async (entityType: 'payment' | 'subscription' | 'refund', providerId: string, mode: 'test' | 'live' = 'test') => {
     const values = await requestFields({
       title: `Sync ${entityType} with Razorpay?`,
-      message: `LeadWatch will fetch ${providerId} in ${mode} mode and reconcile its local projection. The action and reason are audited.`,
+      message: `Smartly Manage will fetch ${providerId} in ${mode} mode and reconcile its local projection. The action and reason are audited.`,
       confirmLabel: 'Run provider sync',
       variant: 'warning',
       fields: [

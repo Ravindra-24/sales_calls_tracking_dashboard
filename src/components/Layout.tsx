@@ -94,9 +94,9 @@ export const Layout: React.FC = () => {
   return (
     <div className="app-shell">
       <header className="mobile-header glass-panel">
-        <NavLink to="/dashboard" className="mobile-brand" aria-label="LeadWatch dashboard">
+        <NavLink to="/dashboard" className="mobile-brand" aria-label="Smartly Manage dashboard">
           <span className="brand-mark"><PhoneCall color="white" size={18} /></span>
-          <strong>LeadWatch</strong>
+          <strong>Smartly Manage</strong>
         </NavLink>
         <button
           ref={menuButtonRef}
@@ -125,7 +125,7 @@ export const Layout: React.FC = () => {
             <div className="brand-mark">
               <PhoneCall color="white" size={18} />
             </div>
-            <h2>LeadWatch</h2>
+            <h2>Smartly Manage</h2>
           </div>
           <button
             ref={closeButtonRef}

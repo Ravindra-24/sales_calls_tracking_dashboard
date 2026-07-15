@@ -56,7 +56,7 @@ export const ClaimAccount = () => {
     setError('');
     try {
       const currentUser = auth.currentUser;
-      const displayName = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'LeadWatch user';
+      const displayName = currentUser?.displayName || currentUser?.email?.split('@')[0] || 'Smartly Manage user';
       await api.post('/auth/invite/accept', {
         token: inviteToken,
         name: displayName,
@@ -79,7 +79,7 @@ export const ClaimAccount = () => {
         <div className="claim-header">
           <div className="success-icon"><Check size={18} /></div>
           <h1>Claim account</h1>
-          <p>Set up your dashboard login for LeadWatch.</p>
+          <p>Set up your dashboard login for Smartly Manage.</p>
         </div>
 
         {!inviteToken && (

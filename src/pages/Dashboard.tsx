@@ -116,7 +116,7 @@ export const Dashboard = () => {
           <div>
             <p className="eyebrow">Platform</p>
             <h1>Owner dashboard</h1>
-            <p>Monitor tenant growth and users across the LeadWatch service.</p>
+            <p>Monitor tenant growth and users across the Smartly Manage service.</p>
           </div>
         </div>
 

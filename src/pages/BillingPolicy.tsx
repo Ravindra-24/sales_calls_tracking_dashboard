@@ -13,22 +13,22 @@ const policyVersions: Record<PolicyKind, string> = {
 const content: Record<PolicyKind, { title: string; intro: string; sections: Array<{ title: string; body: string }> }> = {
   terms: {
     title: 'Terms of Service',
-    intro: 'These terms describe the account, organization, billing, and acceptable-use rules for LeadWatch.',
+    intro: 'These terms describe the account, organization, billing, and acceptable-use rules for Smartly Manage.',
     sections: [
       { title: 'Organization account', body: 'The organization administrator is responsible for authorized users, accurate billing details, and activity performed through the organization account.' },
-      { title: 'Service use', body: 'LeadWatch may be used only for lawful sales and call-tracking activity. Users must have every consent required to access, process, or synchronize call information.' },
+      { title: 'Service use', body: 'Smartly Manage may be used only for lawful sales and call-tracking activity. Users must have every consent required to access, process, or synchronize call information.' },
       { title: 'Plans and access', body: 'Lite has no recurring charge. Paid access is organization-wide and begins only after a captured Razorpay payment is verified. Failed renewals receive the grace and read-only treatment stated in the billing policy.' },
-      { title: 'Availability and records', body: 'LeadWatch keeps application billing records for support and reconciliation. Razorpay remains authoritative for payment movement. Service maintenance or third-party outages may temporarily affect availability.' },
+      { title: 'Availability and records', body: 'Smartly Manage keeps application billing records for support and reconciliation. Razorpay remains authoritative for payment movement. Service maintenance or third-party outages may temporarily affect availability.' },
     ],
   },
   refund: {
     title: 'Refund Policy',
-    intro: 'All paid LeadWatch plan purchases and renewals are final and non-refundable.',
+    intro: 'All paid Smartly Manage plan purchases and renewals are final and non-refundable.',
     sections: [
       { title: 'No refunds', body: 'Payments for initial purchases, renewals, plan changes, unused time, and partially used billing periods are not refundable.' },
       { title: 'Final payments', body: 'By completing checkout, the organization confirms that the selected plan, billing period, price, and applicable taxes have been reviewed and accepted.' },
       { title: 'Cancellation', body: 'Cancellation prevents future renewals and takes effect at the end of the current paid cycle. It does not create a refund or credit for the current cycle.' },
-      { title: 'Payment issues', body: 'Duplicate or unauthorized transactions should be reported to LeadWatch support for investigation. This policy does not limit rights that cannot legally be excluded.' },
+      { title: 'Payment issues', body: 'Duplicate or unauthorized transactions should be reported to Smartly Manage support for investigation. This policy does not limit rights that cannot legally be excluded.' },
     ],
   },
   cancellation: {
@@ -37,7 +37,7 @@ const content: Record<PolicyKind, { title: string; intro: string; sections: Arra
     sections: [
       { title: 'Cycle-end effect', body: 'Paid-to-Lite cancellation is scheduled for the end of the current paid cycle. Paid access continues through the recorded current-period end.' },
       { title: 'No refund', body: 'Payments are final. Scheduling cancellation does not create a refund or credit for the current cycle.' },
-      { title: 'Restarting', body: 'A scheduled Razorpay cancellation is treated as irreversible in LeadWatch. Restarting paid service requires a new subscription and authorization.' },
+      { title: 'Restarting', body: 'A scheduled Razorpay cancellation is treated as irreversible in Smartly Manage. Restarting paid service requires a new subscription and authorization.' },
       { title: 'Data', body: 'Changing to Lite does not delete organization data. Features remain subject to the limits of the effective plan.' },
     ],
   },
@@ -48,7 +48,7 @@ export const BillingPolicy = ({ kind }: { kind: PolicyKind }) => {
   const policyPath = kind === 'terms' ? '/terms' : kind === 'refund' ? '/refund-policy' : '/cancellation-policy';
 
   usePublicMetadata({
-    title: `${policy.title} | LeadWatch`,
+    title: `${policy.title} | Smartly Manage`,
     description: policy.intro,
     path: policyPath,
   });
@@ -60,7 +60,7 @@ export const BillingPolicy = ({ kind }: { kind: PolicyKind }) => {
         <div className="lw-policy-shell">
           <Reveal as="section" className="lw-policy-hero">
             <span className="lw-policy-icon"><ShieldCheck size={22} /></span>
-            <p className="lw-eyebrow">LeadWatch policy · version {policyVersions[kind]}</p>
+            <p className="lw-eyebrow">Smartly Manage policy · version {policyVersions[kind]}</p>
             <h1>{policy.title}</h1>
             <p>{policy.intro}</p>
           </Reveal>
@@ -80,7 +80,7 @@ export const BillingPolicy = ({ kind }: { kind: PolicyKind }) => {
             ))}
           </section>
 
-          <p className="lw-policy-contact">Questions about these policies can be sent to <a href="mailto:support@leadwatch.app">support@leadwatch.app</a>.</p>
+          <p className="lw-policy-contact">Questions about these policies can be sent to <a href="mailto:info@smartlymanage.com">info@smartlymanage.com</a>.</p>
         </div>
       </main>
       <PublicFooter />

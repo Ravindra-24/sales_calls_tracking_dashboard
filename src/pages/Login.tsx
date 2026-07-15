@@ -81,10 +81,10 @@ export const Login: React.FC = () => {
         <div className="split-auth-form-container">
           <div className="auth-header">
             <div className="auth-logo">
-              <img src={appIcon} alt="LeadWatch Logo" />
+              <img src={appIcon} alt="Smartly Manage Logo" />
             </div>
             <h2>Welcome back</h2>
-            <p>Sign in to your LeadWatch dashboard</p>
+            <p>Sign in to your Smartly Manage dashboard</p>
           </div>
 
           {(error || accessDenied) && (

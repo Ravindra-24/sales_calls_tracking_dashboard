@@ -49,7 +49,7 @@ export const PublicFooter = () => {
             <span>Smartly Manage</span>
           </Link>
           <p>Clear sales call visibility for the people who coach, manage, and grow the team.</p>
-          <a href="mailto:support@leadwatch.app">support@leadwatch.app</a>
+          <a href="mailto:info@smartlymanage.com">info@smartlymanage.com</a>
         </div>
 
         <nav className="lw-footer-links" aria-label="Product links">

@@ -36,7 +36,7 @@ const navigation = [
 ];
 
 const curlExample = `curl "${apiBaseUrl}/calls?limit=50" \\
-  -H "Authorization: Bearer $LEADWATCH_API_KEY"`;
+  -H "Authorization: Bearer $SMARTLYMANAGE_API_KEY"`;
 
 const organizationResponse = `{
   "success": true,
@@ -158,9 +158,9 @@ const webhookPayload = `{
 
 const verificationExample = `import crypto from "node:crypto";
 
-export function verifyLeadWatchWebhook(rawBody, headers, secret) {
-  const timestamp = headers["leadwatch-timestamp"];
-  const received = headers["leadwatch-signature"];
+export function verifySmartlyManageWebhook(rawBody, headers, secret) {
+  const timestamp = headers["smartlymanage-timestamp"];
+  const received = headers["smartlymanage-signature"];
 
   const ageInSeconds = Math.abs(Date.now() / 1000 - Number(timestamp));
   if (!timestamp || !received || ageInSeconds > 300) return false;
@@ -233,8 +233,8 @@ export const IntegrationDocs = () => {
   const [activeSection, setActiveSection] = useState('overview');
 
   usePublicMetadata({
-    title: 'LeadWatch API Documentation',
-    description: 'Integrate LeadWatch call data, team statistics, and signed webhooks into your organization platform.',
+    title: 'Smartly Manage API Documentation',
+    description: 'Integrate Smartly Manage call data, team statistics, and signed webhooks into your organization platform.',
     path: '/docs/integrations',
   });
 
@@ -305,7 +305,7 @@ export const IntegrationDocs = () => {
           </select>
         </label>
         <aside className="docs-sidebar" aria-label="Documentation sections">
-          <p>LeadWatch API</p>
+          <p>Smartly Manage API</p>
           <nav>
             {navigation.map((item) => {
               const sectionId = item.href.slice(1);
@@ -327,7 +327,7 @@ export const IntegrationDocs = () => {
         <article className="docs-content">
           <section className="docs-intro" id="overview">
             <div className="docs-version"><span /> API v1</div>
-            <h1>Connect LeadWatch to your organization platform</h1>
+            <h1>Connect Smartly Manage to your organization platform</h1>
             <p>
               Read call activity, team members, and performance statistics from your own backend.
               Receive signed webhook events when calls and daily totals change.
@@ -381,7 +381,7 @@ export const IntegrationDocs = () => {
             <p>Every request must include the API key as a bearer token.</p>
             <CodeBlock code={'Authorization: Bearer lwk_live_<key-id>_<secret>'} language="http" />
             <div className="docs-fact-grid">
-              <div><KeyRound size={19} /><strong>Shown once</strong><p>Copy the key when it is created. LeadWatch cannot display it again.</p></div>
+              <div><KeyRound size={19} /><strong>Shown once</strong><p>Copy the key when it is created. Smartly Manage cannot display it again.</p></div>
               <div><ShieldCheck size={19} /><strong>Organization scoped</strong><p>Do not send an organization ID. It is securely resolved from the key.</p></div>
               <div><LockKeyhole size={19} /><strong>Permission scoped</strong><p>Each endpoint requires a matching read scope.</p></div>
             </div>
@@ -470,10 +470,10 @@ export const IntegrationDocs = () => {
               <table className="docs-table parameters">
                 <thead><tr><th>Header</th><th>Purpose</th></tr></thead>
                 <tbody>
-                  <tr><td><code>LeadWatch-Event-Id</code></td><td>Stable identifier used to deduplicate retries.</td></tr>
-                  <tr><td><code>LeadWatch-Event-Type</code></td><td>The event type sent in this request.</td></tr>
-                  <tr><td><code>LeadWatch-Timestamp</code></td><td>Unix timestamp used in signature verification.</td></tr>
-                  <tr><td><code>LeadWatch-Signature</code></td><td>HMAC SHA-256 signature in <code>sha256=...</code> format.</td></tr>
+                  <tr><td><code>SmartlyManage-Event-Id</code></td><td>Stable identifier used to deduplicate retries.</td></tr>
+                  <tr><td><code>SmartlyManage-Event-Type</code></td><td>The event type sent in this request.</td></tr>
+                  <tr><td><code>SmartlyManage-Timestamp</code></td><td>Unix timestamp used in signature verification.</td></tr>
+                  <tr><td><code>SmartlyManage-Signature</code></td><td>HMAC SHA-256 signature in <code>sha256=...</code> format.</td></tr>
                 </tbody>
               </table>
             </div>
@@ -528,11 +528,11 @@ export const IntegrationDocs = () => {
               <p><CheckCircle2 size={18} /> Give each system its own API key and only the scopes it needs.</p>
               <p><CheckCircle2 size={18} /> Use cursor pagination for call history imports.</p>
               <p><CheckCircle2 size={18} /> Verify webhook signatures against the raw request body.</p>
-              <p><CheckCircle2 size={18} /> Deduplicate webhook retries using <code>LeadWatch-Event-Id</code>.</p>
+              <p><CheckCircle2 size={18} /> Deduplicate webhook retries using <code>SmartlyManage-Event-Id</code>.</p>
               <p><CheckCircle2 size={18} /> Monitor 401, 403, and 429 responses in your integration logs.</p>
             </div>
             <Link className="docs-dashboard-link" to={user ? '/dashboard' : '/login'}>
-              {user ? 'Return to LeadWatch dashboard' : 'Open LeadWatch dashboard'} <ArrowRight size={17} />
+              {user ? 'Return to Smartly Manage dashboard' : 'Open Smartly Manage dashboard'} <ArrowRight size={17} />
             </Link>
           </section>
         </article>

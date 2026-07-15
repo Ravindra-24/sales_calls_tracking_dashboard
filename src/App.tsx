@@ -43,7 +43,7 @@ function App() {
       <AuthProvider>
         <FeedbackProvider>
           <BrowserRouter>
-            <React.Suspense fallback={<div className="app-loader">Loading LeadWatch…</div>}>
+            <React.Suspense fallback={<div className="app-loader">Loading Smartly Manage…</div>}>
               <Routes>
                 <Route path="/" element={<ProductPage />} />
                 <Route path="/home" element={<Navigate to="/" replace />} />

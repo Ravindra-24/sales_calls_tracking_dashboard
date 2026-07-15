@@ -95,30 +95,30 @@ const securityPoints = [
   {
     icon: PhoneCall,
     title: 'Metadata, not recordings',
-    copy: 'LeadWatch syncs call-log details such as time, direction, duration, and status. It does not record call audio.',
+    copy: 'Smartly Manage syncs call-log details such as time, direction, duration, and status. It does not record call audio.',
   },
   {
     icon: LockKeyhole,
     title: 'Authenticated access',
-    copy: 'The dashboard and Android app require a signed-in LeadWatch account before organization activity is available.',
+    copy: 'The dashboard and Android app require a signed-in Smartly Manage account before organization activity is available.',
   },
   {
     icon: KeyRound,
     title: 'Role-aware controls',
-    copy: 'Organization administration and team views follow the permissions assigned to each LeadWatch role.',
+    copy: 'Organization administration and team views follow the permissions assigned to each Smartly Manage role.',
   },
 ];
 
 const integrations = [
   {
     icon: Code2,
-    title: 'LeadWatch API',
+    title: 'Smartly Manage API',
     copy: 'Read organization, team, call, and performance data from your own trusted backend.',
   },
   {
     icon: Webhook,
     title: 'Signed webhooks',
-    copy: 'Receive verifiable event notifications when eligible LeadWatch activity changes.',
+    copy: 'Receive verifiable event notifications when eligible Smartly Manage activity changes.',
   },
   {
     icon: Plug,
@@ -138,7 +138,7 @@ const publicPlanDetails: Record<BillingPlanCode, { accent: string; features: str
   },
   max: {
     accent: 'blue',
-    features: ['LeadWatch API access', 'Signed event webhooks', 'Higher integration limits', 'Annual organization billing'],
+    features: ['Smartly Manage API access', 'Signed event webhooks', 'Higher integration limits', 'Annual organization billing'],
   },
   enterprise: {
     accent: 'warm',
@@ -148,20 +148,20 @@ const publicPlanDetails: Record<BillingPlanCode, { accent: string; features: str
 
 const faqs = [
   {
-    question: 'Does LeadWatch record sales call audio?',
-    answer: 'No. LeadWatch syncs permitted call metadata from Android, including details such as call time, direction, duration, and status. It does not record the conversation.',
+    question: 'Does Smartly Manage record sales call audio?',
+    answer: 'No. Smartly Manage syncs permitted call metadata from Android, including details such as call time, direction, duration, and status. It does not record the conversation.',
   },
   {
-    question: 'Who is LeadWatch designed for?',
-    answer: 'LeadWatch is designed for sales organizations that want managers to understand team call activity while keeping the rep workflow simple.',
+    question: 'Who is Smartly Manage designed for?',
+    answer: 'Smartly Manage is designed for sales organizations that want managers to understand team call activity while keeping the rep workflow simple.',
   },
   {
     question: 'Do sales members need to enter every call manually?',
     answer: 'No. After the Android app is installed, the member signs in, and the required call-log permissions are granted, eligible metadata can sync from the device.',
   },
   {
-    question: 'Can LeadWatch connect with another business system?',
-    answer: 'Max and Enterprise plans include LeadWatch integration capabilities such as scoped API access and signed webhooks. The public API documentation explains the available endpoints and limits.',
+    question: 'Can Smartly Manage connect with another business system?',
+    answer: 'Max and Enterprise plans include Smartly Manage integration capabilities such as scoped API access and signed webhooks. The public API documentation explains the available endpoints and limits.',
   },
   {
     question: 'What happens when Android download is not available?',
@@ -219,8 +219,8 @@ export const ProductPage = () => {
   const screenshotReady = Boolean(apkScreenshotUrl) && !screenshotFailed;
 
   usePublicMetadata({
-    title: 'LeadWatch | Every sales call. One clear picture.',
-    description: 'Turn Android sales call metadata into a clear, role-aware view for managers and their teams with LeadWatch.',
+    title: 'Smartly Manage | Every sales call. One clear picture.',
+    description: 'Turn Android sales call metadata into a clear, role-aware view for managers and their teams with Smartly Manage.',
     path: '/',
   });
 
@@ -245,7 +245,7 @@ export const ProductPage = () => {
   }, []);
 
   const planDestination = (plan: BillingCatalogPlan) => {
-    if (plan.code === 'enterprise') return 'mailto:sales@leadwatch.app?subject=LeadWatch%20Enterprise';
+    if (plan.code === 'enterprise') return 'mailto:sales@leadwatch.app?subject=Smartly%20Manage%20Enterprise';
     if (claims.role === 'platform_owner') return '/dashboard/billing-catalog';
     if (claims.role === 'org_admin' || claims.role === 'manager') {
       return plan.code === 'pro' || plan.code === 'max'
@@ -287,7 +287,7 @@ export const ProductPage = () => {
               <p className="lw-eyebrow"><Sparkles size={15} /> Sales call visibility, without manual reporting</p>
               <h1 id="leadwatch-hero-title">Every sales call. One clear picture.</h1>
               <p className="lw-hero-lead">
-                LeadWatch brings Android call metadata, team activity, and manager context into one focused workspace—so your sales operation can act with clarity.
+                Smartly Manage brings Android call metadata, team activity, and manager context into one focused workspace—so your sales operation can act with clarity.
               </p>
               <div className="lw-hero-actions">
                 <Link className="lw-button lw-button-primary" to={user ? '/dashboard' : '/signup'}>
@@ -308,7 +308,7 @@ export const ProductPage = () => {
                   {googleError && <div className="lw-hero-google-error" role="alert">{googleError}</div>}
                 </div>
               )}
-              <div className="lw-hero-assurances" aria-label="LeadWatch product assurances">
+              <div className="lw-hero-assurances" aria-label="Smartly Manage product assurances">
                 <span><CheckCircle2 size={15} /> Call metadata—not recordings</span>
                 <span><CheckCircle2 size={15} /> Role-aware access</span>
                 <span><CheckCircle2 size={15} /> Android and web workflow</span>
@@ -349,7 +349,7 @@ export const ProductPage = () => {
                   </div>
                 </div>
               </div>
-              <div className="lw-preview-phone" aria-label="LeadWatch Android sync preview">
+              <div className="lw-preview-phone" aria-label="Smartly Manage Android sync preview">
                 <span className="lw-phone-speaker" />
                 <img src="/favicon.svg" alt="" />
                 <small>Android sync</small>
@@ -363,11 +363,11 @@ export const ProductPage = () => {
         <Reveal as="section" className="lw-section lw-outcomes-section" id="outcomes">
           <div className="lw-container">
             <div className="lw-section-heading">
-              <p className="lw-eyebrow">What changes with LeadWatch</p>
+              <p className="lw-eyebrow">What changes with Smartly Manage</p>
               <h2>Less chasing for updates. More useful conversations.</h2>
-              <p>LeadWatch gives managers a consistent view of sales call activity while keeping the day-to-day experience practical for the rep.</p>
+              <p>Smartly Manage gives managers a consistent view of sales call activity while keeping the day-to-day experience practical for the rep.</p>
             </div>
-            <MobileSlider className="lw-outcome-grid" count={outcomes.length} label="What changes with LeadWatch">
+            <MobileSlider className="lw-outcome-grid" count={outcomes.length} label="What changes with Smartly Manage">
               {outcomes.map((outcome, index) => (
                 <Reveal as="article" className="lw-outcome-card" delay={index * 70} key={outcome.title}>
                   <span className="lw-icon-tile"><outcome.icon size={21} /></span>
@@ -384,7 +384,7 @@ export const ProductPage = () => {
             <div className="lw-tour-copy">
               <p className="lw-eyebrow">A connected workflow</p>
               <h2>From the phone call to the manager view.</h2>
-              <p>No disconnected reporting chain. LeadWatch connects the team account, the Android companion, and the web dashboard in one understandable flow.</p>
+              <p>No disconnected reporting chain. Smartly Manage connects the team account, the Android companion, and the web dashboard in one understandable flow.</p>
               <Link className="lw-text-link" to={user ? '/dashboard' : '/signup'}>
                 {user ? 'Open your workspace' : 'Create your workspace'} <ArrowRight size={17} />
               </Link>
@@ -428,7 +428,7 @@ export const ProductPage = () => {
             <div className="lw-security-copy">
               <p className="lw-eyebrow">Privacy made understandable</p>
               <h2>Clear about what the product uses—and what it does not.</h2>
-              <p>Teams should understand the data path before they adopt a call-visibility tool. LeadWatch keeps the product experience centered on permitted metadata and authenticated, role-aware access.</p>
+              <p>Teams should understand the data path before they adopt a call-visibility tool. Smartly Manage keeps the product experience centered on permitted metadata and authenticated, role-aware access.</p>
             </div>
             <MobileSlider className="lw-security-grid" count={securityPoints.length} label="Security features">
               {securityPoints.map((point, index) => (
@@ -447,7 +447,7 @@ export const ProductPage = () => {
             <div className="lw-integrations-heading">
               <div>
                 <p className="lw-eyebrow">Build beyond the dashboard</p>
-                <h2>Connect LeadWatch to the systems around your sales workflow.</h2>
+                <h2>Connect Smartly Manage to the systems around your sales workflow.</h2>
               </div>
               <Link className="lw-button lw-button-light" to="/docs/integrations">Explore API docs <ArrowRight size={17} /></Link>
             </div>
@@ -534,18 +534,18 @@ export const ProductPage = () => {
                 {screenshotReady ? (
                   <img
                     src={apkScreenshotUrl}
-                    alt="LeadWatch Android call activity screen"
+                    alt="Smartly Manage Android call activity screen"
                     loading="lazy"
                     decoding="async"
                     onError={() => setScreenshotFailed(true)}
                   />
                 ) : (
-                  <div className="lw-device-fallback" role="img" aria-label="LeadWatch Android app preview">
-                    <div className="lw-device-fallback-brand"><img src="/favicon.svg" alt="" /><span>LeadWatch</span></div>
+                  <div className="lw-device-fallback" role="img" aria-label="Smartly Manage Android app preview">
+                    <div className="lw-device-fallback-brand"><img src="/favicon.svg" alt="" /><span>Smartly Manage</span></div>
                     <p>Call activity</p>
                     <div><PhoneCall size={18} /><span><strong>Android sync</strong><small>Call metadata ready</small></span></div>
                     <div><ShieldCheck size={18} /><span><strong>Signed-in access</strong><small>Connected to your team</small></span></div>
-                    <small className="lw-device-fallback-note">LeadWatch Android preview</small>
+                    <small className="lw-device-fallback-note">Smartly Manage Android preview</small>
                   </div>
                 )}
               </div>
@@ -553,13 +553,13 @@ export const ProductPage = () => {
             </div>
 
             <div className="lw-android-copy">
-              <p className="lw-eyebrow">LeadWatch for Android</p>
+              <p className="lw-eyebrow">Smartly Manage for Android</p>
               <h2>Connect the calls your sales team already makes.</h2>
-              <p>Install the Android companion, sign in to the assigned LeadWatch account, and allow the call-log access needed to sync eligible call metadata.</p>
+              <p>Install the Android companion, sign in to the assigned Smartly Manage account, and allow the call-log access needed to sync eligible call metadata.</p>
               <ol className="lw-install-steps">
-                <li><span>1</span><div><strong>Download the Android app</strong><p>Use the current LeadWatch APK when it is available.</p></div></li>
+                <li><span>1</span><div><strong>Download the Android app</strong><p>Use the current Smartly Manage APK when it is available.</p></div></li>
                 <li><span>2</span><div><strong>Grant call-log permissions</strong><p>Android will ask for the permissions required to read and sync call metadata.</p></div></li>
-                <li><span>3</span><div><strong>Sign in and start syncing</strong><p>Use the sales member’s LeadWatch account to connect activity to the right organization.</p></div></li>
+                <li><span>3</span><div><strong>Sign in and start syncing</strong><p>Use the sales member’s Smartly Manage account to connect activity to the right organization.</p></div></li>
               </ol>
               <div className="lw-android-actions">
                 {apkReady ? (
@@ -582,7 +582,7 @@ export const ProductPage = () => {
             <div className="lw-faq-heading">
               <p className="lw-eyebrow">Questions, answered</p>
               <h2>Understand the product before your team adopts it.</h2>
-              <p>Need a conversation specific to your organization? <a href="mailto:support@leadwatch.app">Talk to LeadWatch support.</a></p>
+              <p>Need a conversation specific to your organization? <a href="mailto:info@smartlymanage.com">Talk to Smartly Manage support.</a></p>
             </div>
             <div className="lw-faq-list">
               {faqs.map((faq) => (
@@ -599,7 +599,7 @@ export const ProductPage = () => {
           <div className="lw-container">
             <Reveal className="lw-final-cta-card">
               <p className="lw-eyebrow">Give your sales operation a clearer rhythm</p>
-              <h2 id="leadwatch-final-cta">Your team makes the calls. LeadWatch brings the picture together.</h2>
+              <h2 id="leadwatch-final-cta">Your team makes the calls. Smartly Manage brings the picture together.</h2>
               <p>Start with the role-aware dashboard today, then connect Android activity when your team is ready.</p>
               <div>
                 <Link className="lw-button lw-button-primary" to={user ? '/dashboard' : '/signup'}>

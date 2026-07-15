@@ -245,13 +245,13 @@ export const Signup = () => {
 
   return (
     <main className="onboarding-page">
-      <Link className="onboarding-back" to="/"><ArrowLeft size={17} /> Back to LeadWatch</Link>
+      <Link className="onboarding-back" to="/"><ArrowLeft size={17} /> Back to Smartly Manage</Link>
       <section className="onboarding-shell glass-panel animate-fade-in">
         <aside className="onboarding-summary">
           <div className="auth-logo"><img src="/favicon.svg" alt="" /></div>
           <p className="eyebrow">Selected plan</p>
           <h1>{selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1)}</h1>
-          <p>Your organization starts safely on Lite. Paid access activates only after a captured payment is confirmed by LeadWatch.</p>
+          <p>Your organization starts safely on Lite. Paid access activates only after a captured payment is confirmed by Smartly Manage.</p>
           <ol className="onboarding-progress">
             <li className={step === 'account' ? 'active' : ''}><UserPlus size={18} /> Create account</li>
             <li className={step === 'verify' ? 'active' : ''}><MailCheck size={18} /> Verify email</li>
@@ -306,7 +306,7 @@ export const Signup = () => {
               </div>
               <label className="billing-policy-check">
                 <input type="checkbox" checked={policiesAccepted} onChange={(event) => setPoliciesAccepted(event.target.checked)} />
-                <span>I accept the LeadWatch <Link to="/terms" target="_blank">Terms</Link> (v{policyVersions.terms}), no-refund <Link to="/refund-policy" target="_blank">Refund Policy</Link> (v{policyVersions.refund}), and cycle-end <Link to="/cancellation-policy" target="_blank">Cancellation Policy</Link> (v{policyVersions.cancellation}).</span>
+                <span>I accept the Smartly Manage <Link to="/terms" target="_blank">Terms</Link> (v{policyVersions.terms}), no-refund <Link to="/refund-policy" target="_blank">Refund Policy</Link> (v{policyVersions.refund}), and cycle-end <Link to="/cancellation-policy" target="_blank">Cancellation Policy</Link> (v{policyVersions.cancellation}).</span>
               </label>
               <button className="btn-primary" disabled={loading}>{loading ? 'Creating organization…' : <><CheckCircle2 size={17} /> Create organization</>}</button>
               <button className="billing-link-button" type="button" onClick={() => void handleUseAnotherAccount()}>Use another account</button>

@@ -558,7 +558,7 @@ export const Billing = () => {
           toast({
             variant: 'info',
             title: 'Activation check continues',
-            message: 'Razorpay has the payment, and LeadWatch is still confirming the subscription and full access.',
+            message: 'Razorpay has the payment, and Smartly Manage is still confirming the subscription and full access.',
             duration: 7_000,
           });
           return;
@@ -572,7 +572,7 @@ export const Billing = () => {
       toast({
         variant: 'info',
         title: 'Verification response delayed',
-        message: 'LeadWatch could not confirm the callback response yet. Your payment is not being marked failed; authoritative checks will continue for up to one minute.',
+        message: 'Smartly Manage could not confirm the callback response yet. Your payment is not being marked failed; authoritative checks will continue for up to one minute.',
         duration: 7_000,
       });
       persistActivationAttempt(activationAttempt);
@@ -691,7 +691,7 @@ export const Billing = () => {
         title: activePlan === 'max' && plan.code === 'pro' ? 'Schedule downgrade?' : `Change to ${plan.name}?`,
         description: activePlan === 'max' && plan.code === 'pro'
           ? 'The change is scheduled for the end of your current paid cycle. Your Max access continues until then.'
-          : `LeadWatch will ask Razorpay to ${changeLabel}. Paid access changes only after provider confirmation.`,
+          : `Smartly Manage will ask Razorpay to ${changeLabel}. Paid access changes only after provider confirmation.`,
         confirmLabel: activePlan === 'max' && plan.code === 'pro' ? 'Schedule downgrade' : `Change to ${plan.name}`,
         variant: activePlan === 'max' && plan.code === 'pro' ? 'warning' : 'default',
       })) return;
@@ -747,7 +747,7 @@ export const Billing = () => {
           variant: provisionalAttempt ? 'info' : 'error',
           title: provisionalAttempt ? 'Upgrade outcome is being checked' : 'Plan unchanged',
           message: provisionalAttempt
-            ? 'The server response was interrupted. LeadWatch will check for the exact upgrade operation before changing what you see.'
+            ? 'The server response was interrupted. Smartly Manage will check for the exact upgrade operation before changing what you see.'
             : getApiErrorMessage(requestError, 'Plan change could not be completed. Your current plan remains active.'),
         });
       }
@@ -881,7 +881,7 @@ export const Billing = () => {
           variant: ambiguous ? 'info' : 'error',
           title: ambiguous ? 'Recovery outcome is being checked' : 'Recovery not started',
           message: ambiguous
-            ? 'The response was interrupted. LeadWatch will check the exact recovery operation, and Retry will reuse the same operation ID.'
+            ? 'The response was interrupted. Smartly Manage will check the exact recovery operation, and Retry will reuse the same operation ID.'
             : getApiErrorMessage(requestError, 'Payment recovery could not be started.'),
         });
       }
@@ -978,8 +978,8 @@ export const Billing = () => {
             <p>{activationPhase === 'timed_out'
               ? 'This is not a payment failure. Razorpay confirmation can take longer than usual; refresh to check the authoritative status again.'
               : pendingActivation.action === 'recovery' && !pendingActivation.correlatedPaymentId
-                ? 'LeadWatch is checking the exact recovery operation before changing your plan or access status.'
-                : `LeadWatch is confirming the ${billingPlanName(pendingActivation.targetPlan)} subscription, captured payment, and full organization access.`}</p>
+                ? 'Smartly Manage is checking the exact recovery operation before changing your plan or access status.'
+                : `Smartly Manage is confirming the ${billingPlanName(pendingActivation.targetPlan)} subscription, captured payment, and full organization access.`}</p>
           </div>
           {activationPhase === 'timed_out' && (
             <button className="secondary-button" type="button" disabled={workingAction === 'recover'} onClick={() => {
@@ -1075,7 +1075,7 @@ export const Billing = () => {
                 ) : plan.code === 'lite' ? (
                   <button className="secondary-button" type="button" onClick={() => void cancelSubscription()} disabled={!subscription || Boolean(workingAction)}>{workingAction === 'cancel' ? 'Scheduling…' : 'Cancel to Lite at cycle end'}</button>
                 ) : isEnterprise ? (
-                  <a className="secondary-button billing-action-link" href="mailto:sales@leadwatch.app?subject=LeadWatch%20Enterprise">Contact sales <ArrowUpRight size={15} /></a>
+                  <a className="secondary-button billing-action-link" href="mailto:sales@leadwatch.app?subject=Smartly%20Manage%20Enterprise">Contact sales <ArrowUpRight size={15} /></a>
                 ) : activePlan === 'lite' || !subscription ? (
                   <button className="btn-primary" type="button" onClick={() => void purchasePlan(plan)} disabled={actionDisabled}>{workingAction === plan.code ? 'Opening checkout…' : resumesPendingCheckout ? `Resume ${plan.name}` : switchesPendingCheckout ? `Switch to ${plan.name}` : catalog.checkoutAvailable && price?.providerReady ? `Choose ${plan.name}` : 'Checkout unavailable'}</button>
                 ) : (
@@ -1136,7 +1136,7 @@ export const Billing = () => {
         </article>
 
         <article className="section-card table-card">
-          <div className="section-heading table-heading"><div><h2>Tax invoices & credit notes</h2><p>LeadWatch-issued documents, separate from payment confirmation.</p></div><FileText size={20} /></div>
+          <div className="section-heading table-heading"><div><h2>Tax invoices & credit notes</h2><p>Smartly Manage-issued documents, separate from payment confirmation.</p></div><FileText size={20} /></div>
           <div className="table-scroll"><table className="data-table billing-table"><thead><tr><th>Issued</th><th>Document</th><th>Period</th><th>Amount</th><th>Status</th><th>Download</th></tr></thead><tbody>
             {invoices.length === 0 ? <tr><td colSpan={6} className="table-message">No billing documents yet.</td></tr> : invoices.map((invoice) => (
               <tr key={invoice.id}>

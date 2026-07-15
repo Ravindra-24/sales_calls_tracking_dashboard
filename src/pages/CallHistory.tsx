@@ -162,7 +162,7 @@ export const CallHistory = () => {
       const url = URL.createObjectURL(response.data as Blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'leadwatch-calls.csv';
+      link.download = 'smartly-manage-calls.csv';
       link.click();
       URL.revokeObjectURL(url);
     } catch (requestError) {

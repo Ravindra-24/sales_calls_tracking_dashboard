@@ -205,8 +205,8 @@ export const BillingCelebration = ({
         <h2 id="billing-celebration-title">{celebrationTitle(celebration)}</h2>
         <p id="billing-celebration-description">
           {celebration.action === 'recovery' && celebration.previousAccessMode === 'full'
-            ? 'LeadWatch confirmed the current-period payment while your organization remained available during grace.'
-            : 'LeadWatch has confirmed your payment, subscription, and organization access.'}
+            ? 'Smartly Manage confirmed the current-period payment while your organization remained available during grace.'
+            : 'Smartly Manage has confirmed your payment, subscription, and organization access.'}
         </p>
 
         {celebration.renewalDate && (

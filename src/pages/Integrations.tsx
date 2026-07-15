@@ -427,7 +427,7 @@ export const Integrations = () => {
               </label>
               <label>
                 HTTPS endpoint URL
-                <input className="input-field" type="url" value={webhookForm.url} onChange={(event) => setWebhookForm((current) => ({ ...current, url: event.target.value }))} placeholder="https://crm.example.com/webhooks/leadwatch" required disabled={!planEnabled} />
+                <input className="input-field" type="url" value={webhookForm.url} onChange={(event) => setWebhookForm((current) => ({ ...current, url: event.target.value }))} placeholder="https://crm.example.com/webhooks/smartly-manage" required disabled={!planEnabled} />
               </label>
               <fieldset className="integration-option-group" disabled={!planEnabled}>
                 <legend>Events</legend>

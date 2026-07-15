@@ -166,7 +166,7 @@ export const Settings = () => {
               <div className="stat-icon violet"><User size={18} /></div>
               <div>
                 <h2>Profile Settings</h2>
-                <p>Personal details used across LeadWatch.</p>
+                <p>Personal details used across Smartly Manage.</p>
               </div>
             </div>
           </div>

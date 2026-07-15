@@ -69,7 +69,7 @@ describe('ProductPage', () => {
       element?.getAttribute('role') === 'status'
       && element.textContent?.includes('Android download coming soon') === true
     ))).toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'LeadWatch Android app preview' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Smartly Manage Android app preview' })).toBeInTheDocument();
     expect(screen.queryByText('248')).not.toBeInTheDocument();
     expect(screen.getAllByText(/does not record call audio/i).length).toBeGreaterThan(0);
     await waitFor(() => expect(mocks.fetchCatalog).toHaveBeenCalledOnce());
@@ -80,11 +80,11 @@ describe('ProductPage', () => {
     mocks.fetchCatalog.mockResolvedValue(catalog);
     renderPage();
 
-    const screenshot = screen.getByRole('img', { name: 'LeadWatch Android call activity screen' });
+    const screenshot = screen.getByRole('img', { name: 'Smartly Manage Android call activity screen' });
     expect(screenshot).toHaveAttribute('src', 'https://cdn.example.com/leadwatch-android.png');
     expect(screenshot).toHaveAttribute('loading', 'lazy');
     fireEvent.error(screenshot);
-    expect(screen.getByRole('img', { name: 'LeadWatch Android app preview' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Smartly Manage Android app preview' })).toBeInTheDocument();
   });
 
   it('keeps a safe Lite path when the live paid catalog is unavailable', async () => {
