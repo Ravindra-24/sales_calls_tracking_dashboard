@@ -105,9 +105,9 @@ export const PublicHeader = ({ activeSection = '', contextLabel }: PublicHeaderP
   return (
     <header className="lw-public-header">
       <div className="lw-header-inner">
-        <Link className="lw-public-brand" to="/" aria-label="LeadWatch home">
+        <Link className="lw-public-brand" to="/" aria-label="Smartly Manage home">
           <span className="lw-brand-mark"><img src="/favicon.svg" alt="" /></span>
-          <span>LeadWatch</span>
+          <span>Smartly Manage</span>
           {contextLabel && <small>{contextLabel}</small>}
         </Link>
 

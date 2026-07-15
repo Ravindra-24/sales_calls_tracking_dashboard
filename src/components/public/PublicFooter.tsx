@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/auth';
 
 const configuredSiteUrl = import.meta.env.VITE_PUBLIC_SITE_URL?.trim().replace(/\/$/, '') ?? '';
-const shareTitle = 'LeadWatch — Sales call visibility';
+const shareTitle = 'Smartly Manage — Sales call visibility';
 const shareDescription = 'Turn Android sales call metadata into a clear, role-aware view for managers and their teams.';
 
 export const PublicFooter = () => {
@@ -44,9 +44,9 @@ export const PublicFooter = () => {
     <footer className="lw-public-footer">
       <div className="lw-footer-main">
         <div className="lw-footer-intro">
-          <Link className="lw-public-brand" to="/" aria-label="LeadWatch home">
+          <Link className="lw-public-brand" to="/" aria-label="Smartly Manage home">
             <span className="lw-brand-mark"><img src="/favicon.svg" alt="" /></span>
-            <span>LeadWatch</span>
+            <span>Smartly Manage</span>
           </Link>
           <p>Clear sales call visibility for the people who coach, manage, and grow the team.</p>
           <a href="mailto:support@leadwatch.app">support@leadwatch.app</a>
@@ -69,17 +69,17 @@ export const PublicFooter = () => {
         </nav>
 
         <div className="lw-footer-share">
-          <strong>Share LeadWatch</strong>
+          <strong>Share Smartly Manage</strong>
           <p>Know a team that needs a clearer view of sales calls?</p>
           <div className="lw-share-actions">
-            <button type="button" onClick={shareLandingPage} aria-label="Share LeadWatch">
+            <button type="button" onClick={shareLandingPage} aria-label="Share Smartly Manage">
               <Share2 size={16} /> <span>Share</span>
             </button>
             <a
               href={`https://wa.me/?text=${encodedShareText}%20${encodedShareUrl}`}
               target="_blank"
               rel="noreferrer"
-              aria-label="Share LeadWatch on WhatsApp"
+              aria-label="Share Smartly Manage on WhatsApp"
             >
               <MessageCircle size={16} />
             </a>
@@ -87,11 +87,11 @@ export const PublicFooter = () => {
               href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodedShareUrl}`}
               target="_blank"
               rel="noreferrer"
-              aria-label="Share LeadWatch on LinkedIn"
+              aria-label="Share Smartly Manage on LinkedIn"
             >
               <Send size={16} />
             </a>
-            <button type="button" onClick={copyShareLink} aria-label="Copy LeadWatch link">
+            <button type="button" onClick={copyShareLink} aria-label="Copy Smartly Manage link">
               {shareStatus === 'Copied' ? <Check size={16} /> : <Copy size={16} />}
             </button>
           </div>
@@ -99,7 +99,7 @@ export const PublicFooter = () => {
         </div>
       </div>
       <div className="lw-footer-bottom">
-        <span>© {new Date().getFullYear()} LeadWatch</span>
+        <span>© {new Date().getFullYear()} Smartly Manage</span>
         <span>Built for focused sales operations.</span>
       </div>
     </footer>

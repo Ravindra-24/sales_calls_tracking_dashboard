@@ -1,6 +1,6 @@
 {
-  "name": "LeadWatch Sales Tracking",
-  "short_name": "LeadWatch",
+  "name": "Smartly Manage Sales Tracking",
+  "short_name": "Smartly Manage",
   "description": "Android call activity, role-aware sales visibility, and team dashboards without manual reporting.",
   "start_url": "/",
   "scope": "/",
