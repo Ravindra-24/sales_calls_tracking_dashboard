@@ -63,6 +63,7 @@ export const PublicFooter = () => {
 
         <nav className="lw-footer-links" aria-label="Legal links">
           <strong>Policies</strong>
+          <Link to="/privacy">Privacy Policy</Link>
           <Link to="/terms">Terms of Service</Link>
           <Link to="/refund-policy">Refund Policy</Link>
           <Link to="/cancellation-policy">Cancellation Policy</Link>

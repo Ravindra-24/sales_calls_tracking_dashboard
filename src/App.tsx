@@ -13,6 +13,7 @@ const CallHistory = React.lazy(() => import('./pages/CallHistory').then((module)
 const Team = React.lazy(() => import('./pages/Team').then((module) => ({ default: module.Team })));
 const Platform = React.lazy(() => import('./pages/Platform').then((module) => ({ default: module.Platform })));
 const ClaimAccount = React.lazy(() => import('./pages/ClaimAccount').then((module) => ({ default: module.ClaimAccount })));
+const ResetPassword = React.lazy(() => import('./pages/ResetPassword').then((module) => ({ default: module.ResetPassword })));
 const Settings = React.lazy(() => import('./pages/Settings').then((module) => ({ default: module.Settings })));
 const Notifications = React.lazy(() => import('./pages/Notifications').then((module) => ({ default: module.Notifications })));
 const ProductPage = React.lazy(() => import('./pages/ProductPage').then((module) => ({ default: module.ProductPage })));
@@ -23,6 +24,7 @@ const Billing = React.lazy(() => import('./pages/Billing').then((module) => ({ d
 const BillingOperations = React.lazy(() => import('./pages/BillingOperations').then((module) => ({ default: module.BillingOperations })));
 const BillingCatalog = React.lazy(() => import('./pages/BillingCatalog').then((module) => ({ default: module.BillingCatalog })));
 const BillingPolicy = React.lazy(() => import('./pages/BillingPolicy').then((module) => ({ default: module.BillingPolicy })));
+const PrivacyPolicy = React.lazy(() => import('./pages/PrivacyPolicy').then((module) => ({ default: module.PrivacyPolicy })));
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, claims } = useAuth();
@@ -51,7 +53,9 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/claim" element={<ClaimAccount />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/docs/integrations" element={<IntegrationDocs />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/terms" element={<BillingPolicy kind="terms" />} />
                 <Route path="/refund-policy" element={<BillingPolicy kind="refund" />} />
                 <Route path="/cancellation-policy" element={<BillingPolicy kind="cancellation" />} />
