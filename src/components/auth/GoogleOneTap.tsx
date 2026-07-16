@@ -3,6 +3,13 @@ import { FirebaseError } from 'firebase/app';
 import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import { auth } from '../../config/firebase';
 
+interface OneTapPromptMoment {
+  isNotDisplayed?: () => boolean;
+  isSkippedMoment?: () => boolean;
+  getNotDisplayedReason?: () => string;
+  getSkippedReason?: () => string;
+}
+
 declare global {
   interface Window {
     google?: {
@@ -14,8 +21,9 @@ declare global {
             context?: 'signin' | 'signup' | 'use';
             auto_select?: boolean;
             cancel_on_tap_outside?: boolean;
+            use_fedcm_for_prompt?: boolean;
           }) => void;
-          prompt: () => void;
+          prompt: (momentListener?: (moment: OneTapPromptMoment) => void) => void;
           renderButton: (
             parent: HTMLElement,
             options: {
@@ -101,6 +109,13 @@ export const GoogleOneTap = ({
 }: GoogleOneTapProps) => {
   const buttonRef = useRef<HTMLDivElement>(null);
   const [scriptReady, setScriptReady] = useState(false);
+  const onSuccessRef = useRef(onSuccess);
+  const onErrorRef = useRef(onError);
+
+  useEffect(() => {
+    onSuccessRef.current = onSuccess;
+    onErrorRef.current = onError;
+  }, [onSuccess, onError]);
 
   useEffect(() => {
     if (!googleClientId || disabled) return;
@@ -110,27 +125,26 @@ export const GoogleOneTap = ({
         if (active) setScriptReady(true);
       })
       .catch((error) => {
-        if (active) onError(googleAuthMessage(error));
+        if (active) onErrorRef.current(googleAuthMessage(error));
       });
     return () => {
       active = false;
-      window.google?.accounts?.id.cancel();
     };
-  }, [disabled, onError]);
+  }, [disabled]);
 
   useEffect(() => {
     if (!scriptReady || !googleClientId || !window.google?.accounts?.id || disabled) return;
 
     const handleCredential = async (response: { credential?: string }) => {
       if (!response.credential) {
-        onError('Google did not return a credential. Try the button again.');
+        onErrorRef.current('Google did not return a credential. Try the button again.');
         return;
       }
       try {
         await signInWithGoogleIdToken(response.credential);
-        await onSuccess();
+        await onSuccessRef.current();
       } catch (error) {
-        onError(googleAuthMessage(error));
+        onErrorRef.current(googleAuthMessage(error));
       }
     };
 
@@ -140,6 +154,7 @@ export const GoogleOneTap = ({
       context,
       auto_select: false,
       cancel_on_tap_outside: true,
+      use_fedcm_for_prompt: true,
     });
 
     if (buttonRef.current) {
@@ -154,8 +169,20 @@ export const GoogleOneTap = ({
       });
     }
 
-    if (prompt) window.google.accounts.id.prompt();
-  }, [buttonText, context, disabled, onError, onSuccess, prompt, scriptReady]);
+    if (prompt) {
+      window.google.accounts.id.prompt((moment) => {
+        if (moment.isNotDisplayed?.()) {
+          console.debug('[GoogleOneTap] prompt not displayed:', moment.getNotDisplayedReason?.());
+        } else if (moment.isSkippedMoment?.()) {
+          console.debug('[GoogleOneTap] prompt skipped:', moment.getSkippedReason?.());
+        }
+      });
+    }
+
+    return () => {
+      window.google?.accounts?.id.cancel();
+    };
+  }, [buttonText, context, disabled, prompt, scriptReady]);
 
   if (!isGoogleOneTapConfigured()) {
     return (

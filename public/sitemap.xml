@@ -1,31 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://saleconnect.vercel.app/</loc>
+    <loc>https://smartlymanage.com/</loc>
     <lastmod>2026-07-13</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://saleconnect.vercel.app/docs/integrations</loc>
+    <loc>https://smartlymanage.com/docs/integrations</loc>
     <lastmod>2026-07-13</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://saleconnect.vercel.app/terms</loc>
+    <loc>https://smartlymanage.com/terms</loc>
     <lastmod>2026-07-13</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://saleconnect.vercel.app/refund-policy</loc>
+    <loc>https://smartlymanage.com/refund-policy</loc>
     <lastmod>2026-07-13</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://saleconnect.vercel.app/cancellation-policy</loc>
+    <loc>https://smartlymanage.com/cancellation-policy</loc>
     <lastmod>2026-07-13</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.4</priority>

@@ -6,4 +6,4 @@ Disallow: /login
 Disallow: /signup
 Disallow: /claim
 
-Sitemap: https://saleconnect.vercel.app/sitemap.xml
+Sitemap: https://smartlymanage.com/sitemap.xml

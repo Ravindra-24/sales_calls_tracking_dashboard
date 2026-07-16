@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 import { auth } from '../config/firebase';
@@ -17,7 +17,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [claims, setClaims] = useState<AuthClaims>(emptyClaims);
   const [loading, setLoading] = useState(true);
 
-  const readClaims = async (currentUser: User, forceRefresh = false) => {
+  const readClaims = useCallback(async (currentUser: User, forceRefresh = false) => {
     const token = await currentUser.getIdTokenResult(forceRefresh);
     const nextClaims: AuthClaims = {
       orgId: typeof token.claims.orgId === 'string' ? token.claims.orgId : '',
@@ -25,15 +25,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     setClaims(nextClaims);
     return nextClaims;
-  };
+  }, []);
 
-  const refreshClaims = async () => {
+  const refreshClaims = useCallback(async () => {
     if (!auth.currentUser) {
       setClaims(emptyClaims);
       return emptyClaims;
     }
     return readClaims(auth.currentUser, true);
-  };
+  }, [readClaims]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -50,10 +50,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [readClaims]);
+
+  const value = useMemo(
+    () => ({ user, claims, loading, refreshClaims }),
+    [user, claims, loading, refreshClaims],
+  );
 
   return (
-    <AuthContext.Provider value={{ user, claims, loading, refreshClaims }}>
+    <AuthContext.Provider value={value}>
       {loading ? <div className="app-loader">Loading Smartly Manage…</div> : children}
     </AuthContext.Provider>
   );

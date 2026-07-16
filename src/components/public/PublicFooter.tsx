@@ -13,7 +13,7 @@ export const PublicFooter = () => {
   const shareUrl = useMemo(() => {
     if (configuredSiteUrl) return `${configuredSiteUrl}/`;
     if (typeof window !== 'undefined') return `${window.location.origin}/`;
-    return 'https://saleconnect.vercel.app/';
+    return 'https://smartlymanage.com/';
   }, []);
   const encodedShareUrl = encodeURIComponent(shareUrl);
   const encodedShareText = encodeURIComponent(`${shareTitle} — ${shareDescription}`);

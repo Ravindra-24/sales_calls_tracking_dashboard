@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { FirebaseError } from 'firebase/app';
 import {
   createUserWithEmailAndPassword,
-  sendEmailVerification,
   signOut,
   updateProfile,
 } from 'firebase/auth';
@@ -97,12 +96,26 @@ export const Signup = () => {
   }, [organization]);
 
   const sendVerification = async () => {
-    const currentUser = auth.currentUser;
-    if (!currentUser) return;
-    await sendEmailVerification(currentUser, {
-      url: `${window.location.origin}/signup?plan=${selectedPlan}`,
-      handleCodeInApp: false,
+    if (!auth.currentUser) return null;
+    const response = await api.post<ApiResponse<{
+      emailSent: boolean;
+      emailError?: string;
+      verifyLink?: string;
+      alreadyVerified?: boolean;
+    }>>('/auth/email/verification', {
+      continuePath: `/signup?plan=${selectedPlan}`,
     });
+    return response.data.data ?? null;
+  };
+
+  const verificationSentMessage = (
+    result: Awaited<ReturnType<typeof sendVerification>>,
+    sentText: string,
+  ) => {
+    if (result && !result.emailSent && result.verifyLink) {
+      return `Email delivery is unavailable right now. Open this link to verify: ${result.verifyLink}`;
+    }
+    return sentText;
   };
 
   const createAccount = async (event: React.FormEvent) => {
@@ -115,8 +128,8 @@ export const Signup = () => {
       setStep('verify');
       try {
         await updateProfile(credential.user, { displayName: account.name.trim() });
-        await sendVerification();
-        setMessage('Verification email sent. Open it, then return here to continue.');
+        const result = await sendVerification();
+        setMessage(verificationSentMessage(result, 'Verification email sent. Open it, then return here to continue.'));
       } catch {
         setError('Your account was created, but the verification email was not sent. Use “Resend verification” below.');
       }
@@ -147,11 +160,17 @@ export const Signup = () => {
   const resendVerification = async () => {
     setLoading(true);
     setError('');
+    setMessage('');
     try {
-      await sendVerification();
-      setMessage('A fresh verification email has been sent.');
-    } catch {
-      setError('Verification email could not be sent yet. Wait a moment and try again.');
+      const result = await sendVerification();
+      if (result?.alreadyVerified) {
+        setLoading(false);
+        await checkVerification();
+        return;
+      }
+      setMessage(verificationSentMessage(result, 'A fresh verification email has been sent.'));
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, 'Verification email could not be sent yet. Wait a moment and try again.'));
     } finally {
       setLoading(false);
     }
@@ -215,7 +234,7 @@ export const Signup = () => {
     setMessage('');
   };
 
-  const continueWithGoogle = async () => {
+  const continueWithGoogle = useCallback(async () => {
     setError('');
     setMessage('');
     const nextClaims = await refreshClaims();
@@ -241,7 +260,7 @@ export const Signup = () => {
     }));
     setStep(currentUser?.emailVerified ? 'organization' : 'verify');
     setMessage(currentUser?.emailVerified ? 'Google sign-in complete. Set up your organization.' : 'Google sign-in complete. Verify your email to continue.');
-  };
+  }, [navigate, refreshClaims]);
 
   return (
     <main className="onboarding-page">

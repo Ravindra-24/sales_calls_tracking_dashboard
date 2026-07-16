@@ -14,6 +14,7 @@ const Team = React.lazy(() => import('./pages/Team').then((module) => ({ default
 const Platform = React.lazy(() => import('./pages/Platform').then((module) => ({ default: module.Platform })));
 const ClaimAccount = React.lazy(() => import('./pages/ClaimAccount').then((module) => ({ default: module.ClaimAccount })));
 const ResetPassword = React.lazy(() => import('./pages/ResetPassword').then((module) => ({ default: module.ResetPassword })));
+const VerifyEmail = React.lazy(() => import('./pages/VerifyEmail').then((module) => ({ default: module.VerifyEmail })));
 const Settings = React.lazy(() => import('./pages/Settings').then((module) => ({ default: module.Settings })));
 const Notifications = React.lazy(() => import('./pages/Notifications').then((module) => ({ default: module.Notifications })));
 const ProductPage = React.lazy(() => import('./pages/ProductPage').then((module) => ({ default: module.ProductPage })));
@@ -54,6 +55,7 @@ function App() {
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/claim" element={<ClaimAccount />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/verify-email" element={<VerifyEmail />} />
                 <Route path="/docs/integrations" element={<IntegrationDocs />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/terms" element={<BillingPolicy kind="terms" />} />

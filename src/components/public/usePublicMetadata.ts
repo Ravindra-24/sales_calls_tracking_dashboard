@@ -11,7 +11,7 @@ const configuredSiteUrl = import.meta.env.VITE_PUBLIC_SITE_URL?.trim().replace(/
 const getSiteUrl = () => {
   if (configuredSiteUrl) return configuredSiteUrl;
   if (typeof window !== 'undefined') return window.location.origin;
-  return 'https://saleconnect.vercel.app';
+  return 'https://smartlymanage.com';
 };
 
 export const usePublicMetadata = ({ title, description, path = '/' }: PublicMetadataOptions) => {
