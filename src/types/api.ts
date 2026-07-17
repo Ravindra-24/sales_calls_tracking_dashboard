@@ -76,6 +76,7 @@ export interface SyncHealthRecord {
   appVersion: string | null;
   platform: 'android' | 'ios' | 'web';
   manufacturer: string | null;
+  ignored?: boolean;
   updatedAt: string | null;
 }
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AlertTriangle, CheckCircle2, RefreshCw } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { api, getApiErrorMessage } from '../api/client';
 import { useAuth } from '../context/auth';
@@ -10,6 +10,24 @@ export const SyncHealthPanel = () => {
   const [rows, setRows] = useState<SyncHealthRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showIgnored, setShowIgnored] = useState(false);
+  const [togglingId, setTogglingId] = useState('');
+
+  const canIgnore = claims.role === 'org_admin' || claims.role === 'manager';
+
+  const toggleIgnored = useCallback(async (row: SyncHealthRecord) => {
+    if (!claims.orgId) return;
+    setTogglingId(row.userId);
+    setError('');
+    try {
+      await api.patch(`/orgs/${claims.orgId}/sync-health/${row.userId}`, { ignored: !row.ignored });
+      setRows((current) => current.map((item) => (item.userId === row.userId ? { ...item, ignored: !row.ignored } : item)));
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, 'Failed to update sync health.'));
+    } finally {
+      setTogglingId('');
+    }
+  }, [claims.orgId]);
 
   const loadHealth = useCallback(async () => {
     if (claims.role === 'platform_owner') {
@@ -40,7 +58,10 @@ export const SyncHealthPanel = () => {
 
   if (claims.role === 'platform_owner') return null;
 
-  const unhealthy = rows.filter((row) => row.billingReadOnly || row.batteryOptimized || !row.trackingEnabled || row.lastFailureReason);
+  const activeRows = rows.filter((row) => !row.ignored);
+  const ignoredRows = rows.filter((row) => row.ignored);
+  const unhealthy = activeRows.filter((row) => row.billingReadOnly || row.batteryOptimized || !row.trackingEnabled || row.lastFailureReason);
+  const visibleRows = [...activeRows.slice(0, 6), ...(showIgnored ? ignoredRows : [])];
 
   return (
     <section className="section-card sync-health-panel">
@@ -62,28 +83,60 @@ export const SyncHealthPanel = () => {
       ) : (
         <>
           <div className="sync-health-summary">
-            <span><CheckCircle2 size={17} /> {rows.length - unhealthy.length} healthy</span>
+            <span><CheckCircle2 size={17} /> {activeRows.length - unhealthy.length} healthy</span>
             <span><AlertTriangle size={17} /> {unhealthy.length} need attention</span>
           </div>
           <div className="sync-health-list">
-            {rows.slice(0, 6).map((row) => {
-              const needsAttention = row.billingReadOnly || row.batteryOptimized || !row.trackingEnabled || Boolean(row.lastFailureReason);
+            {visibleRows.map((row) => {
+              const needsAttention = !row.ignored && (row.billingReadOnly || row.batteryOptimized || !row.trackingEnabled || Boolean(row.lastFailureReason));
+              const deviceIssues = [
+                ...(!row.trackingEnabled ? [{ label: 'Tracking off', fix: 'turn call tracking on in the app' }] : []),
+                ...(row.batteryOptimized ? [{ label: 'Battery optimization on', fix: 'allow the app to run without battery restrictions in Android settings' }] : []),
+              ];
               return (
-                <div className={`sync-health-row ${needsAttention ? 'warning' : 'healthy'}`} key={row.id}>
-                  <span>{needsAttention ? <AlertTriangle size={18} /> : <CheckCircle2 size={18} />}</span>
+                <div className={`sync-health-row ${needsAttention ? 'warning' : 'healthy'}${row.ignored ? ' ignored' : ''}`} key={row.id}>
+                  <span>{row.ignored ? <EyeOff size={18} /> : needsAttention ? <AlertTriangle size={18} /> : <CheckCircle2 size={18} />}</span>
                   <div>
                     <strong>{row.name || row.email || 'Your device'}</strong>
                     <p>
                       {row.lastSuccessAt ? `Last sync ${formatDistanceToNow(new Date(row.lastSuccessAt), { addSuffix: true })}` : 'No successful sync yet'}
                       {row.pendingUploadCount > 0 ? ` · ${row.pendingUploadCount} pending` : ''}
                     </p>
-                    {row.lastFailureReason && <small>{row.lastFailureReason}</small>}
-                    {row.billingReadOnly && <small>{row.billingReadOnlyMessage || 'Billing recovery is required.'}</small>}
+                    {!row.ignored && deviceIssues.length > 0 && (
+                      <div className="sync-health-tags">
+                        {deviceIssues.map((issue) => <span key={issue.label}>{issue.label}</span>)}
+                      </div>
+                    )}
+                    {!row.ignored && deviceIssues.length > 0 && (
+                      <small className="sync-health-hint">
+                        {claims.role === 'sales_member' ? 'To fix: ' : 'Ask them to '}
+                        {deviceIssues.map((issue) => issue.fix).join(', and ')}.
+                      </small>
+                    )}
+                    {!row.ignored && row.lastFailureReason && <small>{row.lastFailureReason}</small>}
+                    {!row.ignored && row.billingReadOnly && <small>{row.billingReadOnlyMessage || 'Billing recovery is required.'}</small>}
                   </div>
+                  {canIgnore && (
+                    <button
+                      className="icon-button"
+                      type="button"
+                      disabled={togglingId === row.userId}
+                      aria-label={row.ignored ? 'Stop ignoring this device' : 'Ignore this device'}
+                      title={row.ignored ? 'Stop ignoring this device' : 'Ignore this device'}
+                      onClick={() => void toggleIgnored(row)}
+                    >
+                      {row.ignored ? <Eye size={16} /> : <EyeOff size={16} />}
+                    </button>
+                  )}
                 </div>
               );
             })}
           </div>
+          {ignoredRows.length > 0 && (
+            <button className="link-button sync-health-ignored-toggle" type="button" onClick={() => setShowIgnored((current) => !current)}>
+              {showIgnored ? 'Hide ignored' : `Show ignored (${ignoredRows.length})`}
+            </button>
+          )}
         </>
       )}
     </section>
