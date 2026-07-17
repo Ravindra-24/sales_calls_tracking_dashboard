@@ -67,6 +67,7 @@ export const PublicFooter = () => {
           <Link to="/terms">Terms of Service</Link>
           <Link to="/refund-policy">Refund Policy</Link>
           <Link to="/cancellation-policy">Cancellation Policy</Link>
+          <Link to="/delete-account">Delete Account</Link>
         </nav>
 
         <div className="lw-footer-share">

@@ -26,6 +26,7 @@ const BillingOperations = React.lazy(() => import('./pages/BillingOperations').t
 const BillingCatalog = React.lazy(() => import('./pages/BillingCatalog').then((module) => ({ default: module.BillingCatalog })));
 const BillingPolicy = React.lazy(() => import('./pages/BillingPolicy').then((module) => ({ default: module.BillingPolicy })));
 const PrivacyPolicy = React.lazy(() => import('./pages/PrivacyPolicy').then((module) => ({ default: module.PrivacyPolicy })));
+const DeleteAccount = React.lazy(() => import('./pages/DeleteAccount').then((module) => ({ default: module.DeleteAccount })));
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, claims } = useAuth();
@@ -61,6 +62,7 @@ function App() {
                 <Route path="/terms" element={<BillingPolicy kind="terms" />} />
                 <Route path="/refund-policy" element={<BillingPolicy kind="refund" />} />
                 <Route path="/cancellation-policy" element={<BillingPolicy kind="cancellation" />} />
+                <Route path="/delete-account" element={<DeleteAccount />} />
                 <Route path="/calls" element={<Navigate to="/dashboard/calls" replace />} />
                 <Route path="/team" element={<Navigate to="/dashboard/team" replace />} />
                 <Route path="/platform" element={<Navigate to="/dashboard/platform" replace />} />
