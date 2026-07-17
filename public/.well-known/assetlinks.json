@@ -5,7 +5,8 @@
       "namespace": "android_app",
       "package_name": "com.revconnect.app",
       "sha256_cert_fingerprints": [
-        "REPLACE_WITH_RELEASE_SHA256_FINGERPRINT"
+        "0C:77:65:B7:F6:36:4E:33:F1:62:D8:D0:3C:E7:CD:0B:16:5B:CF:8F:DB:90:4A:30:D6:3B:2F:99:8C:FC:63:38",
+        "CC:BE:B8:D8:09:51:87:62:43:FB:99:9F:62:58:94:90:EF:77:C2:46:90:44:CD:92:9F:6D:C5:51:B2:70:95:B6"
       ]
     }
   }
