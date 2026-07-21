@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Activity, BadgePercent, Bell, Building2, CreditCard, LayoutDashboard, PhoneCall, Users, LogOut, Menu, Settings, Webhook, X } from 'lucide-react';
+import { Activity, BadgePercent, Bell, Building2, CreditCard, LayoutDashboard, MapPin, PhoneCall, Users, LogOut, Menu, Settings, Webhook, X } from 'lucide-react';
 import { auth } from '../config/firebase';
 import { useAuth } from '../context/auth';
 
@@ -76,6 +76,7 @@ export const Layout: React.FC = () => {
     ...(isPlatformOwner ? [{ path: '/dashboard/platform', icon: Building2, label: 'Tenants' }] : []),
     ...(canViewCalls ? [{ path: '/dashboard/calls', icon: PhoneCall, label: 'Call History' }] : []),
     ...(canManageTeam ? [{ path: '/dashboard/team', icon: Users, label: 'Team Management' }] : []),
+    ...(canManageTeam ? [{ path: '/dashboard/live', icon: MapPin, label: 'Live Tracking' }] : []),
     { path: '/dashboard/notifications', icon: Bell, label: 'Notifications' },
     ...(canManageIntegrations ? [{ path: '/dashboard/integrations', icon: Webhook, label: 'Integrations' }] : []),
     ...(canManageTeam ? [{ path: '/dashboard/billing', icon: CreditCard, label: 'Billing' }] : []),

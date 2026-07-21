@@ -27,6 +27,7 @@ const BillingCatalog = React.lazy(() => import('./pages/BillingCatalog').then((m
 const BillingPolicy = React.lazy(() => import('./pages/BillingPolicy').then((module) => ({ default: module.BillingPolicy })));
 const PrivacyPolicy = React.lazy(() => import('./pages/PrivacyPolicy').then((module) => ({ default: module.PrivacyPolicy })));
 const DeleteAccount = React.lazy(() => import('./pages/DeleteAccount').then((module) => ({ default: module.DeleteAccount })));
+const LiveTracking = React.lazy(() => import('./pages/LiveTracking').then((module) => ({ default: module.LiveTracking })));
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, claims } = useAuth();
@@ -82,6 +83,7 @@ function App() {
                   <Route index element={<Dashboard />} />
                   <Route path="calls" element={<CallHistory />} />
                   <Route path="team" element={<Team />} />
+                  <Route path="live" element={<RoleRoute allowed={['org_admin', 'manager']}><LiveTracking /></RoleRoute>} />
                   <Route path="platform" element={<Platform />} />
                   <Route path="notifications" element={<Notifications />} />
                   <Route path="settings" element={<Settings />} />

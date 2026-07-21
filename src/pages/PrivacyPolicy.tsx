@@ -1,7 +1,7 @@
 import { ShieldCheck } from 'lucide-react';
 import { PublicFooter, PublicHeader, Reveal, usePublicMetadata } from '../components/public';
 
-const privacyPolicyVersion = '2026-07-17';
+const privacyPolicyVersion = '2026-07-18';
 
 const intro = 'This policy explains what Smartly Manage collects when your organization uses the Android app and web dashboard, and how that information is used, shared, retained, and deleted.';
 
@@ -17,6 +17,10 @@ const sections: Array<{ title: string; body: string }> = [
   {
     title: 'Call and contact data (Android permissions)',
     body: 'The Smartly Manage Android app requests the call log, contacts, and phone state permissions. These permissions are used solely to provide the app’s core call-tracking feature: after the device user explicitly grants them, the app reads call metadata — call time, direction, duration, and status — along with the associated contact name and phone number, and uploads it to Smartly Manage servers so that the user and their organization’s managers can review team call activity. We never record, listen to, or store call audio, and we never read the content of messages. Call and contact data is not used for advertising and is not shared with third parties beyond the service providers listed below. Organizations are responsible for informing their team members that work calls are tracked before inviting them.',
+  },
+  {
+    title: 'Location data (shift-based visit tracking)',
+    body: 'If your organization uses Smartly Manage’s field-visit tracking, the Android app collects the device’s precise location — including in the background while the app is closed — but only during a work shift that the signed-in rep has started themselves, and only after the rep has separately agreed to an in-app disclosure and granted the location permission on their own device. A persistent notification is shown on the device the entire time location is being collected; ending the shift, declining or withdrawing consent, or revoking the permission stops all collection. Location and derived visit data (places visited, arrival and departure times) are visible only to the rep and their organization’s admins and managers, are never sold, and are never shared with third parties beyond the service providers listed below. Raw location points are automatically deleted after 90 days; summarized visit records are retained while the account is active and are removed through the account-deletion process described later in this policy.',
   },
   {
     title: 'Billing and payment data',
