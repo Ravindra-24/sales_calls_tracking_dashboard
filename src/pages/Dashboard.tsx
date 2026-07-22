@@ -1,14 +1,28 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
-import { Activity, Building2, Clock, PhoneCall, PhoneIncoming, PhoneMissed, PhoneOutgoing, Users } from 'lucide-react';
-import { eachDayOfInterval, format, parseISO, subDays } from 'date-fns';
+import type { CSSProperties, ReactNode } from 'react';
+import {
+  Activity,
+  Building2,
+  Clock,
+  Percent,
+  PhoneCall,
+  PhoneIncoming,
+  PhoneMissed,
+  Timer,
+  Users,
+} from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 import { api, getApiErrorMessage } from '../api/client';
 import { useAuth } from '../context/auth';
-import type { ApiResponse, PlatformAnalytics, TeamMember, TeamStats } from '../types/api';
+import type { ApiResponse, PlatformAnalytics, RepStats, TeamMember, TeamStats } from '../types/api';
 import { OnboardingChecklist } from '../components/OnboardingChecklist';
 import { SyncHealthPanel } from '../components/SyncHealthPanel';
-
-const today = format(new Date(), 'yyyy-MM-dd');
+import {
+  buildDashboardTrend,
+  DASHBOARD_RANGE_OPTIONS,
+  resolveDashboardRange,
+  type DashboardRangePreset,
+} from './dashboardAnalytics';
 
 const formatDuration = (seconds: number) => {
   const hours = Math.floor(seconds / 3600);
@@ -16,16 +30,52 @@ const formatDuration = (seconds: number) => {
   return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 };
 
+const formatAverageDuration = (seconds: number) => {
+  const roundedSeconds = Math.round(seconds);
+  const minutes = Math.floor(roundedSeconds / 60);
+  const remainder = roundedSeconds % 60;
+  return `${minutes}m ${remainder.toString().padStart(2, '0')}s`;
+};
+
+const readDashboardFilters = (storageKey: string) => {
+  const fallback: { rangePreset: DashboardRangePreset; repId: string } = {
+    rangePreset: 'today',
+    repId: '',
+  };
+  try {
+    const stored = window.sessionStorage.getItem(storageKey);
+    if (!stored) return fallback;
+    const parsed = JSON.parse(stored) as { rangePreset?: unknown; repId?: unknown };
+    const validPreset = DASHBOARD_RANGE_OPTIONS.some((option) => option.value === parsed.rangePreset);
+    return {
+      rangePreset: validPreset ? parsed.rangePreset as DashboardRangePreset : fallback.rangePreset,
+      repId: typeof parsed.repId === 'string' ? parsed.repId : '',
+    };
+  } catch {
+    return fallback;
+  }
+};
+
 export const Dashboard = () => {
   const { user, claims } = useAuth();
-  const [days, setDays] = useState(7);
+  const dashboardFilterStorageKey = `smartlymanage.dashboard.filters:${claims.orgId || user?.uid || claims.role || 'default'}`;
+  const [rangePreset, setRangePreset] = useState<DashboardRangePreset>(() => (
+    readDashboardFilters(dashboardFilterStorageKey).rangePreset
+  ));
+  const [repId, setRepId] = useState(() => (
+    claims.role === 'sales_member' ? '' : readDashboardFilters(dashboardFilterStorageKey).repId
+  ));
   const [stats, setStats] = useState<TeamStats | null>(null);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [platformStats, setPlatformStats] = useState<PlatformAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { from, to } = useMemo(() => resolveDashboardRange(rangePreset), [rangePreset]);
 
-  const from = format(subDays(new Date(), days - 1), 'yyyy-MM-dd');
+  useEffect(() => {
+    if (claims.role === 'platform_owner') return;
+    window.sessionStorage.setItem(dashboardFilterStorageKey, JSON.stringify({ rangePreset, repId }));
+  }, [claims.role, dashboardFilterStorageKey, rangePreset, repId]);
 
   useEffect(() => {
     let active = true;
@@ -43,35 +93,15 @@ export const Dashboard = () => {
         .finally(() => {
           if (active) setLoading(false);
         });
-      return () => {
-        active = false;
-      };
+      return () => { active = false; };
     }
 
-    api.get<ApiResponse<TeamStats>>('/stats/team', { params: { from, to: today } })
-      .then(async (statsResponse) => {
-        let nextMembers: TeamMember[] = [];
-        if (claims.role !== 'sales_member' && claims.orgId) {
-          const usersResponse = await api.get<ApiResponse<TeamMember[]>>(
-            `/orgs/${claims.orgId}/users`,
-            { params: { limit: 100 } },
-          );
-          nextMembers = usersResponse.data.data;
-        } else if (user) {
-          nextMembers = [{
-            id: user.uid,
-            email: user.email ?? '',
-            name: user.displayName ?? user.email ?? 'You',
-            role: 'sales_member',
-            status: 'active',
-            createdAt: '',
-            updatedAt: '',
-          }];
-        }
-        if (active) {
-          setStats(statsResponse.data.data);
-          setMembers(nextMembers);
-        }
+    setStats(null);
+    api.get<ApiResponse<TeamStats>>('/stats/team', {
+      params: { from, to, ...(repId ? { repId } : {}) },
+    })
+      .then((response) => {
+        if (active) setStats(response.data.data);
       })
       .catch((requestError) => {
         if (active) setError(getApiErrorMessage(requestError, 'Failed to load dashboard statistics.'));
@@ -80,34 +110,47 @@ export const Dashboard = () => {
         if (active) setLoading(false);
       });
 
-    return () => {
-      active = false;
-    };
-  }, [claims.orgId, claims.role, days, from, user]);
+    return () => { active = false; };
+  }, [claims.role, from, repId, to]);
+
+  useEffect(() => {
+    if (claims.role === 'platform_owner') return;
+    let active = true;
+    if (claims.role !== 'sales_member' && claims.orgId) {
+      api.get<ApiResponse<TeamMember[]>>(`/orgs/${claims.orgId}/users`, { params: { limit: 100 } })
+        .then((response) => {
+          if (active) setMembers(response.data.data);
+        })
+        .catch(() => undefined);
+    } else if (user) {
+      setMembers([{
+        id: user.uid,
+        email: user.email ?? '',
+        name: user.displayName ?? user.email ?? 'You',
+        role: 'sales_member',
+        status: 'active',
+        createdAt: '',
+        updatedAt: '',
+      }]);
+    }
+    return () => { active = false; };
+  }, [claims.orgId, claims.role, user]);
 
   const memberNames = useMemo(
     () => new Map(members.map((member) => [member.id, member.name || member.email])),
     [members],
   );
-
-  const dailyTrend = useMemo(() => {
-    const totals = new Map<string, number>();
-    stats?.byRep.forEach((rep) => {
-      rep.dailyBreakdown.forEach((day) => {
-        totals.set(day.date, (totals.get(day.date) ?? 0) + day.totalCalls);
-      });
-    });
-    return eachDayOfInterval({ start: parseISO(from), end: parseISO(today) }).map((date) => {
-      const key = format(date, 'yyyy-MM-dd');
-      return { date: key, label: format(date, days > 7 ? 'd MMM' : 'EEE'), calls: totals.get(key) ?? 0 };
-    });
-  }, [days, from, stats]);
-
+  const salesReps = members.filter((member) => member.role === 'sales_member');
+  const dailyTrend = useMemo(
+    () => buildDashboardTrend(stats?.byRep ?? [], from, to, rangePreset),
+    [from, rangePreset, stats, to],
+  );
   const maximumCalls = Math.max(...dailyTrend.map((day) => day.calls), 1);
   const totals = stats?.teamTotals;
-  const isSalesMember = claims.role === 'sales_member';
   const connectedCalls = (totals?.incomingCount ?? 0) + (totals?.outgoingCount ?? 0);
-  const activeReps = members.filter((member) => member.role === 'sales_member' && member.status === 'active').length;
+  const missedCalls = totals?.missedCount ?? 0;
+  const connectRate = totals?.totalCalls ? Math.round((connectedCalls / totals.totalCalls) * 100) : 0;
+  const averageDuration = connectedCalls ? (totals?.totalDurationSeconds ?? 0) / connectedCalls : 0;
 
   if (claims.role === 'platform_owner') {
     return (
@@ -130,18 +173,10 @@ export const Dashboard = () => {
         </div>
 
         <section className="section-card platform-summary">
-          <div className="section-heading">
-            <div>
-              <h2>Role distribution</h2>
-              <p>Current user mix across all tenant accounts.</p>
-            </div>
-          </div>
+          <div className="section-heading"><div><h2>Role distribution</h2><p>Current user mix across all tenant accounts.</p></div></div>
           <div className="summary-list">
             {Object.entries(platformStats?.roleCounts ?? {}).map(([role, count]) => (
-              <div className="summary-row" key={role}>
-                <span>{role.replace('_', ' ')}</span>
-                <strong>{count}</strong>
-              </div>
+              <div className="summary-row" key={role}><span>{role.replace('_', ' ')}</span><strong>{count}</strong></div>
             ))}
             {!loading && Object.keys(platformStats?.roleCounts ?? {}).length === 0 && <EmptyState message="No users have been created yet." />}
           </div>
@@ -150,106 +185,147 @@ export const Dashboard = () => {
     );
   }
 
+  const selectedRepName = repId ? memberNames.get(repId) : undefined;
+  const rangeLabel = `${format(parseISO(from), 'd MMM')} to ${format(parseISO(to), 'd MMM yyyy')}`;
+
   return (
     <div className="page animate-fade-in">
-      <div className="page-header">
+      <div className="page-header dashboard-page-header">
         <div>
           <p className="eyebrow">Performance</p>
           <h1>Dashboard overview</h1>
-          <p>{claims.role === 'sales_member' ? 'Your call activity' : 'Team call activity'} from {format(parseISO(from), 'd MMM')} to {format(parseISO(today), 'd MMM yyyy')}.</p>
+          <p>{selectedRepName ? `${selectedRepName}'s call activity` : claims.role === 'sales_member' ? 'Your call activity' : 'Team call activity'} from {rangeLabel}.</p>
         </div>
-        <select className="input-field compact-select" value={days} onChange={(event) => setDays(Number(event.target.value))}>
-          <option value={7}>Last 7 days</option>
-          <option value={30}>Last 30 days</option>
-          <option value={90}>Last 90 days</option>
-        </select>
+        <div className="dashboard-filters" aria-label="Dashboard filters">
+          {claims.role !== 'sales_member' && (
+            <label>Representative
+              <select className="input-field compact-select" value={repId} onChange={(event) => setRepId(event.target.value)}>
+                <option value="">All representatives</option>
+                {salesReps.map((rep) => (
+                  <option key={rep.id} value={rep.id}>{rep.name || rep.email}{rep.status === 'disabled' ? ' (inactive)' : ''}</option>
+                ))}
+              </select>
+            </label>
+          )}
+          <label>Date range
+            <select className="input-field compact-select" value={rangePreset} onChange={(event) => setRangePreset(event.target.value as DashboardRangePreset)}>
+              {DASHBOARD_RANGE_OPTIONS.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}
+            </select>
+          </label>
+        </div>
       </div>
 
       {error && <div className="notice error-notice">{error}</div>}
-
       <OnboardingChecklist />
 
-      <div className="stats-grid" aria-busy={loading}>
+      <div className="stats-grid analytics-stats-grid" aria-busy={loading}>
         <StatCard title="Total calls" value={loading ? '—' : totals?.totalCalls ?? 0} icon={<PhoneCall />} tone="blue" />
+        <StatCard title="Connected" value={loading ? '—' : connectedCalls} icon={<PhoneIncoming />} tone="green" />
+        <StatCard title="Missed" value={loading ? '—' : missedCalls} icon={<PhoneMissed />} tone="orange" />
         <StatCard title="Talk time" value={loading ? '—' : formatDuration(totals?.totalDurationSeconds ?? 0)} icon={<Clock />} tone="violet" />
-        <StatCard
-          title={isSalesMember ? 'Connected calls' : 'Active reps'}
-          value={loading ? '—' : isSalesMember ? connectedCalls : activeReps}
-          icon={isSalesMember ? <PhoneIncoming /> : <Activity />}
-          tone="green"
-        />
-        <StatCard title="Missed calls" value={loading ? '—' : totals?.missedCount ?? 0} icon={<PhoneMissed />} tone="orange" />
+        <StatCard title="Connect rate" value={loading ? '—' : `${connectRate}%`} icon={<Percent />} tone="green" />
+        <StatCard title="Avg. duration" value={loading ? '—' : formatAverageDuration(averageDuration)} icon={<Timer />} tone="blue" />
       </div>
 
       <SyncHealthPanel />
 
-      <div className="dashboard-grid">
+      <div className="dashboard-grid dashboard-analytics-grid">
         <section className="section-card chart-card">
-          <div className="section-heading">
-            <div>
-              <h2>Call trend</h2>
-              <p>{claims.role === 'sales_member' ? 'Daily call volume from your device' : 'Daily call volume across the team'}</p>
-            </div>
-          </div>
+          <div className="section-heading"><div><h2>Call trend</h2><p>Call volume across the selected range</p></div></div>
           {dailyTrend.some((day) => day.calls > 0) ? (
-            <div className="bar-chart" role="img" aria-label="Daily team call volume">
+            <div className="bar-chart" role="img" aria-label={`Call volume trend from ${rangeLabel}`}>
               {dailyTrend.map((day) => (
-                <div className="bar-column" key={day.date} title={`${day.date}: ${day.calls} calls`}>
+                <div className="bar-column" key={day.key} title={`${day.label}: ${day.calls} calls`}>
                   <span className="bar-value">{day.calls}</span>
                   <div className="bar" style={{ height: `${Math.max((day.calls / maximumCalls) * 100, 4)}%` }} />
                   <span className="bar-label">{day.label}</span>
                 </div>
               ))}
             </div>
-          ) : (
-            <EmptyState message="No calls were recorded in this range." />
-          )}
+          ) : <EmptyState message="No calls were recorded in this range." />}
         </section>
 
-        <section className="section-card">
-          <div className="section-heading">
-            <div>
-              <h2>{claims.role === 'sales_member' ? 'Your performance' : 'Top representatives'}</h2>
-              <p>{claims.role === 'sales_member' ? 'Total calls and talk time' : 'Ranked by total calls'}</p>
-            </div>
-          </div>
-          <div className="rep-list">
-            {[...(stats?.byRep ?? [])]
-              .sort((left, right) => right.totalCalls - left.totalCalls)
-              .slice(0, 6)
-              .map((rep) => (
-                <div className="rep-row" key={rep.repId}>
-                  <div className="avatar">{(memberNames.get(rep.repId) ?? 'R').charAt(0).toUpperCase()}</div>
-                  <div className="rep-summary">
-                    <strong>{memberNames.get(rep.repId) ?? `Rep ${rep.repId.slice(0, 6)}`}</strong>
-                    <span>{formatDuration(rep.totalDurationSeconds)} talk time</span>
-                  </div>
-                  <strong>{rep.totalCalls}</strong>
-                </div>
-              ))}
-            {!loading && stats?.byRep.length === 0 && <EmptyState message="No representative activity yet." />}
-          </div>
-        </section>
+        <OutcomeChart
+          incoming={totals?.incomingCount ?? 0}
+          outgoing={totals?.outgoingCount ?? 0}
+          missed={missedCalls}
+        />
       </div>
 
-      <section className="section-card direction-summary">
-        <DirectionMetric icon={<PhoneOutgoing />} label="Outgoing" value={totals?.outgoingCount ?? 0} />
-        <DirectionMetric icon={<PhoneIncoming />} label="Incoming" value={totals?.incomingCount ?? 0} />
-        <DirectionMetric icon={<PhoneMissed />} label="Missed" value={totals?.missedCount ?? 0} />
-      </section>
+      <RepPerformanceChart reps={stats?.byRep ?? []} memberNames={memberNames} loading={loading} />
     </div>
   );
 };
 
 const StatCard = ({ title, value, icon, tone }: { title: string; value: string | number; icon: ReactNode; tone: string }) => (
-  <div className="stat-card section-card">
-    <div className={`stat-icon ${tone}`}>{icon}</div>
-    <div><p>{title}</p><strong>{value}</strong></div>
-  </div>
+  <div className="stat-card section-card"><div className={`stat-icon ${tone}`}>{icon}</div><div><p>{title}</p><strong>{value}</strong></div></div>
 );
 
-const DirectionMetric = ({ icon, label, value }: { icon: ReactNode; label: string; value: number }) => (
-  <div className="direction-metric"><span>{icon}</span><div><strong>{value}</strong><p>{label}</p></div></div>
-);
+const OutcomeChart = ({ incoming, outgoing, missed }: { incoming: number; outgoing: number; missed: number }) => {
+  const total = incoming + outgoing + missed;
+  const outgoingStop = total ? (outgoing / total) * 100 : 0;
+  const incomingStop = total ? outgoingStop + (incoming / total) * 100 : 0;
+  const style = total ? {
+    background: `conic-gradient(#60a5fa 0 ${outgoingStop}%, #34d399 ${outgoingStop}% ${incomingStop}%, #f87171 ${incomingStop}% 100%)`,
+  } as CSSProperties : undefined;
+  const metrics = [
+    { label: 'Outgoing', value: outgoing, color: '#60a5fa' },
+    { label: 'Incoming', value: incoming, color: '#34d399' },
+    { label: 'Missed', value: missed, color: '#f87171' },
+  ];
+
+  return (
+    <section className="section-card outcome-card">
+      <div className="section-heading"><div><h2>Call outcomes</h2><p>Incoming, outgoing, and missed share</p></div></div>
+      {total > 0 ? (
+        <>
+          <div className="outcome-donut" style={style} role="img" aria-label={`${outgoing} outgoing, ${incoming} incoming, ${missed} missed calls`}>
+            <div><strong>{total}</strong><span>Total calls</span></div>
+          </div>
+          <div className="outcome-legend">
+            {metrics.map((metric) => (
+              <div className="outcome-legend-row" key={metric.label}>
+                <span className="outcome-swatch" style={{ background: metric.color }} />
+                <span>{metric.label}</span><strong>{metric.value}</strong>
+                <small>{Math.round((metric.value / total) * 100)}%</small>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : <EmptyState message="No call outcomes are available in this range." />}
+    </section>
+  );
+};
+
+const RepPerformanceChart = ({ reps, memberNames, loading }: { reps: RepStats[]; memberNames: Map<string, string>; loading: boolean }) => {
+  const ranked = [...reps].sort((left, right) => right.totalCalls - left.totalCalls).slice(0, 8);
+  return (
+    <section className="section-card rep-performance-card">
+      <div className="section-heading"><div><h2>{ranked.length === 1 ? 'Representative performance' : 'Rep performance'}</h2><p>Connected and missed calls, ranked by total volume</p></div></div>
+      <div className="rep-performance-list">
+        {ranked.map((rep, index) => {
+          const connected = rep.incomingCount + rep.outgoingCount;
+          const total = Math.max(rep.totalCalls, 1);
+          const name = memberNames.get(rep.repId) ?? `Rep ${rep.repId.slice(0, 6)}`;
+          return (
+            <div className="rep-performance-row" key={rep.repId}>
+              <span className="rep-rank">{index + 1}</span>
+              <div className="avatar">{name.charAt(0).toUpperCase()}</div>
+              <div className="rep-performance-copy">
+                <div><strong>{name}</strong><span>{rep.totalCalls} calls · {formatDuration(rep.totalDurationSeconds)}</span></div>
+                <div className="rep-stacked-bar" role="img" aria-label={`${name}: ${connected} connected and ${rep.missedCount} missed calls`}>
+                  {connected > 0 && <span className="connected" style={{ width: `${(connected / total) * 100}%` }} />}
+                  {rep.missedCount > 0 && <span className="missed" style={{ width: `${(rep.missedCount / total) * 100}%` }} />}
+                </div>
+              </div>
+              <strong className="rep-total">{rep.totalCalls}</strong>
+            </div>
+          );
+        })}
+        {!loading && ranked.length === 0 && <EmptyState message="No representative activity yet." />}
+      </div>
+    </section>
+  );
+};
 
 const EmptyState = ({ message }: { message: string }) => <div className="empty-state">{message}</div>;

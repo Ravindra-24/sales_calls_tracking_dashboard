@@ -41,6 +41,12 @@ export interface CallRecord {
   notesUpdatedAt?: string | null;
 }
 
+export interface CallSummary {
+  totalCalls: number;
+  connectedCalls: number;
+  missedCalls: number;
+}
+
 export interface OnboardingItem {
   id: string;
   label: string;
