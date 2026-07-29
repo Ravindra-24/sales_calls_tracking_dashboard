@@ -9,6 +9,8 @@ const rep = (dailyBreakdown: RepStats['dailyBreakdown']): RepStats => ({
   incomingCount: 0,
   outgoingCount: 0,
   missedCount: 0,
+  connectedCount: 0,
+  notConnectedCount: 0,
   dailyBreakdown,
 });
 
@@ -19,6 +21,8 @@ const day = (date: string, totalCalls: number) => ({
   incomingCount: 0,
   outgoingCount: 0,
   missedCount: 0,
+  connectedCount: 0,
+  notConnectedCount: 0,
 });
 
 describe('dashboard analytics helpers', () => {

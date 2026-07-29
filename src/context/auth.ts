@@ -6,6 +6,9 @@ export type DashboardRole = 'platform_owner' | 'org_admin' | 'manager' | 'sales_
 export interface AuthClaims {
   orgId: string;
   role: DashboardRole | null;
+  impersonatorUid?: string;
+  impersonationSessionId?: string;
+  impersonationReason?: string;
 }
 
 export interface AuthContextType {

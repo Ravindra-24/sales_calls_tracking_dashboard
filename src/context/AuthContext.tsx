@@ -22,6 +22,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const nextClaims: AuthClaims = {
       orgId: typeof token.claims.orgId === 'string' ? token.claims.orgId : '',
       role: parseRole(token.claims.role),
+      impersonatorUid: typeof token.claims.impersonatorUid === 'string' ? token.claims.impersonatorUid : undefined,
+      impersonationSessionId: typeof token.claims.impersonationSessionId === 'string' ? token.claims.impersonationSessionId : undefined,
+      impersonationReason: typeof token.claims.impersonationReason === 'string' ? token.claims.impersonationReason : undefined,
     };
     setClaims(nextClaims);
     return nextClaims;

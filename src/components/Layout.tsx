@@ -1,8 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Activity, BadgePercent, Bell, Building2, CreditCard, LayoutDashboard, MapPin, PhoneCall, Users, LogOut, Menu, Settings, Webhook, X } from 'lucide-react';
+import { signInWithCustomToken } from 'firebase/auth';
+import { Activity, BadgePercent, Bell, Building2, CreditCard, LayoutDashboard, MapPin, PhoneCall, Users, LogOut, Menu, Settings, ShieldAlert, Webhook, X } from 'lucide-react';
+import { api, getApiErrorMessage } from '../api/client';
 import { auth } from '../config/firebase';
 import { useAuth } from '../context/auth';
+import { useFeedback } from '../context/feedback';
+import type { ApiResponse } from '../types/api';
 
 const appIcon = '/favicon.svg';
 
@@ -10,7 +14,9 @@ export const Layout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, claims } = useAuth();
+  const { toast } = useFeedback();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [returningToPlatform, setReturningToPlatform] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
@@ -66,7 +72,35 @@ export const Layout: React.FC = () => {
     navigate('/login');
   };
 
+  const stopImpersonation = async () => {
+    if (!claims.impersonationSessionId || returningToPlatform) return;
+    setReturningToPlatform(true);
+    try {
+      const response = await api.post<ApiResponse<{ customToken: string }>>(
+        '/admin/impersonation/stop',
+      );
+      await signInWithCustomToken(auth, response.data.data.customToken);
+      toast({
+        title: 'Returned to platform account',
+        message: 'The impersonation session has ended.',
+        variant: 'success',
+      });
+      navigate('/dashboard/platform', { replace: true });
+    } catch (requestError) {
+      toast({
+        title: 'Could not return to platform account',
+        message: getApiErrorMessage(
+          requestError,
+          'Sign out and sign in again with your platform-owner account.',
+        ),
+        variant: 'error',
+      });
+      setReturningToPlatform(false);
+    }
+  };
+
   const isPlatformOwner = claims.role === 'platform_owner';
+  const isImpersonating = Boolean(claims.impersonatorUid && claims.impersonationSessionId);
   const canManageTeam = claims.role === 'org_admin' || claims.role === 'manager';
   const canViewCalls = claims.role === 'org_admin' || claims.role === 'manager' || claims.role === 'sales_member';
   const canManageIntegrations = isPlatformOwner || claims.role === 'org_admin';
@@ -174,12 +208,24 @@ export const Layout: React.FC = () => {
             onClick={handleLogout}
           >
             <LogOut size={18} />
-            Logout
+            {isImpersonating ? 'Sign out completely' : 'Logout'}
           </button>
         </div>
       </aside>
 
       <main className="main-content">
+        {isImpersonating && (
+          <aside className="impersonation-banner" aria-label="Impersonation session active">
+            <ShieldAlert size={21} aria-hidden="true" />
+            <div>
+              <strong>Viewing as {user?.displayName || user?.email}</strong>
+              <span>{roleLabel}{claims.impersonationReason ? ` · ${claims.impersonationReason}` : ''}</span>
+            </div>
+            <button type="button" disabled={returningToPlatform} onClick={() => void stopImpersonation()}>
+              {returningToPlatform ? 'Returning…' : 'Return to platform account'}
+            </button>
+          </aside>
+        )}
         <div className="content-panel glass-panel">
           <Outlet />
         </div>

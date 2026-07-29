@@ -47,7 +47,7 @@ const installApiMock = () => {
       id: 'rep-1', name: 'Asha', email: 'asha@example.com', role: 'sales_member', status: 'active', createdAt: '', updatedAt: '',
     }] } });
     if (url === '/calls/filters') return Promise.resolve({ data: { data: [] } });
-    if (url === '/calls/summary') return Promise.resolve({ data: { data: { totalCalls: 8, connectedCalls: 6, missedCalls: 2 } } });
+    if (url === '/calls/summary') return Promise.resolve({ data: { data: { totalCalls: 8, connectedCalls: 5, notConnectedCalls: 1, missedCalls: 2 } } });
     if (url === '/calls') {
       const secondPage = config?.params?.cursor === 'page-2';
       return Promise.resolve({ data: {

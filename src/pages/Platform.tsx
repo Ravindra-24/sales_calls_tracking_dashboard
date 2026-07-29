@@ -1,14 +1,23 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Building2, Check, Copy, CreditCard, Plus, Power, User } from 'lucide-react';
+import { Building2, Check, Copy, CreditCard, LogIn, Plus, Power, User, X } from 'lucide-react';
 import { format } from 'date-fns';
-import { Link } from 'react-router-dom';
+import { signInWithCustomToken } from 'firebase/auth';
+import { Link, useNavigate } from 'react-router-dom';
 import { api, getApiErrorMessage } from '../api/client';
+import { auth } from '../config/firebase';
 import { useAuth } from '../context/auth';
 import { useFeedback } from '../context/feedback';
 import { ActionMenu } from '../components/ActionMenu';
-import type { ApiResponse, PlatformOrganization, TenantCreateResult } from '../types/api';
+import type {
+  ApiResponse,
+  ImpersonationStartResult,
+  PlatformOrganization,
+  TeamMember,
+  TenantCreateResult,
+} from '../types/api';
 
 export const Platform = () => {
+  const navigate = useNavigate();
   const { claims } = useAuth();
   const { confirm, toast } = useFeedback();
   const [organizations, setOrganizations] = useState<PlatformOrganization[]>([]);
@@ -18,6 +27,13 @@ export const Platform = () => {
   const [error, setError] = useState('');
   const [result, setResult] = useState<TenantCreateResult | null>(null);
   const [copied, setCopied] = useState(false);
+  const [impersonationOrg, setImpersonationOrg] = useState<PlatformOrganization | null>(null);
+  const [impersonationUsers, setImpersonationUsers] = useState<TeamMember[]>([]);
+  const [impersonationUserId, setImpersonationUserId] = useState('');
+  const [impersonationReason, setImpersonationReason] = useState('');
+  const [impersonationLoading, setImpersonationLoading] = useState(false);
+  const [impersonationSubmitting, setImpersonationSubmitting] = useState(false);
+  const [impersonationError, setImpersonationError] = useState('');
   const [form, setForm] = useState({
     orgName: '',
     adminName: '',
@@ -111,6 +127,64 @@ export const Platform = () => {
     }
   };
 
+  const openImpersonation = async (organization: PlatformOrganization) => {
+    setImpersonationOrg(organization);
+    setImpersonationUsers([]);
+    setImpersonationUserId('');
+    setImpersonationReason('');
+    setImpersonationError('');
+    setImpersonationLoading(true);
+    try {
+      const response = await api.get<ApiResponse<TeamMember[]>>(
+        `/admin/organizations/${organization.id}/users`,
+      );
+      const activeUsers = response.data.data.filter((member) => member.status === 'active');
+      setImpersonationUsers(activeUsers);
+      setImpersonationUserId(activeUsers[0]?.id ?? '');
+    } catch (requestError) {
+      setImpersonationError(getApiErrorMessage(requestError, 'Failed to load organization users.'));
+    } finally {
+      setImpersonationLoading(false);
+    }
+  };
+
+  const closeImpersonation = () => {
+    if (impersonationSubmitting) return;
+    setImpersonationOrg(null);
+  };
+
+  const startImpersonation = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!impersonationOrg || !impersonationUserId) return;
+    const reason = impersonationReason.trim();
+    if (reason.length < 10) {
+      setImpersonationError('Enter a support reason of at least 10 characters.');
+      return;
+    }
+
+    setImpersonationSubmitting(true);
+    setImpersonationError('');
+    try {
+      const response = await api.post<ApiResponse<ImpersonationStartResult>>(
+        `/admin/impersonate/${impersonationUserId}`,
+        { reason },
+      );
+      await signInWithCustomToken(auth, response.data.data.customToken);
+      toast({
+        title: 'Impersonation started',
+        message: `You are now viewing Smartly Manage as ${response.data.data.session.targetName}.`,
+        variant: 'success',
+      });
+      navigate('/dashboard', { replace: true });
+    } catch (requestError) {
+      setImpersonationError(getApiErrorMessage(
+        requestError,
+        'Could not start the impersonation session.',
+      ));
+      setImpersonationSubmitting(false);
+    }
+  };
+
   if (claims.role !== 'platform_owner') {
     return (
       <div className="page animate-fade-in">
@@ -171,7 +245,7 @@ export const Platform = () => {
                 <tr><td colSpan={6} className="table-message">No organizations created yet.</td></tr>
               ) : organizations.map((org) => (
                 <tr key={org.id}>
-                  <td data-label="Organization"><div className="member-cell"><div className="avatar"><Building2 size={17} /></div><div><strong>{org.name}</strong><span>{org.id}</span></div></div></td>
+                  <td data-label="Organization"><Link className="platform-org-link" to={`/dashboard/platform/organizations/${org.id}`}><div className="member-cell"><div className="avatar"><Building2 size={17} /></div><div><strong>{org.name}</strong><span>{org.id}</span></div></div></Link></td>
                   <td data-label="Plan">
                     <div className="platform-billing-summary">
                       <span className="role-badge">{org.plan}</span>
@@ -183,6 +257,17 @@ export const Platform = () => {
                   <td data-label="Status"><span className={`status-badge ${org.status}`}><i /> {org.status}</span></td>
                   <td data-label="Actions">
                     <ActionMenu label={`Actions for ${org.name}`}>
+                      <Link className="secondary-button" to={`/dashboard/platform/organizations/${org.id}`}>
+                        <Building2 size={15} /> View details
+                      </Link>
+                      <button
+                        className="secondary-button"
+                        type="button"
+                        disabled={org.status !== 'active'}
+                        onClick={() => void openImpersonation(org)}
+                      >
+                        <LogIn size={15} /> Login as user
+                      </button>
                       <button
                         className={`secondary-button ${org.status === 'active' ? 'danger-button' : ''}`}
                         type="button"
@@ -199,6 +284,88 @@ export const Platform = () => {
           </table>
         </div>
       </section>
+
+      {impersonationOrg && (
+        <div className="impersonation-modal-backdrop" role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) closeImpersonation();
+        }}>
+          <section
+            className="impersonation-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="impersonation-title"
+          >
+            <button
+              className="impersonation-modal-close"
+              type="button"
+              aria-label="Close impersonation dialog"
+              disabled={impersonationSubmitting}
+              onClick={closeImpersonation}
+            >
+              <X size={19} />
+            </button>
+            <div className="impersonation-modal-heading">
+              <span><LogIn size={20} /></span>
+              <div>
+                <p className="eyebrow">Support access</p>
+                <h2 id="impersonation-title">Login as a user</h2>
+                <p>You will leave your platform session and view {impersonationOrg.name} with the selected user’s permissions.</p>
+              </div>
+            </div>
+
+            <form onSubmit={startImpersonation}>
+              <label>
+                User
+                <select
+                  className="input-field"
+                  value={impersonationUserId}
+                  disabled={impersonationLoading || impersonationSubmitting}
+                  onChange={(event) => setImpersonationUserId(event.target.value)}
+                  required
+                >
+                  {impersonationLoading && <option value="">Loading users…</option>}
+                  {!impersonationLoading && impersonationUsers.length === 0 && (
+                    <option value="">No active users available</option>
+                  )}
+                  {impersonationUsers.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.name} — {member.email} ({member.role.replace('_', ' ')})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Required support reason
+                <textarea
+                  className="input-field"
+                  rows={4}
+                  minLength={10}
+                  maxLength={500}
+                  value={impersonationReason}
+                  disabled={impersonationSubmitting}
+                  placeholder="For example: Investigating missing call activity reported in ticket #1234"
+                  onChange={(event) => setImpersonationReason(event.target.value)}
+                  required
+                />
+              </label>
+              <div className="impersonation-warning">
+                This action is audited. Changes made during impersonation are performed with the selected user’s access.
+              </div>
+              {impersonationError && <div className="notice error-notice" role="alert">{impersonationError}</div>}
+              <div className="impersonation-modal-actions">
+                <button className="secondary-button" type="button" disabled={impersonationSubmitting} onClick={closeImpersonation}>Cancel</button>
+                <button
+                  className="btn-primary"
+                  type="submit"
+                  disabled={impersonationSubmitting || impersonationLoading || !impersonationUserId}
+                >
+                  <LogIn size={16} /> {impersonationSubmitting ? 'Switching…' : 'Confirm and login'}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
     </div>
   );
 };

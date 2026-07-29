@@ -25,6 +25,13 @@ export interface TeamMember {
   updatedAt: string;
 }
 
+export interface PlatformEmployee extends TeamMember {
+  orgId: string;
+  accountDisabled: boolean;
+  lastSignInAt: string | null;
+  lastSeenAt: string | null;
+}
+
 export interface CallRecord {
   id: string;
   repId: string;
@@ -44,6 +51,7 @@ export interface CallRecord {
 export interface CallSummary {
   totalCalls: number;
   connectedCalls: number;
+  notConnectedCalls: number;
   missedCalls: number;
 }
 
@@ -113,6 +121,8 @@ export interface DailyBreakdown {
   incomingCount: number;
   outgoingCount: number;
   missedCount: number;
+  connectedCount: number;
+  notConnectedCount: number;
 }
 
 export interface RepStats {
@@ -122,6 +132,8 @@ export interface RepStats {
   incomingCount: number;
   outgoingCount: number;
   missedCount: number;
+  connectedCount: number;
+  notConnectedCount: number;
   dailyBreakdown: DailyBreakdown[];
 }
 
@@ -133,6 +145,8 @@ export interface TeamStats {
     incomingCount: number;
     outgoingCount: number;
     missedCount: number;
+    connectedCount: number;
+    notConnectedCount: number;
   };
   byRep: RepStats[];
 }
@@ -196,6 +210,65 @@ export interface PlatformOrganization {
     role: UserRole;
     status: UserStatus;
   } | null;
+}
+
+export interface PlatformOrganizationOverview {
+  organization: OrganizationDetails;
+  primaryAdmin: {
+    id: string;
+    name: string;
+    email: string;
+    phoneNumber: string | null;
+    status: UserStatus;
+  } | null;
+  users: {
+    total: number;
+    active: number;
+    disabled: number;
+    roleCounts: Record<string, number>;
+  };
+  activity: {
+    lastCallAt: string | null;
+    lastSyncAt: string | null;
+  };
+  syncHealth: {
+    totalDevices: number;
+    healthy: number;
+    attention: number;
+  };
+  billing: {
+    account: {
+      effectivePlan: string;
+      planSource: string;
+      accessMode: string;
+      currentPeriodEnd: string | null;
+      currentSubscriptionId: string | null;
+    } | null;
+    subscription: {
+      id: string;
+      status: string;
+      planCode: string;
+      currentPeriodEnd: string | null;
+      cancelAtPeriodEnd: boolean;
+    } | null;
+  };
+}
+
+export interface ImpersonationSession {
+  id: string;
+  targetUid: string;
+  targetEmail: string;
+  targetName: string;
+  targetRole: Exclude<UserRole, 'platform_owner'>;
+  orgId: string;
+  orgName: string | null;
+  reason: string;
+}
+
+export interface ImpersonationStartResult {
+  customToken: string;
+  user: TeamMember;
+  session: ImpersonationSession;
 }
 
 export interface PlatformSettings {

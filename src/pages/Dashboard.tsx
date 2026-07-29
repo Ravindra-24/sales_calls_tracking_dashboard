@@ -147,7 +147,8 @@ export const Dashboard = () => {
   );
   const maximumCalls = Math.max(...dailyTrend.map((day) => day.calls), 1);
   const totals = stats?.teamTotals;
-  const connectedCalls = (totals?.incomingCount ?? 0) + (totals?.outgoingCount ?? 0);
+  const connectedCalls = totals?.connectedCount ?? 0;
+  const notConnectedCalls = totals?.notConnectedCount ?? 0;
   const missedCalls = totals?.missedCount ?? 0;
   const connectRate = totals?.totalCalls ? Math.round((connectedCalls / totals.totalCalls) * 100) : 0;
   const averageDuration = connectedCalls ? (totals?.totalDurationSeconds ?? 0) / connectedCalls : 0;
@@ -221,6 +222,7 @@ export const Dashboard = () => {
       <div className="stats-grid analytics-stats-grid" aria-busy={loading}>
         <StatCard title="Total calls" value={loading ? '—' : totals?.totalCalls ?? 0} icon={<PhoneCall />} tone="blue" />
         <StatCard title="Connected" value={loading ? '—' : connectedCalls} icon={<PhoneIncoming />} tone="green" />
+        <StatCard title="Not connected" value={loading ? '—' : notConnectedCalls} icon={<PhoneMissed />} tone="orange" />
         <StatCard title="Missed" value={loading ? '—' : missedCalls} icon={<PhoneMissed />} tone="orange" />
         <StatCard title="Talk time" value={loading ? '—' : formatDuration(totals?.totalDurationSeconds ?? 0)} icon={<Clock />} tone="violet" />
         <StatCard title="Connect rate" value={loading ? '—' : `${connectRate}%`} icon={<Percent />} tone="green" />
@@ -301,10 +303,10 @@ const RepPerformanceChart = ({ reps, memberNames, loading }: { reps: RepStats[];
   const ranked = [...reps].sort((left, right) => right.totalCalls - left.totalCalls).slice(0, 8);
   return (
     <section className="section-card rep-performance-card">
-      <div className="section-heading"><div><h2>{ranked.length === 1 ? 'Representative performance' : 'Rep performance'}</h2><p>Connected and missed calls, ranked by total volume</p></div></div>
+      <div className="section-heading"><div><h2>{ranked.length === 1 ? 'Representative performance' : 'Rep performance'}</h2><p>Connected, not connected, and missed calls ranked by total volume</p></div></div>
       <div className="rep-performance-list">
         {ranked.map((rep, index) => {
-          const connected = rep.incomingCount + rep.outgoingCount;
+          const connected = rep.connectedCount;
           const total = Math.max(rep.totalCalls, 1);
           const name = memberNames.get(rep.repId) ?? `Rep ${rep.repId.slice(0, 6)}`;
           return (
@@ -313,8 +315,9 @@ const RepPerformanceChart = ({ reps, memberNames, loading }: { reps: RepStats[];
               <div className="avatar">{name.charAt(0).toUpperCase()}</div>
               <div className="rep-performance-copy">
                 <div><strong>{name}</strong><span>{rep.totalCalls} calls · {formatDuration(rep.totalDurationSeconds)}</span></div>
-                <div className="rep-stacked-bar" role="img" aria-label={`${name}: ${connected} connected and ${rep.missedCount} missed calls`}>
+                <div className="rep-stacked-bar" role="img" aria-label={`${name}: ${connected} connected, ${rep.notConnectedCount} not connected, and ${rep.missedCount} missed calls`}>
                   {connected > 0 && <span className="connected" style={{ width: `${(connected / total) * 100}%` }} />}
+                  {rep.notConnectedCount > 0 && <span className="not-connected" style={{ width: `${(rep.notConnectedCount / total) * 100}%` }} />}
                   {rep.missedCount > 0 && <span className="missed" style={{ width: `${(rep.missedCount / total) * 100}%` }} />}
                 </div>
               </div>

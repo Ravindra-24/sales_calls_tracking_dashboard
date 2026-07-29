@@ -27,6 +27,8 @@ const stats = {
     incomingCount: 3,
     outgoingCount: 5,
     missedCount: 2,
+    connectedCount: 7,
+    notConnectedCount: 1,
   },
   byRep: [{
     repId: 'rep-1',
@@ -42,6 +44,8 @@ const stats = {
       incomingCount: 3,
       outgoingCount: 5,
       missedCount: 2,
+      connectedCount: 7,
+      notConnectedCount: 1,
     }],
   }],
 };
@@ -61,8 +65,9 @@ describe('Dashboard', () => {
     render(<Dashboard />);
 
     expect(screen.getByLabelText('Date range')).toHaveValue('today');
-    expect(await screen.findByText('80%')).toBeInTheDocument();
-    expect(screen.getByText('1m 20s')).toBeInTheDocument();
+    expect(await screen.findByText('70%')).toBeInTheDocument();
+    expect(screen.getByText('1m 31s')).toBeInTheDocument();
+    expect(screen.getByText('Not connected')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /5 outgoing, 3 incoming, 2 missed/ })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Asha (inactive)' })).toBeInTheDocument();
 

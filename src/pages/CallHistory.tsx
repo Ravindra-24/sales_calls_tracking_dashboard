@@ -446,6 +446,7 @@ export const CallHistory = () => {
           <div className="call-summary-grid" aria-busy={summaryLoading}>
             <CallSummaryCard label="Total" value={summaryLoading ? '—' : summary?.totalCalls ?? '—'} icon={<PhoneCall />} tone="blue" />
             <CallSummaryCard label="Connected" value={summaryLoading ? '—' : summary?.connectedCalls ?? '—'} icon={<PhoneIncoming />} tone="green" />
+            <CallSummaryCard label="Not connected" value={summaryLoading ? '—' : summary?.notConnectedCalls ?? '—'} icon={<PhoneMissed />} tone="orange" />
             <CallSummaryCard label="Missed" value={summaryLoading ? '—' : summary?.missedCalls ?? '—'} icon={<PhoneMissed />} tone="orange" />
           </div>
           {summaryError && <div className="call-summary-error" role="status">{summaryError}</div>}

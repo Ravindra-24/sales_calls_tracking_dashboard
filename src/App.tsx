@@ -12,6 +12,7 @@ const Dashboard = React.lazy(() => import('./pages/Dashboard').then((module) => 
 const CallHistory = React.lazy(() => import('./pages/CallHistory').then((module) => ({ default: module.CallHistory })));
 const Team = React.lazy(() => import('./pages/Team').then((module) => ({ default: module.Team })));
 const Platform = React.lazy(() => import('./pages/Platform').then((module) => ({ default: module.Platform })));
+const PlatformOrganization = React.lazy(() => import('./pages/PlatformOrganization').then((module) => ({ default: module.PlatformOrganization })));
 const ClaimAccount = React.lazy(() => import('./pages/ClaimAccount').then((module) => ({ default: module.ClaimAccount })));
 const ResetPassword = React.lazy(() => import('./pages/ResetPassword').then((module) => ({ default: module.ResetPassword })));
 const VerifyEmail = React.lazy(() => import('./pages/VerifyEmail').then((module) => ({ default: module.VerifyEmail })));
@@ -85,6 +86,7 @@ function App() {
                   <Route path="team" element={<Team />} />
                   <Route path="live" element={<RoleRoute allowed={['org_admin', 'manager']}><LiveTracking /></RoleRoute>} />
                   <Route path="platform" element={<Platform />} />
+                  <Route path="platform/organizations/:orgId" element={<RoleRoute allowed={['platform_owner']}><PlatformOrganization /></RoleRoute>} />
                   <Route path="notifications" element={<Notifications />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="integrations" element={<Integrations />} />
