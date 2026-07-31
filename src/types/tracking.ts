@@ -45,6 +45,7 @@ export interface LiveRepStatus {
 }
 
 export interface RoutePoint {
+  shiftId: string;
   ts: string;
   lat: number;
   lng: number;

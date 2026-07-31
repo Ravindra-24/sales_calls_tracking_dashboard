@@ -5,7 +5,7 @@ import {
   signOut,
   updateProfile,
 } from 'firebase/auth';
-import { ArrowLeft, Building2, CheckCircle2, MailCheck, ShieldCheck, UserPlus } from 'lucide-react';
+import { ArrowLeft, Building2, CheckCircle2, Eye, EyeOff, MailCheck, ShieldCheck, UserPlus } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, getApiErrorMessage } from '../api/client';
 import { fetchBillingCatalog, FALLBACK_BILLING_CATALOG } from '../api/billing';
@@ -42,6 +42,7 @@ export const Signup = () => {
     user ? (user.emailVerified ? 'organization' : 'verify') : 'account'
   ));
   const [account, setAccount] = useState({ name: '', email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [organization, setOrganization] = useState(() => {
     try {
       const stored = JSON.parse(localStorage.getItem(onboardingDraftKey) || '{}') as Record<string, string>;
@@ -295,7 +296,21 @@ export const Signup = () => {
               <div className="auth-divider"><span>or create with email</span></div>
               <label>Full name<input className="input-field" autoComplete="name" value={account.name} onChange={(event) => setAccount((current) => ({ ...current, name: event.target.value }))} required /></label>
               <label>Work email<input className="input-field" type="email" autoComplete="email" value={account.email} onChange={(event) => setAccount((current) => ({ ...current, email: event.target.value }))} required /></label>
-              <label>Password<input className="input-field" type="password" autoComplete="new-password" minLength={6} value={account.password} onChange={(event) => setAccount((current) => ({ ...current, password: event.target.value }))} required /></label>
+              <label>
+                Password
+                <span className="password-input-wrapper">
+                  <input className="input-field" type={showPassword ? 'text' : 'password'} autoComplete="new-password" minLength={6} value={account.password} onChange={(event) => setAccount((current) => ({ ...current, password: event.target.value }))} required />
+                  <button
+                    type="button"
+                    className="password-visibility-toggle"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    aria-pressed={showPassword}
+                    onClick={() => setShowPassword((visible) => !visible)}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </span>
+              </label>
               <button className="btn-primary" disabled={loading}>{loading ? 'Creating account…' : 'Create account'}</button>
               <p className="billing-form-footnote">Already registered? <Link to={`/login?plan=${selectedPlan}`}>Sign in</Link></p>
             </form>

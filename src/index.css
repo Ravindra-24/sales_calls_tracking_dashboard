@@ -1880,6 +1880,14 @@ button:disabled {
   animation: tracking-marker-pulse 1.8s ease-in-out infinite;
 }
 
+.tracking-div-icon.route-start {
+  background: #16a34a;
+}
+
+.tracking-div-icon.route-end {
+  background: #dc2626;
+}
+
 .tracking-div-icon b {
   line-height: 1;
   transform: rotate(45deg);
@@ -2727,6 +2735,44 @@ button:disabled {
 .auth-input .input-field:focus + svg,
 .auth-input:focus-within > svg {
   color: var(--accent-primary);
+}
+
+.password-input-wrapper {
+  position: relative;
+  display: block;
+}
+
+.password-input-wrapper .input-field {
+  width: 100%;
+  padding-right: 46px;
+}
+
+.password-visibility-toggle {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  place-items: center;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: transparent;
+  cursor: pointer;
+  transition: color .2s ease, background-color .2s ease;
+}
+
+.password-visibility-toggle:hover {
+  color: var(--text-primary);
+  background: var(--bg-control-soft);
+}
+
+.password-visibility-toggle:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
 }
 
 .auth-submit {

@@ -47,6 +47,14 @@ const clientIcon = (name: string) =>
     iconAnchor: [18, 18],
   });
 
+const routeEndpointIcon = (label: 'S' | 'E', tone: 'route-start' | 'route-end') =>
+  L.divIcon({
+    className: 'tracking-div-icon-shell',
+    html: `<span class="tracking-div-icon ${tone}" aria-hidden="true"><b>${label}</b></span>`,
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
+  });
+
 const RecenterMap = ({ center, zoom = 16 }: { center: LatLngTuple; zoom?: number }) => {
   const map = useMap();
   useEffect(() => {
@@ -144,6 +152,7 @@ export const ClientLocationPicker = ({
 };
 
 export interface VisitPolyline {
+  id?: string;
   repId: string;
   positions: LatLngTuple[];
   kind?: 'visit-sequence' | 'gps-route';
@@ -188,7 +197,7 @@ export const VisitMap = ({
         <FitMapToPoints points={mapPoints} />
         {polylines.map((line) => (
           <Polyline
-            key={`${line.repId}-${line.kind ?? 'visit-sequence'}`}
+            key={`${line.repId}-${line.kind ?? 'visit-sequence'}-${line.id ?? 'all'}`}
             positions={line.positions}
             pathOptions={{
               color: line.kind === 'gps-route' ? '#4f8cff' : '#8b5cf6',
@@ -203,6 +212,31 @@ export const VisitMap = ({
             </Tooltip>
           </Polyline>
         ))}
+        {polylines
+          .filter((line) => line.kind === 'gps-route' && line.positions.length > 0)
+          .flatMap((line) => {
+            const name = repNames.get(line.repId) ?? line.repId;
+            const start = line.positions[0];
+            const end = line.positions[line.positions.length - 1];
+            return [
+              <Marker
+                key={`${line.repId}-${line.id ?? 'all'}-route-start`}
+                position={start}
+                icon={routeEndpointIcon('S', 'route-start')}
+                zIndexOffset={900}
+              >
+                <Popup><strong>{name}</strong><br />Shift route started here</Popup>
+              </Marker>,
+              <Marker
+                key={`${line.repId}-${line.id ?? 'all'}-route-end`}
+                position={end}
+                icon={routeEndpointIcon('E', 'route-end')}
+                zIndexOffset={900}
+              >
+                <Popup><strong>{name}</strong><br />Shift route ended here</Popup>
+              </Marker>,
+            ];
+          })}
         {clients.map((client) => (
           <Fragment key={client.id}>
             <Circle

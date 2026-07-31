@@ -44,9 +44,10 @@ export const Visits = () => {
         api.get<ApiResponse<TrackingClient[]>>('/tracking/clients'),
         api.get<ApiResponse<LiveRepStatus[]>>('/tracking/live'),
       ]);
-      setMembers(
-        membersResponse.data.data.filter((member) => member.role === 'sales_member'),
-      );
+      // Every organization role can start a shift in the mobile app. Keeping
+      // only sales_member here hid valid test/field trails recorded by a
+      // manager or org admin (for example Ritik's July 27 shift).
+      setMembers(membersResponse.data.data.filter((member) => member.status === 'active'));
       setClients(clientsResponse.data.data);
       setLiveReps(liveResponse.data.data);
     } catch (requestError) {
@@ -130,6 +131,12 @@ export const Visits = () => {
     [members],
   );
 
+  const boardVisitLabel = useCallback((visit: TrackingVisit) => {
+    const place = visitLabel(visit);
+    if (repId) return place;
+    return `${place} · ${repNames.get(visit.repId) ?? 'Unknown representative'}`;
+  }, [repId, repNames]);
+
   const filteredLiveReps = useMemo(
     () => liveReps.filter((rep) => !repId || rep.repId === repId),
     [liveReps, repId],
@@ -158,11 +165,18 @@ export const Visits = () => {
 
   const displayedLines = useMemo<VisitPolyline[]>(() => {
     if (repId && routePoints.length > 1) {
-      return [{
+      const byShift = new Map<string, RoutePoint[]>();
+      routePoints.forEach((point) => {
+        const points = byShift.get(point.shiftId) ?? [];
+        points.push(point);
+        byShift.set(point.shiftId, points);
+      });
+      return [...byShift.entries()].map(([shiftId, points]) => ({
+        id: shiftId,
         repId,
-        kind: 'gps-route',
-        positions: routePoints.map((point) => [point.lat, point.lng]),
-      }];
+        kind: 'gps-route' as const,
+        positions: points.map((point) => [point.lat, point.lng]),
+      }));
     }
     return visitSequenceLines;
   }, [repId, routePoints, visitSequenceLines]);
@@ -187,9 +201,9 @@ export const Visits = () => {
   );
 
   const board = [
-    { title: 'Unclassified', tone: 'warning', items: unclassified.map(visitLabel) },
-    { title: 'At location', tone: 'active', items: atLocation.map(visitLabel) },
-    { title: 'Visited today', tone: 'active', items: visited.map(visitLabel) },
+    { title: 'Unclassified', tone: 'warning', items: unclassified.map(boardVisitLabel) },
+    { title: 'At location', tone: 'active', items: atLocation.map(boardVisitLabel) },
+    { title: 'Visited today', tone: 'active', items: visited.map(boardVisitLabel) },
     { title: 'Assigned · not visited', tone: 'pending', items: notVisited.map((client) => client.name) },
   ];
 
@@ -234,6 +248,9 @@ export const Visits = () => {
             {members.map((member) => (
               <option key={member.id} value={member.id}>
                 {member.name || member.email}
+                {member.role === 'sales_member'
+                  ? ''
+                  : ` · ${member.role === 'org_admin' ? 'Admin' : 'Manager'}`}
               </option>
             ))}
           </select>
