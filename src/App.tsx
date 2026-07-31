@@ -19,7 +19,13 @@ const VerifyEmail = React.lazy(() => import('./pages/VerifyEmail').then((module)
 const Settings = React.lazy(() => import('./pages/Settings').then((module) => ({ default: module.Settings })));
 const Notifications = React.lazy(() => import('./pages/Notifications').then((module) => ({ default: module.Notifications })));
 const ProductPage = React.lazy(() => import('./pages/ProductPage').then((module) => ({ default: module.ProductPage })));
+const ProductDetailsPage = React.lazy(() => import('./pages/ProductDetailsPage').then((module) => ({ default: module.ProductDetailsPage })));
+const PricingPage = React.lazy(() => import('./pages/PricingPage').then((module) => ({ default: module.PricingPage })));
+const AndroidAppPage = React.lazy(() => import('./pages/AndroidAppPage').then((module) => ({ default: module.AndroidAppPage })));
+const AboutPage = React.lazy(() => import('./pages/AboutPage').then((module) => ({ default: module.AboutPage })));
+const FaqPage = React.lazy(() => import('./pages/FaqPage').then((module) => ({ default: module.FaqPage })));
 const Integrations = React.lazy(() => import('./pages/Integrations').then((module) => ({ default: module.Integrations })));
+const CallRecordings = React.lazy(() => import('./pages/CallRecordings').then((module) => ({ default: module.CallRecordings })));
 const IntegrationDocs = React.lazy(() => import('./pages/IntegrationDocs').then((module) => ({ default: module.IntegrationDocs })));
 const Signup = React.lazy(() => import('./pages/Signup').then((module) => ({ default: module.Signup })));
 const Billing = React.lazy(() => import('./pages/Billing').then((module) => ({ default: module.Billing })));
@@ -29,6 +35,8 @@ const BillingPolicy = React.lazy(() => import('./pages/BillingPolicy').then((mod
 const PrivacyPolicy = React.lazy(() => import('./pages/PrivacyPolicy').then((module) => ({ default: module.PrivacyPolicy })));
 const DeleteAccount = React.lazy(() => import('./pages/DeleteAccount').then((module) => ({ default: module.DeleteAccount })));
 const LiveTracking = React.lazy(() => import('./pages/LiveTracking').then((module) => ({ default: module.LiveTracking })));
+const Clients = React.lazy(() => import('./pages/Clients').then((module) => ({ default: module.Clients })));
+const Visits = React.lazy(() => import('./pages/Visits').then((module) => ({ default: module.Visits })));
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, claims } = useAuth();
@@ -53,7 +61,12 @@ function App() {
               <Routes>
                 <Route path="/" element={<ProductPage />} />
                 <Route path="/home" element={<Navigate to="/" replace />} />
-                <Route path="/product" element={<Navigate to="/" replace />} />
+                <Route path="/product" element={<ProductDetailsPage />} />
+                <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/download" element={<AndroidAppPage />} />
+                <Route path="/android" element={<Navigate to="/download" replace />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/faq" element={<FaqPage />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/claim" element={<ClaimAccount />} />
@@ -85,11 +98,14 @@ function App() {
                   <Route path="calls" element={<CallHistory />} />
                   <Route path="team" element={<Team />} />
                   <Route path="live" element={<RoleRoute allowed={['org_admin', 'manager']}><LiveTracking /></RoleRoute>} />
+                  <Route path="clients" element={<RoleRoute allowed={['org_admin', 'manager']}><Clients /></RoleRoute>} />
+                  <Route path="visits" element={<RoleRoute allowed={['org_admin', 'manager']}><Visits /></RoleRoute>} />
                   <Route path="platform" element={<Platform />} />
                   <Route path="platform/organizations/:orgId" element={<RoleRoute allowed={['platform_owner']}><PlatformOrganization /></RoleRoute>} />
                   <Route path="notifications" element={<Notifications />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="integrations" element={<Integrations />} />
+                  <Route path="call-recordings" element={<CallRecordings />} />
                   <Route path="billing" element={<RoleRoute allowed={['org_admin', 'manager']}><Billing /></RoleRoute>} />
                   <Route path="billing-operations" element={<RoleRoute allowed={['platform_owner']}><BillingOperations /></RoleRoute>} />
                   <Route path="billing-catalog" element={<RoleRoute allowed={['platform_owner']}><BillingCatalog /></RoleRoute>} />

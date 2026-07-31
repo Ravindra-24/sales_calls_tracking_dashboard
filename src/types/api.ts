@@ -46,6 +46,67 @@ export interface CallRecord {
   followUpStatus?: 'none' | 'open' | 'completed';
   nextAction?: string;
   notesUpdatedAt?: string | null;
+  recordingSource?: 'native_recorder' | 'manual' | null;
+  recordingMatchStatus?: 'none' | 'matched' | 'ambiguous' | 'unmatched';
+  recordingUploadStatus?: 'none' | 'pending' | 'uploaded' | 'failed';
+  analysisStatus?: 'none' | 'queued' | 'transcribing' | 'summarizing' | 'ready' | 'failed' | 'deleting';
+  consentNoticeStatus?: 'unknown' | 'detected' | 'missing';
+  recordingDurationSeconds?: number | null;
+}
+
+export interface CallAnalysis {
+  id: string;
+  callId: string;
+  status: 'queued' | 'transcribing' | 'summarizing' | 'ready' | 'failed' | 'deleting';
+  transcript: string | null;
+  summary: string | null;
+  outcome: string | null;
+  keyPoints: string[];
+  actionItems: string[];
+  nextStep: string | null;
+  consentNoticeStatus: 'unknown' | 'detected' | 'missing';
+  failureCode: string | null;
+  failureMessage: string | null;
+  attempts: number;
+  durationSeconds: number;
+  createdAt: string | null;
+  updatedAt: string | null;
+  readyAt: string | null;
+}
+
+export interface RecordingUsage {
+  period: string;
+  usedMinutes: number;
+  limitMinutes: number;
+  remainingMinutes: number;
+  enabled: boolean;
+  policyVersion: string | null;
+}
+
+export interface RecordingConfig {
+  enabled: boolean;
+  policyVersion: string | null;
+  currentPolicyVersion: string;
+  planEligible: boolean;
+  usage: RecordingUsage | null;
+}
+
+export interface RecordingImport {
+  id: string;
+  callId: string | null;
+  repId: string;
+  fingerprint: string;
+  fileName: string;
+  modifiedAt: string | null;
+  durationSeconds: number;
+  sizeBytes: number;
+  source: 'native_recorder' | 'manual';
+  status: 'matched' | 'ambiguous' | 'unmatched' | 'uploaded' | 'failed';
+  matchConfidence: number | null;
+  candidateCallIds: string[];
+  failureMessage: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
 }
 
 export interface CallSummary {
@@ -96,7 +157,7 @@ export interface SyncHealthRecord {
 
 export interface AppNotification {
   id: string;
-  type: 'sync_health' | 'invite_reminder' | 'weekly_nudge' | 'account_issue';
+  type: 'sync_health' | 'invite_reminder' | 'weekly_nudge' | 'account_issue' | 'call_analysis_ready' | 'call_analysis_failed';
   severity: 'info' | 'warning' | 'critical';
   title: string;
   message: string;
@@ -200,6 +261,8 @@ export interface PlatformOrganization {
     workingHoursEnd?: string;
     weeklyReportsEnabled?: boolean;
     managerCanEditSalesMembers?: boolean;
+    callRecordingEnabled?: boolean;
+    callRecordingPolicyVersion?: string;
   };
   createdAt: string | null;
   updatedAt: string | null;

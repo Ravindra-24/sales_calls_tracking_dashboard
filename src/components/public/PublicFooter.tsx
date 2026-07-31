@@ -54,9 +54,11 @@ export const PublicFooter = () => {
 
         <nav className="lw-footer-links" aria-label="Product links">
           <strong>Explore</strong>
-          <a href="/#product-tour">Product</a>
-          <a href="/#pricing">Pricing</a>
-          <a href="/#android">Android</a>
+          <Link to="/product">Product</Link>
+          <Link to="/pricing">Pricing</Link>
+          <Link to="/download">Android app</Link>
+          <Link to="/about">About</Link>
+          <Link to="/faq">FAQ</Link>
           <Link to="/docs/integrations">API documentation</Link>
           <Link to={user ? '/dashboard' : '/login'}>{user ? 'Dashboard' : 'Sign in'}</Link>
         </nav>

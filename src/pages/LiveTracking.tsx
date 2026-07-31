@@ -22,11 +22,16 @@ interface VisitRecord {
   repId: string;
   shiftId: string;
   status: 'open' | 'closed';
-  source: 'geofence' | 'dwell_detection';
+  source: 'geofence' | 'dwell_detection' | 'manual';
+  type: 'client_visit' | 'ad_hoc_stop' | 'unclassified';
   lat: number;
   lng: number;
   orgLocationId: string | null;
+  clientId: string | null;
   placeName: string | null;
+  reason: string | null;
+  notes: string | null;
+  geocodeStatus: 'pending' | 'matched' | 'named' | 'failed' | 'skipped';
   arrivedAt: string | null;
   departedAt: string | null;
   dwellSeconds: number | null;
@@ -38,6 +43,12 @@ interface ClientSite {
   lat: number;
   lng: number;
   radiusMeters: number;
+  address: string | null;
+  contactName: string | null;
+  phone: string | null;
+  category: string | null;
+  notes: string | null;
+  assignedRepIds: string[];
 }
 
 const POLL_INTERVAL_MS = 30_000;
@@ -115,10 +126,10 @@ export const LiveTracking = () => {
   const loadSites = useCallback(async () => {
     if (!canView) return;
     try {
-      const response = await api.get<ApiResponse<ClientSite[]>>('/tracking/locations');
+      const response = await api.get<ApiResponse<ClientSite[]>>('/tracking/clients');
       setSites(response.data.data);
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Failed to load client sites.'));
+      setError(getApiErrorMessage(requestError, 'Failed to load clients.'));
     }
   }, [canView]);
 
@@ -129,7 +140,7 @@ export const LiveTracking = () => {
     setSiteSubmitting(true);
     setError('');
     try {
-      await api.post('/tracking/locations', {
+      await api.post('/tracking/clients', {
         name: siteForm.name.trim(),
         lat: Number(siteForm.lat),
         lng: Number(siteForm.lng),
@@ -138,7 +149,7 @@ export const LiveTracking = () => {
       setSiteForm({ name: '', lat: '', lng: '', radiusMeters: '150' });
       await loadSites();
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Failed to add the client site.'));
+      setError(getApiErrorMessage(requestError, 'Failed to add the client.'));
     } finally {
       setSiteSubmitting(false);
     }
@@ -148,10 +159,10 @@ export const LiveTracking = () => {
     if (!window.confirm(`Remove "${site.name}"? Reps will stop getting automatic visits there on their next shift.`)) return;
     setError('');
     try {
-      await api.delete(`/tracking/locations/${site.id}`);
+      await api.delete(`/tracking/clients/${site.id}`);
       await loadSites();
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Failed to remove the client site.'));
+      setError(getApiErrorMessage(requestError, 'Failed to remove the client.'));
     }
   };
 

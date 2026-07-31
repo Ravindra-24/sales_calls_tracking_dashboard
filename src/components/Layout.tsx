@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { signInWithCustomToken } from 'firebase/auth';
-import { Activity, BadgePercent, Bell, Building2, CreditCard, LayoutDashboard, MapPin, PhoneCall, Users, LogOut, Menu, Settings, ShieldAlert, Webhook, X } from 'lucide-react';
+import { Activity, BadgePercent, Bell, Building2, ContactRound, CreditCard, LayoutDashboard, MapPin, Mic2, PhoneCall, Route, Users, LogOut, Menu, Settings, ShieldAlert, Webhook, X } from 'lucide-react';
 import { api, getApiErrorMessage } from '../api/client';
 import { auth } from '../config/firebase';
 import { useAuth } from '../context/auth';
@@ -109,8 +109,11 @@ export const Layout: React.FC = () => {
     { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', end: true },
     ...(isPlatformOwner ? [{ path: '/dashboard/platform', icon: Building2, label: 'Tenants' }] : []),
     ...(canViewCalls ? [{ path: '/dashboard/calls', icon: PhoneCall, label: 'Call History' }] : []),
+    ...(canViewCalls && claims.role !== 'sales_member' ? [{ path: '/dashboard/call-recordings', icon: Mic2, label: 'Call Recordings' }] : []),
     ...(canManageTeam ? [{ path: '/dashboard/team', icon: Users, label: 'Team Management' }] : []),
     ...(canManageTeam ? [{ path: '/dashboard/live', icon: MapPin, label: 'Live Tracking' }] : []),
+    ...(canManageTeam ? [{ path: '/dashboard/clients', icon: ContactRound, label: 'Clients' }] : []),
+    ...(canManageTeam ? [{ path: '/dashboard/visits', icon: Route, label: 'Visits & Routes' }] : []),
     { path: '/dashboard/notifications', icon: Bell, label: 'Notifications' },
     ...(canManageIntegrations ? [{ path: '/dashboard/integrations', icon: Webhook, label: 'Integrations' }] : []),
     ...(canManageTeam ? [{ path: '/dashboard/billing', icon: CreditCard, label: 'Billing' }] : []),

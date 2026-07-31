@@ -1,7 +1,7 @@
 import { ShieldCheck } from 'lucide-react';
 import { PublicFooter, PublicHeader, Reveal, usePublicMetadata } from '../components/public';
 
-const privacyPolicyVersion = '2026-07-18';
+const privacyPolicyVersion = '2026-07-31';
 
 const intro = 'This policy explains what Smartly Manage collects when your organization uses the Android app and web dashboard, and how that information is used, shared, retained, and deleted.';
 
@@ -16,11 +16,15 @@ const sections: Array<{ title: string; body: string }> = [
   },
   {
     title: 'Call and contact data (Android permissions)',
-    body: 'The Smartly Manage Android app requests the call log, contacts, and phone state permissions. These permissions are used solely to provide the app’s core call-tracking feature: after the device user explicitly grants them, the app reads call metadata — call time, direction, duration, and status — along with the associated contact name and phone number, and uploads it to Smartly Manage servers so that the user and their organization’s managers can review team call activity. We never record, listen to, or store call audio, and we never read the content of messages. Call and contact data is not used for advertising and is not shared with third parties beyond the service providers listed below. Organizations are responsible for informing their team members that work calls are tracked before inviting them.',
+    body: 'The Smartly Manage Android app requests call log, contacts, and phone state permissions for call tracking. After the device user grants them, the app reads call metadata — time, direction, duration, status, contact name, and phone number — so the user and authorized organization members can review work activity. Smartly Manage does not directly capture call audio. On Max and Enterprise, an organization may separately enable native recording import: after one-time organization approval, one-time rep disclosure, and rep-selected folder access, the app can upload recordings already created by the phone’s dialer for transcription and AI summarization. We never read message content, use this data for advertising, or sell it.',
+  },
+  {
+    title: 'Optional call recordings and AI analysis',
+    body: 'When the optional native recording feature is enabled, we collect the selected audio recording, transcript, AI-generated summary, outcome, key points, action items, next step, processing status, and an automated indication of whether a recording notice was detected. The rep, their organization’s managers, and organization admins can view this content; platform owners cannot. Audio and transcripts are stored privately in Google Cloud, playback uses short-lived links, and access and deletion events are audited. Speech recognition may be processed in Singapore while stored call data and AI summaries are maintained in the configured India region. Recordings and derived outputs remain until an authorized user deletes them or the associated account is deleted. Organizations and reps are responsible for giving any legally required customer notice before recording.',
   },
   {
     title: 'Location data (shift-based visit tracking)',
-    body: 'If your organization uses Smartly Manage’s field-visit tracking, the Android app collects the device’s precise location — including in the background while the app is closed — but only during a work shift that the signed-in rep has started themselves, and only after the rep has separately agreed to an in-app disclosure and granted the location permission on their own device. A persistent notification is shown on the device the entire time location is being collected; ending the shift, declining or withdrawing consent, or revoking the permission stops all collection. Location and derived visit data (places visited, arrival and departure times) are visible only to the rep and their organization’s admins and managers, are never sold, and are never shared with third parties beyond the service providers listed below. Raw location points are automatically deleted after 90 days; summarized visit records are retained while the account is active and are removed through the account-deletion process described later in this policy.',
+    body: 'If your organization uses Smartly Manage’s field-visit tracking, the Android app collects the device’s precise location — including in the background while the app is closed — but only during a work shift that the signed-in rep has started themselves, and only after the rep has separately agreed to an in-app disclosure and granted the location permission on their own device. A persistent notification is shown on the device the entire time location is being collected; ending the shift, declining or withdrawing consent, or revoking the permission stops all collection. Live position, derived visit data (places visited, arrival and departure times), and the route or path traveled during a rep-started shift are visible only to the rep and their organization’s admins and managers, are never sold, and are never shared with third parties beyond the service providers listed below. Raw location points used for route review are automatically deleted after 90 days; summarized visit records are retained while the account is active and are removed through the account-deletion process described later in this policy.',
   },
   {
     title: 'Billing and payment data',
@@ -32,11 +36,11 @@ const sections: Array<{ title: string; body: string }> = [
   },
   {
     title: 'How we use this information',
-    body: 'Data is used to operate core features (call history, team reporting, analytics), manage billing and access, send transactional emails (invites, password resets, billing notices), and provide support. We do not sell personal data, we do not show ads, and we do not use your data for any purpose unrelated to providing the service.',
+    body: 'Data is used to operate core features (call history, optional transcription and AI summaries, team reporting, analytics), manage billing and access, send transactional emails and notifications, and provide support. We do not sell personal data, show ads, or use customer recordings or transcripts to train our own models.',
   },
   {
     title: 'Data sharing and service providers',
-    body: 'We share data only with the service providers needed to run Smartly Manage: Razorpay for payment processing, Google Cloud / Firebase for hosting, authentication, database, and storage, and a transactional email delivery provider for messages such as invites and billing notices. These providers process data under their own security and privacy commitments. We do not sell personal data or share it with advertisers or data brokers. We may disclose information if required by law or to protect the rights and safety of our users and service.',
+    body: 'We share data only with service providers needed to run Smartly Manage: Razorpay for payment processing, Google Cloud / Firebase for hosting, authentication, database, storage, Speech-to-Text, and Vertex AI processing, and a transactional email provider. These providers process data under their own security and privacy commitments. We do not sell personal data or share it with advertisers or data brokers. We may disclose information if required by law or to protect users and the service.',
   },
   {
     title: 'Data storage and security',

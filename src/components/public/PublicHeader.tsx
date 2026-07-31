@@ -3,29 +3,25 @@ import { ArrowRight, Menu, X } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/auth';
 
-const sectionLinks = [
-  { id: 'product-tour', label: 'Product' },
-  { id: 'roles', label: 'Solutions' },
-  { id: 'pricing', label: 'Pricing' },
-  { id: 'android', label: 'Android' },
-  { id: 'faq', label: 'FAQ' },
+const navigationLinks = [
+  { to: '/product', label: 'Product' },
+  { to: '/pricing', label: 'Pricing' },
+  { to: '/download', label: 'Android' },
+  { to: '/about', label: 'About' },
+  { to: '/faq', label: 'FAQ' },
+  { to: '/docs/integrations', label: 'Docs' },
 ];
 
 interface PublicHeaderProps {
-  activeSection?: string;
   contextLabel?: string;
 }
 
-const prefersReducedMotion = () =>
-  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-export const PublicHeader = ({ activeSection = '', contextLabel }: PublicHeaderProps) => {
+export const PublicHeader = ({ contextLabel }: PublicHeaderProps) => {
   const { user } = useAuth();
   const location = useLocation();
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const mobilePanelRef = useRef<HTMLDivElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const isHome = location.pathname === '/';
 
   useEffect(() => {
     setMenuOpen(false);
@@ -75,31 +71,16 @@ export const PublicHeader = ({ activeSection = '', contextLabel }: PublicHeaderP
     };
   }, [menuOpen]);
 
-  const navigateToSection = (event: React.MouseEvent<HTMLAnchorElement>, id: string) => {
-    if (!isHome) {
-      setMenuOpen(false);
-      return;
-    }
-
-    const section = document.getElementById(id);
-    if (!section) return;
-    event.preventDefault();
-    setMenuOpen(false);
-    section.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
-    window.history.replaceState(null, '', `/#${id}`);
-  };
-
-  const renderSectionLinks = (mobile = false) => sectionLinks.map((item) => (
-    <a
-      key={item.id}
-      href={isHome ? `#${item.id}` : `/#${item.id}`}
-      className={activeSection === item.id ? 'is-active' : ''}
-      aria-current={activeSection === item.id ? 'location' : undefined}
-      onClick={(event) => navigateToSection(event, item.id)}
+  const renderNavigationLinks = (mobile = false) => navigationLinks.map((item) => (
+    <Link
+      key={item.to}
+      to={item.to}
+      className={location.pathname === item.to ? 'is-active' : ''}
+      aria-current={location.pathname === item.to ? 'page' : undefined}
       tabIndex={mobile || !menuOpen ? undefined : -1}
     >
       {item.label}
-    </a>
+    </Link>
   ));
 
   return (
@@ -112,10 +93,7 @@ export const PublicHeader = ({ activeSection = '', contextLabel }: PublicHeaderP
         </Link>
 
         <nav className="lw-desktop-navigation" aria-label="Primary navigation">
-          {renderSectionLinks()}
-          <Link className={location.pathname === '/docs/integrations' ? 'is-active' : ''} to="/docs/integrations">
-            Docs
-          </Link>
+          {renderNavigationLinks()}
         </nav>
 
         <div className="lw-header-actions">
@@ -149,8 +127,7 @@ export const PublicHeader = ({ activeSection = '', contextLabel }: PublicHeaderP
           />
           <div ref={mobilePanelRef} className="lw-mobile-panel" id="lw-mobile-navigation">
             <nav aria-label="Mobile navigation">
-              {renderSectionLinks(true)}
-              <Link className={location.pathname === '/docs/integrations' ? 'is-active' : ''} to="/docs/integrations">Docs</Link>
+              {renderNavigationLinks(true)}
             </nav>
             <div className={`lw-mobile-actions${user ? ' single-action' : ''}`}>
               {!user && <Link className="lw-button lw-button-secondary" to="/login">Sign in</Link>}

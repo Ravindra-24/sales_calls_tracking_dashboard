@@ -7,6 +7,10 @@ import {
   Download,
   Filter,
   MessageSquare,
+  PlayCircle,
+  RefreshCw,
+  Sparkles,
+  Trash2,
   PhoneCall,
   PhoneIncoming,
   PhoneMissed,
@@ -16,7 +20,7 @@ import {
 import { api, getApiErrorMessage } from '../api/client';
 import { useAuth } from '../context/auth';
 import { useFeedback } from '../context/feedback';
-import type { ApiResponse, CallRecord, CallSummary, SavedCallFilter, TeamMember } from '../types/api';
+import type { ApiResponse, CallAnalysis, CallRecord, CallSummary, SavedCallFilter, TeamMember } from '../types/api';
 
 interface CallFilters {
   repId: string;
@@ -118,6 +122,11 @@ export const CallHistory = () => {
   const [cursorHistory, setCursorHistory] = useState<CursorPage[]>([{ offset: 0 }]);
   const [nextCursor, setNextCursor] = useState<string>();
   const [refreshVersion, setRefreshVersion] = useState(0);
+  const [analysisCall, setAnalysisCall] = useState<CallRecord | null>(null);
+  const [analysis, setAnalysis] = useState<CallAnalysis | null>(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState('');
+  const [audioUrl, setAudioUrl] = useState('');
   const filterButtonRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const currentPage = cursorHistory[cursorHistory.length - 1];
@@ -360,6 +369,59 @@ export const CallHistory = () => {
     }
   };
 
+  const openAnalysis = async (call: CallRecord) => {
+    setAnalysisCall(call);
+    setAnalysis(null);
+    setAudioUrl('');
+    setAnalysisError('');
+    setAnalysisLoading(true);
+    try {
+      const response = await api.get<ApiResponse<CallAnalysis>>(`/calls/${call.id}/analysis`);
+      setAnalysis(response.data.data);
+      if (response.data.data.status === 'ready') {
+        const audio = await api.get<ApiResponse<{ url: string }>>(`/calls/${call.id}/analysis/audio-url`);
+        setAudioUrl(audio.data.data.url);
+      }
+    } catch (requestError) {
+      setAnalysisError(getApiErrorMessage(requestError, 'Call analysis is not available yet.'));
+    } finally {
+      setAnalysisLoading(false);
+    }
+  };
+
+  const retryAnalysis = async () => {
+    if (!analysisCall) return;
+    try {
+      await api.post(`/calls/${analysisCall.id}/analysis/retry`);
+      setAnalysis(current => current ? { ...current, status: 'queued', failureMessage: null } : current);
+      feedback.toast({ variant: 'success', message: 'Call analysis queued for retry.' });
+      setRefreshVersion(current => current + 1);
+    } catch (requestError) {
+      setAnalysisError(getApiErrorMessage(requestError, 'Failed to retry call analysis.'));
+    }
+  };
+
+  const deleteAnalysis = async () => {
+    if (!analysisCall) return;
+    const approved = await feedback.confirm({
+      title: 'Delete recording and AI output?',
+      message: 'The recording, transcript, and summary will be permanently removed.',
+      confirmLabel: 'Delete permanently',
+      variant: 'danger',
+    });
+    if (!approved) return;
+    try {
+      await api.delete(`/calls/${analysisCall.id}/analysis`);
+      setAnalysisCall(null);
+      setAnalysis(null);
+      setAudioUrl('');
+      setRefreshVersion(current => current + 1);
+      feedback.toast({ variant: 'success', message: 'Recording and analysis deleted.' });
+    } catch (requestError) {
+      setAnalysisError(getApiErrorMessage(requestError, 'Failed to delete call analysis.'));
+    }
+  };
+
   const filterPanel = filterOpen && (
     <div
       className={isMobile ? 'call-filter-overlay' : 'call-filter-inline'}
@@ -458,12 +520,12 @@ export const CallHistory = () => {
       <div className="section-card table-card" aria-busy={loading}>
         <div className="table-scroll">
           <table className="data-table">
-            <thead><tr><th>#</th><th>Direction</th><th>Representative</th><th>Phone number</th><th>Date & time</th><th>Duration</th><th>Notes</th><th>Actions</th></tr></thead>
+            <thead><tr><th>#</th><th>Direction</th><th>Representative</th><th>Phone number</th><th>Date & time</th><th>Duration</th><th>AI</th><th>Notes</th><th>Actions</th></tr></thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={8} className="table-message">Loading calls…</td></tr>
+                <tr><td colSpan={9} className="table-message">Loading calls…</td></tr>
               ) : calls.length === 0 ? (
-                <tr><td colSpan={8} className="table-message">No calls match these filters.</td></tr>
+                <tr><td colSpan={9} className="table-message">No calls match these filters.</td></tr>
               ) : calls.map((call, index) => (
                 <tr key={call.id}>
                   <td data-label="#" className="call-row-number">{currentPage.offset + index + 1}</td>
@@ -472,6 +534,16 @@ export const CallHistory = () => {
                   <td data-label="Phone number" className="phone-number">{call.phoneNumber}</td>
                   <td data-label="Date & time">{format(new Date(call.startTime), 'd MMM yyyy, h:mm a')}</td>
                   <td data-label="Duration">{formatDuration(call.durationSeconds)}</td>
+                  <td data-label="AI">
+                    {call.analysisStatus && call.analysisStatus !== 'none' ? (
+                      <button className="analysis-status-button" type="button" onClick={() => void openAnalysis(call)}>
+                        <Sparkles size={15} /> {call.analysisStatus}
+                      </button>
+                    ) : <span className="muted-cell">—</span>}
+                    {call.consentNoticeStatus === 'missing' && (
+                      <small className="call-recording-error">Notice not detected</small>
+                    )}
+                  </td>
                   <td data-label="Notes">
                     <div className="call-notes-cell">
                       <span>{call.nextAction || call.notes || '—'}</span>
@@ -493,6 +565,53 @@ export const CallHistory = () => {
           </div>
         </div>
       </div>
+
+      {analysisCall && (
+        <div className="analysis-dialog-backdrop" role="presentation" onMouseDown={event => {
+          if (event.target === event.currentTarget) setAnalysisCall(null);
+        }}>
+          <section className="analysis-dialog section-card" role="dialog" aria-modal="true" aria-labelledby="analysis-title">
+            <div className="analysis-dialog-heading">
+              <div>
+                <p className="eyebrow">AI call review</p>
+                <h2 id="analysis-title">{analysisCall.phoneNumber}</h2>
+              </div>
+              <button className="icon-button" type="button" aria-label="Close" onClick={() => setAnalysisCall(null)}><X size={19} /></button>
+            </div>
+            {analysisLoading ? (
+              <div className="table-message">Loading call analysis…</div>
+            ) : analysisError ? (
+              <div className="notice error-notice">{analysisError}</div>
+            ) : analysis ? (
+              <div className="analysis-content">
+                <div className="analysis-status-line">
+                  <span className={`direction-badge ${analysis.status === 'ready' ? 'incoming' : analysis.status === 'failed' ? 'missed' : 'outgoing'}`}>{analysis.status}</span>
+                  <span className={`direction-badge ${analysis.consentNoticeStatus === 'detected' ? 'incoming' : analysis.consentNoticeStatus === 'missing' ? 'missed' : 'outgoing'}`}>
+                    Notice {analysis.consentNoticeStatus}
+                  </span>
+                </div>
+                {audioUrl && <audio className="analysis-audio" controls preload="metadata" src={audioUrl} />}
+                {analysis.summary && <section><h3>Summary</h3><p>{analysis.summary}</p></section>}
+                {analysis.outcome && <section><h3>Outcome</h3><p>{analysis.outcome}</p></section>}
+                {analysis.keyPoints.length > 0 && <section><h3>Key points</h3><ul>{analysis.keyPoints.map(point => <li key={point}>{point}</li>)}</ul></section>}
+                {analysis.actionItems.length > 0 && <section><h3>Action items</h3><ul>{analysis.actionItems.map(item => <li key={item}>{item}</li>)}</ul></section>}
+                {analysis.nextStep && <section><h3>Next step</h3><p>{analysis.nextStep}</p></section>}
+                {analysis.transcript && <details><summary>Transcript</summary><pre className="analysis-transcript">{analysis.transcript}</pre></details>}
+                {analysis.failureMessage && <div className="notice error-notice">{analysis.failureMessage}</div>}
+                <div className="analysis-actions">
+                  {analysis.status === 'failed' && claims.role !== 'sales_member' && (
+                    <button className="secondary-button" type="button" onClick={() => void retryAnalysis()}><RefreshCw size={16} /> Retry</button>
+                  )}
+                  {claims.role !== 'manager' && (
+                    <button className="danger-button" type="button" onClick={() => void deleteAnalysis()}><Trash2 size={16} /> Delete recording</button>
+                  )}
+                  {audioUrl && <a className="secondary-button" href={audioUrl} target="_blank" rel="noreferrer"><PlayCircle size={16} /> Open audio</a>}
+                </div>
+              </div>
+            ) : null}
+          </section>
+        </div>
+      )}
     </div>
   );
 };
