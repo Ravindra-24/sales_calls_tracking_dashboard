@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import {
   ArrowLeft,
@@ -422,6 +423,20 @@ export const CallHistory = () => {
     }
   };
 
+  const applyAnalysisSuggestion = async () => {
+    if (!analysisCall?.leadId || !analysis?.suggestedNextAction) return;
+    try {
+      await api.post(`/leads/${analysisCall.leadId}/suggestions/${analysis.id}/apply`);
+      setAnalysis((current) => current?.suggestedNextAction ? {
+        ...current,
+        suggestedNextAction: { ...current.suggestedNextAction, appliedAt: new Date().toISOString() },
+      } : current);
+      feedback.toast({ variant: 'success', message: 'Suggestion applied to the lead.' });
+    } catch (requestError) {
+      setAnalysisError(getApiErrorMessage(requestError, 'Failed to apply suggestion.'));
+    }
+  };
+
   const filterPanel = filterOpen && (
     <div
       className={isMobile ? 'call-filter-overlay' : 'call-filter-inline'}
@@ -531,7 +546,7 @@ export const CallHistory = () => {
                   <td data-label="#" className="call-row-number">{currentPage.offset + index + 1}</td>
                   <td data-label="Direction"><span className={`direction-badge ${call.direction}`}>{directionIcon(call.direction)} {call.direction}</span></td>
                   <td data-label="Representative">{names.get(call.repId) ?? `Rep ${call.repId.slice(0, 6)}`}</td>
-                  <td data-label="Phone number" className="phone-number">{call.phoneNumber}</td>
+                  <td data-label="Phone number" className="phone-number">{call.leadId ? <Link to={`/dashboard/leads/${call.leadId}`}>{call.phoneNumber}</Link> : call.phoneNumber}</td>
                   <td data-label="Date & time">{format(new Date(call.startTime), 'd MMM yyyy, h:mm a')}</td>
                   <td data-label="Duration">{formatDuration(call.durationSeconds)}</td>
                   <td data-label="AI">
@@ -593,9 +608,14 @@ export const CallHistory = () => {
                 {audioUrl && <audio className="analysis-audio" controls preload="metadata" src={audioUrl} />}
                 {analysis.summary && <section><h3>Summary</h3><p>{analysis.summary}</p></section>}
                 {analysis.outcome && <section><h3>Outcome</h3><p>{analysis.outcome}</p></section>}
+                {analysis.sentimentLabel && <section><h3>Customer sentiment</h3><p><span className={`health-pill ${analysis.sentimentLabel}`}>{analysis.sentimentLabel} {analysis.sentimentScore !== null ? `(${analysis.sentimentScore.toFixed(2)})` : ''}</span> · {analysis.sentimentConfidence} confidence</p></section>}
                 {analysis.keyPoints.length > 0 && <section><h3>Key points</h3><ul>{analysis.keyPoints.map(point => <li key={point}>{point}</li>)}</ul></section>}
                 {analysis.actionItems.length > 0 && <section><h3>Action items</h3><ul>{analysis.actionItems.map(item => <li key={item}>{item}</li>)}</ul></section>}
+                {analysis.buyingSignals.length > 0 && <section><h3>Buying signals</h3><ul>{analysis.buyingSignals.map(item => <li key={item}>{item}</li>)}</ul></section>}
+                {analysis.riskSignals.length > 0 && <section><h3>Risks and objections</h3><ul>{[...analysis.riskSignals, ...analysis.objections, ...analysis.customerConcerns].map(item => <li key={item}>{item}</li>)}</ul></section>}
                 {analysis.nextStep && <section><h3>Next step</h3><p>{analysis.nextStep}</p></section>}
+                {analysis.suggestedNextAction && <section className="suggestion-box"><Sparkles size={18} /><div><h3>Suggested next action</h3><p><strong>{analysis.suggestedNextAction.text}</strong></p><p>{analysis.suggestedNextAction.rationale}</p></div>{analysisCall.leadId && !analysis.suggestedNextAction.appliedAt && <button className="btn-primary" type="button" onClick={() => void applyAnalysisSuggestion()}>Apply to lead</button>}</section>}
+                <small>Processed by {analysis.transcriptionProvider} transcription{analysis.transcriptionModel ? ` (${analysis.transcriptionModel})` : ''} and {analysis.intelligenceProvider} intelligence{analysis.intelligenceModel ? ` (${analysis.intelligenceModel})` : ''}{analysis.fallbackUsed ? ` · Google fallback used (${analysis.fallbackReason || 'provider unavailable'})` : ''}</small>
                 {analysis.transcript && <details><summary>Transcript</summary><pre className="analysis-transcript">{analysis.transcript}</pre></details>}
                 {analysis.failureMessage && <div className="notice error-notice">{analysis.failureMessage}</div>}
                 <div className="analysis-actions">

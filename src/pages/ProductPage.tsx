@@ -7,8 +7,8 @@ import {
   Download,
   Layers3,
   PhoneCall,
-  ShieldCheck,
   Sparkles,
+  Target,
   UsersRound,
 } from 'lucide-react';
 import salesTeamImage from '../assets/sales-team.jpg';
@@ -50,8 +50,8 @@ export const ProductPage = () => {
   const [googleError, setGoogleError] = useState('');
 
   usePublicMetadata({
-    title: 'Smartly Manage | Sales call visibility for focused teams',
-    description: 'Connect Android call activity with a clear, role-aware web workspace for sales managers and representatives.',
+    title: 'Smartly Manage | Calls, leads, and field visibility',
+    description: 'Connect permitted Android call activity, lead follow-up, and representative-started field shifts in one role-aware sales workspace.',
     path: '/',
   });
 
@@ -75,10 +75,10 @@ export const ProductPage = () => {
           <div className="lw-hero-glow" aria-hidden="true" />
           <div className="lw-container lw-hero-grid">
             <Reveal className="lw-hero-copy">
-              <p className="lw-eyebrow"><Sparkles size={15} /> Sales call visibility, without manual reporting</p>
-              <h1 id="smartly-manage-hero-title">Every sales call. One clear picture.</h1>
+              <p className="lw-eyebrow"><Sparkles size={15} /> Connected sales activity, without status chasing</p>
+              <h1 id="smartly-manage-hero-title">Calls, follow-ups, and field activity. One clear picture.</h1>
               <p className="lw-hero-lead">
-                Smartly Manage brings permitted Android call activity, team context, and manager workflows into one focused workspace.
+                Smartly Manage brings permitted Android call activity, lead follow-up, consented field visits, and manager workflows into one focused workspace.
               </p>
               <div className="lw-hero-actions">
                 <Link className="lw-button lw-button-primary" to={user ? '/dashboard' : '/signup'}>
@@ -102,7 +102,7 @@ export const ProductPage = () => {
               <div className="lw-hero-assurances" aria-label="Smartly Manage product assurances">
                 <span><CheckCircle2 size={15} /> No cloud-telephony charges</span>
                 <span><CheckCircle2 size={15} /> Role-aware access</span>
-                <span><CheckCircle2 size={15} /> Android and web workflow</span>
+                <span><CheckCircle2 size={15} /> Representative-controlled tracking</span>
               </div>
             </Reveal>
 
@@ -111,7 +111,7 @@ export const ProductPage = () => {
               <div className="lw-preview-window">
                 <div className="lw-preview-toolbar">
                   <div className="lw-preview-title">
-                    <img src="/favicon.svg" alt="" />
+                    <img src="/smartly-manage-icon.webp" alt="" />
                     <span><strong>Team overview</strong><small>Manager workspace</small></span>
                   </div>
                   <span className="lw-preview-status"><i /> Sync ready</span>
@@ -121,7 +121,7 @@ export const ProductPage = () => {
                     <span className="active"><BarChart3 size={16} /> Overview</span>
                     <span><PhoneCall size={16} /> Calls</span>
                     <span><UsersRound size={16} /> Team</span>
-                    <span><ShieldCheck size={16} /> Access</span>
+                    <span><Target size={16} /> Leads</span>
                   </div>
                   <div className="lw-preview-content">
                     <div className="lw-preview-heading">
@@ -130,7 +130,7 @@ export const ProductPage = () => {
                     </div>
                     <div className="lw-preview-summary">
                       <div><PhoneCall size={17} /><span><strong>Recent calls</strong><small>One organized timeline</small></span></div>
-                      <div><BarChart3 size={17} /><span><strong>Team context</strong><small>Ready for coaching</small></span></div>
+                      <div><BarChart3 size={17} /><span><strong>Follow-up context</strong><small>Ready for the next action</small></span></div>
                     </div>
                     <div className="lw-preview-activity">
                       <div><span className="lw-call-icon outgoing"><ArrowRight size={14} /></span><p><strong>Outgoing call</strong><small>Synced from Android</small></p><em>Connected</em></div>
@@ -142,9 +142,9 @@ export const ProductPage = () => {
               </div>
               <div className="lw-preview-phone" aria-label="Smartly Manage Android sync preview">
                 <span className="lw-phone-speaker" />
-                <img src="/favicon.svg" alt="" />
+                <img src="/smartly-manage-icon.webp" alt="" />
                 <small>Android sync</small>
-                <strong>Call metadata ready</strong>
+                <strong>Activity ready to sync</strong>
                 <span className="lw-phone-check"><CheckCircle2 size={17} /> Secure sign-in</span>
               </div>
             </Reveal>
@@ -155,8 +155,8 @@ export const ProductPage = () => {
           <div className="lw-container">
             <div className="lw-section-heading">
               <p className="lw-eyebrow">A clearer operating rhythm</p>
-              <h2>Less chasing for updates. More useful conversations.</h2>
-              <p>Give managers dependable context without turning every sales representative into a data-entry operator.</p>
+              <h2>Less chasing for updates. More useful action.</h2>
+              <p>Give managers dependable call, lead, and field context without turning every sales representative into a data-entry operator.</p>
             </div>
             <MobileSlider className="lw-outcome-grid" count={productOutcomes.length} label="Smartly Manage outcomes">
               {productOutcomes.map((outcome, index) => (
@@ -183,12 +183,12 @@ export const ProductPage = () => {
             </div>
             <div className="lw-story-copy">
               <p className="lw-eyebrow">Managers and representatives, connected</p>
-              <h2>See what happened without interrupting the work.</h2>
-              <p>Representatives keep making calls from Android. Managers get a role-aware view for coaching, follow-up, and team planning. Everyone works from the same activity picture.</p>
+              <h2>See what happened and what needs attention next.</h2>
+              <p>Representatives keep calling, updating leads, and starting field shifts from Android. Managers get a role-aware view for coaching, follow-up, and team planning. Everyone works from the same activity picture.</p>
               <ul>
                 <li><CheckCircle2 size={18} /> Clear call direction, duration, and timing</li>
-                <li><CheckCircle2 size={18} /> Organization and role-based access</li>
-                <li><CheckCircle2 size={18} /> Optional native recording import on eligible plans</li>
+                <li><CheckCircle2 size={18} /> Lead stages, next actions, and follow-up dates</li>
+                <li><CheckCircle2 size={18} /> Consent-led field visits and optional call intelligence</li>
               </ul>
               <Link className="lw-text-link lw-text-link-dark" to="/about">
                 Why we built Smartly Manage <ArrowRight size={17} />
@@ -222,8 +222,8 @@ export const ProductPage = () => {
           <div className="lw-container">
             <Reveal className="lw-final-cta-card">
               <p className="lw-eyebrow">Give your sales operation a clearer rhythm</p>
-              <h2 id="smartly-manage-final-cta">Your team makes the calls. Smartly Manage brings the picture together.</h2>
-              <p>Start with the role-aware dashboard today, then connect Android activity when your team is ready.</p>
+              <h2 id="smartly-manage-final-cta">Your team does the work. Smartly Manage keeps the context connected.</h2>
+              <p>Start with the role-aware workspace today, then enable Android call or field features when your team is ready.</p>
               <div>
                 <Link className="lw-button lw-button-primary" to={user ? '/dashboard' : '/signup'}>
                   {user ? 'Open dashboard' : 'Start free'} <ArrowRight size={18} />

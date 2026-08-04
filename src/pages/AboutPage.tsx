@@ -8,7 +8,7 @@ const principles = [
   {
     icon: Focus,
     title: 'Clarity before complexity',
-    copy: 'Call activity should help a manager decide what to do next, not create another reporting project.',
+    copy: 'Activity data should help a team decide what to do next, not create another reporting project.',
   },
   {
     icon: HeartHandshake,
@@ -18,7 +18,7 @@ const principles = [
   {
     icon: ShieldCheck,
     title: 'Access with intention',
-    copy: 'Authentication, roles, permissions, and disclosure are part of the product—not an afterthought.',
+    copy: 'Authentication, roles, permissions, consent, and clear disclosure are part of the product—not an afterthought.',
   },
 ];
 
@@ -27,7 +27,7 @@ export const AboutPage = () => {
 
   usePublicMetadata({
     title: 'About | Smartly Manage',
-    description: 'Learn why Smartly Manage is building a clearer, more respectful way for sales teams to understand call activity.',
+    description: 'Learn why Smartly Manage is building a clearer, more respectful way to connect sales calls, follow-up, and field activity.',
     path: '/about',
   });
 
@@ -39,8 +39,8 @@ export const AboutPage = () => {
           <div className="lw-container lw-about-hero-grid">
             <Reveal>
               <p className="lw-eyebrow">About Smartly Manage</p>
-              <h1>Sales visibility should help the conversation—not replace it.</h1>
-              <p>We are building a practical bridge between the calls representatives make and the context managers need to coach, plan, and follow up.</p>
+              <h1>Sales visibility should support the work—not become more work.</h1>
+              <p>We are building a practical bridge between the calls, follow-ups, and field visits representatives handle and the context managers need to coach and plan.</p>
             </Reveal>
             <Reveal className="lw-about-hero-image" delay={100}>
               <img src={salesTeamImage} alt="An Indian sales team reviewing call activity together" />
@@ -52,15 +52,15 @@ export const AboutPage = () => {
           <div className="lw-container lw-about-mission-grid">
             <div>
               <p className="lw-eyebrow">Why we built it</p>
-              <h2>Important work was getting lost between phone calls and spreadsheets.</h2>
+              <h2>Important context was getting lost between phone calls, field work, and spreadsheets.</h2>
             </div>
             <div>
-              <p>Sales managers often need a reliable picture of customer activity, but representatives should not have to reconstruct every call at the end of the day.</p>
-              <p>Smartly Manage connects permitted Android call metadata to a role-aware web workspace. The goal is simple: fewer status chases, better coaching context, and more time for actual customer work.</p>
+              <p>Sales managers often need a reliable picture of customer activity, but representatives should not have to reconstruct every call, lead update, or visit at the end of the day.</p>
+              <p>Smartly Manage connects permitted Android call metadata, follow-up records, and representative-started field shifts to a role-aware web workspace. The goal is simple: fewer status chases, better coaching context, and more time for customer work.</p>
               <ul>
                 <li><CheckCircle2 size={18} /> Designed for real organization roles</li>
-                <li><CheckCircle2 size={18} /> Clear about permissions and data use</li>
-                <li><CheckCircle2 size={18} /> Built to grow from a free team workflow to connected operations</li>
+                <li><CheckCircle2 size={18} /> Clear about permissions, consent, and data use</li>
+                <li><CheckCircle2 size={18} /> Built to grow from a free workflow to call intelligence and connected operations</li>
               </ul>
             </div>
           </div>
@@ -88,8 +88,8 @@ export const AboutPage = () => {
           <div className="lw-container">
             <Reveal className="lw-final-cta-card">
               <p className="lw-eyebrow"><UsersRound size={15} /> Built for focused sales teams</p>
-              <h2>Give your organization one clear place to understand call activity.</h2>
-              <p>Explore the workflow in detail or create your workspace today.</p>
+              <h2>Give your organization one clear place to understand sales activity.</h2>
+              <p>Explore the calls-to-follow-up workflow in detail or create your workspace today.</p>
               <div>
                 <Link className="lw-button lw-button-primary" to={user ? '/dashboard' : '/signup'}>
                   {user ? 'Open dashboard' : 'Start free'} <ArrowRight size={18} />

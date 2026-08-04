@@ -2,10 +2,11 @@ import { useMemo, useState } from 'react';
 import { Check, Copy, MessageCircle, Send, Share2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/auth';
+import { buildTrackedShareUrl } from '../../utils/marketingLinks';
 
 const configuredSiteUrl = import.meta.env.VITE_PUBLIC_SITE_URL?.trim().replace(/\/$/, '') ?? '';
-const shareTitle = 'Smartly Manage — Sales call visibility';
-const shareDescription = 'Turn Android sales call metadata into a clear, role-aware view for managers and their teams.';
+const shareTitle = 'Smartly Manage — Connected sales activity';
+const shareDescription = 'Connect permitted Android calls, lead follow-up, and representative-started field shifts in one role-aware workspace.';
 
 export const PublicFooter = () => {
   const { user } = useAuth();
@@ -15,12 +16,15 @@ export const PublicFooter = () => {
     if (typeof window !== 'undefined') return `${window.location.origin}/`;
     return 'https://smartlymanage.com/';
   }, []);
-  const encodedShareUrl = encodeURIComponent(shareUrl);
+  const nativeShareUrl = buildTrackedShareUrl(shareUrl, 'native_share');
+  const copyLinkUrl = buildTrackedShareUrl(shareUrl, 'copy_link');
+  const encodedWhatsAppShareUrl = encodeURIComponent(buildTrackedShareUrl(shareUrl, 'whatsapp'));
+  const encodedLinkedInShareUrl = encodeURIComponent(buildTrackedShareUrl(shareUrl, 'linkedin'));
   const encodedShareText = encodeURIComponent(`${shareTitle} — ${shareDescription}`);
 
   const copyShareLink = async () => {
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(copyLinkUrl);
       setShareStatus('Copied');
     } catch {
       setShareStatus('Copy unavailable');
@@ -31,7 +35,7 @@ export const PublicFooter = () => {
   const shareLandingPage = async () => {
     if (navigator.share) {
       try {
-        await navigator.share({ title: shareTitle, text: shareDescription, url: shareUrl });
+        await navigator.share({ title: shareTitle, text: shareDescription, url: nativeShareUrl });
         return;
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') return;
@@ -45,10 +49,10 @@ export const PublicFooter = () => {
       <div className="lw-footer-main">
         <div className="lw-footer-intro">
           <Link className="lw-public-brand" to="/" aria-label="Smartly Manage home">
-            <span className="lw-brand-mark"><img src="/favicon.svg" alt="" /></span>
+            <span className="lw-brand-mark"><img src="/smartly-manage-icon.webp" alt="" /></span>
             <span>Smartly Manage</span>
           </Link>
-          <p>Clear sales call visibility for the people who coach, manage, and grow the team.</p>
+          <p>Calls, leads, and field activity connected for the people who sell, coach, and grow the team.</p>
           <a href="mailto:info@smartlymanage.com">info@smartlymanage.com</a>
         </div>
 
@@ -74,13 +78,13 @@ export const PublicFooter = () => {
 
         <div className="lw-footer-share">
           <strong>Share Smartly Manage</strong>
-          <p>Know a team that needs a clearer view of sales calls?</p>
+          <p>Know a team that needs a clearer view from call to follow-up?</p>
           <div className="lw-share-actions">
             <button type="button" onClick={shareLandingPage} aria-label="Share Smartly Manage">
               <Share2 size={16} /> <span>Share</span>
             </button>
             <a
-              href={`https://wa.me/?text=${encodedShareText}%20${encodedShareUrl}`}
+              href={`https://wa.me/?text=${encodedShareText}%20${encodedWhatsAppShareUrl}`}
               target="_blank"
               rel="noreferrer"
               aria-label="Share Smartly Manage on WhatsApp"
@@ -88,7 +92,7 @@ export const PublicFooter = () => {
               <MessageCircle size={16} />
             </a>
             <a
-              href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodedShareUrl}`}
+              href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodedLinkedInShareUrl}`}
               target="_blank"
               rel="noreferrer"
               aria-label="Share Smartly Manage on LinkedIn"

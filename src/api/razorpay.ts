@@ -95,7 +95,7 @@ export const openRazorpaySubscriptionCheckout = async (options: {
       subscription_id: options.providerSubscriptionId,
       name: 'Smartly Manage',
       description: `${options.planName} subscription`,
-      image: '/favicon.svg',
+      image: '/pwa-512x512.png',
       prefill: {
         name: options.customer?.name,
         email: options.customer?.email,

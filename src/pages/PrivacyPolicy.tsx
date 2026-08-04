@@ -3,28 +3,32 @@ import { PublicFooter, PublicHeader, Reveal, usePublicMetadata } from '../compon
 
 const privacyPolicyVersion = '2026-07-31';
 
-const intro = 'This policy explains what Smartly Manage collects when your organization uses the Android app and web dashboard, and how that information is used, shared, retained, and deleted.';
+const intro = 'This policy explains the personal data Smartly Manage handles across the Android app and web dashboard, why it is used, who can access it, how long it is kept, and the choices available to you.';
 
 const sections: Array<{ title: string; body: string }> = [
   {
     title: 'Who we are and what this policy covers',
-    body: 'Smartly Manage provides a sales call-tracking service consisting of an Android application and a web dashboard, operated under the Smartly Manage name and reachable at info@smartlymanage.com. This policy applies to both the app and the dashboard. By creating an account or using the service, you agree to the collection and use of information as described here. If you use Smartly Manage as a member of an organization, that organization controls who can see your synced activity within it.',
+    body: 'Smartly Manage provides an organization-based sales activity service through an Android app and web dashboard. It is operated under the Smartly Manage name and can be reached at info@smartlymanage.com. This policy applies to the public website, accounts, app, dashboard, and support interactions. Smartly Manage determines how account, security, billing, and service-operation data is handled. Your organization decides why its team uses the service, which members are invited, which optional features are enabled, and which authorized roles can review organization activity.',
   },
   {
     title: 'Account and organization data',
-    body: 'We collect the information you provide when creating or joining an organization: name, email address, phone number, role, organization membership, and invite records. Organization administrators can view and manage member details within their organization.',
+    body: 'We collect the information provided when you create or join an organization, including name, email address, optional phone number, role, organization membership, invite and verification records, profile settings, and support communications. Organization administrators can view and manage member details within their organization. Authentication records are processed through Firebase Authentication.',
   },
   {
-    title: 'Call and contact data (Android permissions)',
-    body: 'The Smartly Manage Android app requests call log, contacts, and phone state permissions for call tracking. After the device user grants them, the app reads call metadata — time, direction, duration, status, contact name, and phone number — so the user and authorized organization members can review work activity. Smartly Manage does not directly capture call audio. On Max and Enterprise, an organization may separately enable native recording import: after one-time organization approval, one-time rep disclosure, and rep-selected folder access, the app can upload recordings already created by the phone’s dialer for transcription and AI summarization. We never read message content, use this data for advertising, or sell it.',
+    title: 'Call logs and on-device contacts',
+    body: 'Call tracking is optional. After the Android user enables it and grants call-log and phone-state permissions, the app can sync eligible call metadata: the external phone number, time, direction, duration, status, device call-log identifier, and sync status. Authorized organization members can review that activity according to role. If contacts permission is granted, the app reads contacts only on the device to display familiar caller names; the address book and contact names are not uploaded. Smartly Manage does not read message content, route calls, or directly capture call audio.',
+  },
+  {
+    title: 'Lead and follow-up data',
+    body: 'Eligible calls can be matched to a lead using a normalized phone number. Lead records can contain a name, company, phone number, owner and assignees, stage, notes, next action, follow-up date and status, linked call history, and archived status. When optional call intelligence is enabled, a lead can also contain recent analysis suggestions and an explainable deal-health score based on available call activity, recency, frequency, and analyzed sentiment. These signals support—not replace—human sales decisions.',
   },
   {
     title: 'Optional call recordings and AI analysis',
-    body: 'When the optional native recording feature is enabled, we collect the selected audio recording, transcript, AI-generated summary, outcome, key points, action items, next step, processing status, and an automated indication of whether a recording notice was detected. The rep, their organization’s managers, and organization admins can view this content; platform owners cannot. Audio and transcripts are stored privately in Google Cloud, playback uses short-lived links, and access and deletion events are audited. Speech recognition may be processed in Singapore while stored call data and AI summaries are maintained in the configured India region. Recordings and derived outputs remain until an authorized user deletes them or the associated account is deleted. Organizations and reps are responsible for giving any legally required customer notice before recording.',
+    body: 'On Max and Enterprise, an organization may optionally enable processing of recordings already created by a representative’s native Android dialer. Processing requires organization approval of the current policy, the representative’s current disclosure decision, and representative-selected folder access. We may receive the selected audio and produce a speaker-labelled transcript where supported, summary, sentiment, buying and risk signals, objections, customer concerns, suggested follow-up, and deal-health inputs. Audio may be processed by Google Cloud, OpenAI, or AssemblyAI; transcripts may be processed by Google Cloud or OpenAI. Google can be used as a fallback if another selected provider fails. The representative and authorized organization managers and admins can view the result; platform owners can configure providers but cannot view tenant recording or lead content. Organizations and representatives are responsible for any notice or consent legally required from call participants.',
   },
   {
     title: 'Location data (shift-based visit tracking)',
-    body: 'If your organization uses Smartly Manage’s field-visit tracking, the Android app collects the device’s precise location — including in the background while the app is closed — but only during a work shift that the signed-in rep has started themselves, and only after the rep has separately agreed to an in-app disclosure and granted the location permission on their own device. A persistent notification is shown on the device the entire time location is being collected; ending the shift, declining or withdrawing consent, or revoking the permission stops all collection. Live position, derived visit data (places visited, arrival and departure times), and the route or path traveled during a rep-started shift are visible only to the rep and their organization’s admins and managers, are never sold, and are never shared with third parties beyond the service providers listed below. Raw location points used for route review are automatically deleted after 90 days; summarized visit records are retained while the account is active and are removed through the account-deletion process described later in this policy.',
+    body: 'Field tracking is optional. The Android app collects precise location, including in the background while the app is closed, only during a work shift the signed-in representative starts after accepting the current in-app disclosure and granting the required device permission. A persistent notification is shown throughout collection. Ending the shift, recording a declined decision, or revoking permission stops collection. During an active shift, the representative and authorized organization managers and admins can see live status. Location points can be used to create visit summaries such as place, arrival, departure, and dwell time, and—only when the separately disclosed route feature is enabled—to review the path traveled during a recent shift.',
   },
   {
     title: 'Billing and payment data',
@@ -32,27 +36,31 @@ const sections: Array<{ title: string; body: string }> = [
   },
   {
     title: 'Device and diagnostic data',
-    body: 'To keep call sync reliable, the app reports device sync health -- whether tracking is running, battery-optimization status, pending upload counts, device manufacturer, and platform -- to help diagnose sync issues.',
+    body: 'To operate and secure the service, we process app version, platform, device manufacturer, permission and readiness states, sync timestamps, pending-upload counts, battery-optimization status, tracking heartbeat, notification delivery state, IP-based request limits, and error information. This helps diagnose sync problems, prevent abuse, and show administrators when a device needs attention.',
   },
   {
     title: 'How we use this information',
-    body: 'Data is used to operate core features (call history, optional transcription and AI summaries, team reporting, analytics), manage billing and access, send transactional emails and notifications, and provide support. We do not sell personal data, show ads, or use customer recordings or transcripts to train our own models.',
+    body: 'We use data to authenticate users; operate call history, leads, follow-up, visits, optional transcription and call intelligence, reporting, and integrations; manage roles, billing, and account recovery; deliver invitations, transactional emails, reports, and notifications; protect the service; troubleshoot; and provide support. We do not sell personal data, use it for targeted advertising, or use customer recordings or transcripts to train Smartly Manage models.',
   },
   {
     title: 'Data sharing and service providers',
-    body: 'We share data only with service providers needed to run Smartly Manage: Razorpay for payment processing, Google Cloud / Firebase for hosting, authentication, database, storage, Speech-to-Text, and Vertex AI processing, and a transactional email provider. These providers process data under their own security and privacy commitments. We do not sell personal data or share it with advertisers or data brokers. We may disclose information if required by law or to protect users and the service.',
+    body: 'We disclose data only as needed to operate Smartly Manage: Google Cloud and Firebase for hosting, authentication, databases, storage, analytics infrastructure, Speech-to-Text, and Vertex AI; Razorpay for paid-plan checkout and payment processing; a configured transactional email provider; and, only for optional call intelligence, the organization-independent processor selected by the platform configuration—Google Cloud, OpenAI, or AssemblyAI. Processing providers may operate outside India under their own terms and security commitments. We may also disclose information when required by law, to investigate misuse, or to protect users and the service. We do not share data with advertisers or data brokers.',
   },
   {
     title: 'Data storage and security',
-    body: 'Your data is stored on Google Cloud infrastructure in the asia-south1 (Mumbai, India) region. All data is encrypted in transit using HTTPS/TLS, and access within an organization is restricted by role, so members see only what their role permits. We follow reasonable industry practices to protect data against unauthorized access, alteration, or loss.',
+    body: 'Primary application data is stored on Google Cloud infrastructure configured in the asia-south1 (Mumbai, India) region. Optional processors may handle the content sent to them in other locations as described above. Data is encrypted in transit using HTTPS/TLS, stored recordings are private, playback links are short-lived, provider credentials are encrypted and write-only in the product interface, and organization access is restricted by authentication and role. Recording access and deletion, provider changes, and sensitive location views are audited. No security measure can eliminate every risk, but we use reasonable technical and organizational safeguards against unauthorized access, alteration, disclosure, or loss.',
   },
   {
     title: 'Data retention and deletion',
-    body: 'Account and call data are retained while your organization is active. Any user can delete their own account from the app (Profile > Delete Account) or request deletion as described on our Delete Account page at smartlymanage.com/delete-account. Non-admin requests are processed within 48 hours; requests from an organization admin or platform owner require our team to help transfer organization ownership first, since deleting the account managing an organization has broader implications for that organization’s data and billing. Billing and invoice records may be retained where required for legal, tax, or accounting compliance.',
+    body: 'Account, organization, call, lead, visit-summary, and reporting records are generally retained while the organization account is active. Raw location points used for recent route review are automatically deleted after 90 days; live position is cleared when a shift ends; device health keeps the latest state; sensitive access audit records are kept for 1 year; and consent decisions are retained for the account lifetime plus 3 years as compliance evidence. Recordings, transcripts, and derived call intelligence remain until an authorized deletion or associated account deletion. Billing and invoice records may be retained for legal, tax, accounting, fraud-prevention, and reconciliation obligations.',
   },
   {
-    title: 'Your rights',
-    body: 'You can review and update your profile information at any time from the app, and request account deletion as described above. You may also request a copy of your data or a correction of inaccurate data. For any data request, contact support using the details below and we will respond within a reasonable time.',
+    title: 'Account deletion',
+    body: 'You can request account deletion from Profile > Delete Account in the Android app or by following smartlymanage.com/delete-account. A non-admin request enters a 48-hour grace period and is normally completed by the next daily deletion sweep. Completion disables the profile, revokes sign-in tokens, deletes the representative’s shifts, visits, live status, and archived raw location points, deletes their call recordings and derived analyses, and removes their lead assignments. Organization-owned call and lead business records may remain for continuity and accountability, and consent, security, and billing records may remain for the periods described above. Organization administrator and platform owner requests require manual review so ownership, organization data, and billing responsibilities can be handled safely.',
+  },
+  {
+    title: 'Your choices and rights',
+    body: 'You can review and update profile information, decline optional permissions, end a field shift, revoke Android permissions, record a new declined consent decision for supported features, ask an organization administrator to correct organization records, and request account deletion. You may also ask for access to or a copy of your personal data, correction of inaccurate or incomplete data, or information about processing and service providers. Email info@smartlymanage.com from your registered address. We may verify your identity and, where the request concerns organization-controlled business records, coordinate with your organization. You may also raise a grievance using the same address.',
   },
   {
     title: 'Children',
@@ -60,7 +68,7 @@ const sections: Array<{ title: string; body: string }> = [
   },
   {
     title: 'Changes to this policy',
-    body: 'We may update this policy as the service evolves. Updates are posted on this page with a new version date, and material changes will be communicated through the app or by email. Continued use of the service after an update means you accept the revised policy.',
+    body: 'We may update this policy as the service, providers, or legal requirements evolve. Updates are posted on this page with a new version date. When a change affects an optional consent-based feature, the app may require the current disclosure to be reviewed again before that feature can continue. Material changes may also be communicated through the app or by email.',
   },
 ];
 

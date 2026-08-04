@@ -1,14 +1,26 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { signInWithCustomToken } from 'firebase/auth';
-import { Activity, BadgePercent, Bell, Building2, ContactRound, CreditCard, LayoutDashboard, MapPin, Mic2, PhoneCall, Route, Users, LogOut, Menu, Settings, ShieldAlert, Webhook, X } from 'lucide-react';
+import { Activity, BadgePercent, Bell, BrainCircuit, Building2, ContactRound, CreditCard, LayoutDashboard, MapPin, Mic2, PhoneCall, Route, Users, LogOut, Menu, Settings, ShieldAlert, Webhook, X, type LucideIcon } from 'lucide-react';
 import { api, getApiErrorMessage } from '../api/client';
 import { auth } from '../config/firebase';
 import { useAuth } from '../context/auth';
 import { useFeedback } from '../context/feedback';
 import type { ApiResponse } from '../types/api';
 
-const appIcon = '/favicon.svg';
+const appIcon = '/smartly-manage-icon.webp';
+
+interface SidebarNavItem {
+  path: string;
+  icon: LucideIcon;
+  label: string;
+  end?: boolean;
+}
+
+interface SidebarNavGroup {
+  label: string;
+  items: SidebarNavItem[];
+}
 
 export const Layout: React.FC = () => {
   const navigate = useNavigate();
@@ -105,24 +117,48 @@ export const Layout: React.FC = () => {
   const canViewCalls = claims.role === 'org_admin' || claims.role === 'manager' || claims.role === 'sales_member';
   const canManageIntegrations = isPlatformOwner || claims.role === 'org_admin';
 
-  const navItems = [
-    { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', end: true },
-    ...(isPlatformOwner ? [{ path: '/dashboard/platform', icon: Building2, label: 'Tenants' }] : []),
-    ...(canViewCalls ? [{ path: '/dashboard/calls', icon: PhoneCall, label: 'Call History' }] : []),
-    ...(canViewCalls && claims.role !== 'sales_member' ? [{ path: '/dashboard/call-recordings', icon: Mic2, label: 'Call Recordings' }] : []),
-    ...(canManageTeam ? [{ path: '/dashboard/team', icon: Users, label: 'Team Management' }] : []),
-    ...(canManageTeam ? [{ path: '/dashboard/live', icon: MapPin, label: 'Live Tracking' }] : []),
-    ...(canManageTeam ? [{ path: '/dashboard/clients', icon: ContactRound, label: 'Clients' }] : []),
-    ...(canManageTeam ? [{ path: '/dashboard/visits', icon: Route, label: 'Visits & Routes' }] : []),
-    { path: '/dashboard/notifications', icon: Bell, label: 'Notifications' },
-    ...(canManageIntegrations ? [{ path: '/dashboard/integrations', icon: Webhook, label: 'Integrations' }] : []),
-    ...(canManageTeam ? [{ path: '/dashboard/billing', icon: CreditCard, label: 'Billing' }] : []),
-    ...(isPlatformOwner ? [
-      { path: '/dashboard/billing-operations', icon: Activity, label: 'Billing Operations' },
-      { path: '/dashboard/billing-catalog', icon: BadgePercent, label: 'Billing Catalog' },
-    ] : []),
-    { path: '/dashboard/settings', icon: Settings, label: 'Settings' },
-  ];
+  const navGroups: SidebarNavGroup[] = [
+    {
+      label: 'Overview',
+      items: [
+        { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', end: true },
+        { path: '/dashboard/notifications', icon: Bell, label: 'Notifications' },
+      ],
+    },
+    {
+      label: 'Sales activity',
+      items: [
+        ...(canViewCalls ? [{ path: '/dashboard/calls', icon: PhoneCall, label: 'Call History' }] : []),
+        ...(canViewCalls ? [{ path: '/dashboard/leads', icon: BrainCircuit, label: 'Leads' }] : []),
+        ...(canViewCalls && claims.role !== 'sales_member' ? [{ path: '/dashboard/call-recordings', icon: Mic2, label: 'Call Recordings' }] : []),
+      ],
+    },
+    {
+      label: 'Team & field',
+      items: [
+        ...(canManageTeam ? [{ path: '/dashboard/team', icon: Users, label: 'Team Management' }] : []),
+        ...(canManageTeam ? [{ path: '/dashboard/live', icon: MapPin, label: 'Live Tracking' }] : []),
+        ...(canManageTeam ? [{ path: '/dashboard/clients', icon: ContactRound, label: 'Clients' }] : []),
+        ...(canManageTeam ? [{ path: '/dashboard/visits', icon: Route, label: 'Visits & Routes' }] : []),
+      ],
+    },
+    {
+      label: 'Platform administration',
+      items: isPlatformOwner ? [
+        { path: '/dashboard/platform', icon: Building2, label: 'Tenants' },
+        { path: '/dashboard/billing-operations', icon: Activity, label: 'Billing Operations' },
+        { path: '/dashboard/billing-catalog', icon: BadgePercent, label: 'Billing Catalog' },
+      ] : [],
+    },
+    {
+      label: 'Manage',
+      items: [
+        ...(canManageIntegrations ? [{ path: '/dashboard/integrations', icon: Webhook, label: 'Integrations' }] : []),
+        ...(canManageTeam ? [{ path: '/dashboard/billing', icon: CreditCard, label: 'Billing' }] : []),
+        { path: '/dashboard/settings', icon: Settings, label: 'Settings' },
+      ],
+    },
+  ].filter((group) => group.items.length > 0);
 
   const roleLabel = {
     platform_owner: 'Platform owner',
@@ -182,17 +218,24 @@ export const Layout: React.FC = () => {
         </div>
 
         <nav className="sidebar-nav">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.end}
-              className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
-              onClick={() => setMenuOpen(false)}
-            >
-              <item.icon size={20} color="currentColor" />
-              {item.label}
-            </NavLink>
+          {navGroups.map((group) => (
+            <div className="sidebar-nav-group" role="group" aria-label={`${group.label} navigation`} key={group.label}>
+              <p className="sidebar-nav-label">{group.label}</p>
+              <div className="sidebar-nav-links">
+                {group.items.map((item) => (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    end={item.end}
+                    className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <item.icon size={20} color="currentColor" />
+                    {item.label}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 

@@ -268,7 +268,7 @@ export const Signup = () => {
       <Link className="onboarding-back" to="/"><ArrowLeft size={17} /> Back to Smartly Manage</Link>
       <section className="onboarding-shell glass-panel animate-fade-in">
         <aside className="onboarding-summary">
-          <div className="auth-logo"><img src="/favicon.svg" alt="" /></div>
+          <div className="auth-logo"><img src="/smartly-manage-icon.webp" alt="" /></div>
           <p className="eyebrow">Selected plan</p>
           <h1>{selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1)}</h1>
           <p>Your organization starts safely on Lite. Paid access activates only after a captured payment is confirmed by Smartly Manage.</p>

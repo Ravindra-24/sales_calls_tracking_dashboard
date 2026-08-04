@@ -1,7 +1,7 @@
 {
   "name": "Smartly Manage Sales Tracking",
   "short_name": "Smartly Manage",
-  "description": "Android call activity, role-aware sales visibility, and team dashboards without manual reporting.",
+  "description": "Android calls, lead follow-up, field visits, and role-aware team visibility in one sales workspace.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -39,11 +39,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
-    },
-    {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
     }
   ]
 }

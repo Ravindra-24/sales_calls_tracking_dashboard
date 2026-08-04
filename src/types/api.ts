@@ -52,6 +52,8 @@ export interface CallRecord {
   analysisStatus?: 'none' | 'queued' | 'transcribing' | 'summarizing' | 'ready' | 'failed' | 'deleting';
   consentNoticeStatus?: 'unknown' | 'detected' | 'missing';
   recordingDurationSeconds?: number | null;
+  normalizedPhone?: string;
+  leadId?: string | null;
 }
 
 export interface CallAnalysis {
@@ -64,6 +66,28 @@ export interface CallAnalysis {
   keyPoints: string[];
   actionItems: string[];
   nextStep: string | null;
+  sentimentLabel: 'positive' | 'neutral' | 'negative' | 'mixed' | null;
+  sentimentScore: number | null;
+  sentimentConfidence: 'low' | 'medium' | 'high' | null;
+  buyingSignals: string[];
+  riskSignals: string[];
+  objections: string[];
+  customerConcerns: string[];
+  suggestedNextAction: {
+    text: string;
+    rationale: string;
+    dueInDays: number | null;
+    dueAt: string | null;
+    appliedAt: string | null;
+  } | null;
+  transcriptionProvider: 'google' | 'openai' | 'assemblyai';
+  transcriptionModel: string | null;
+  intelligenceProvider: 'google' | 'openai';
+  intelligenceModel: string | null;
+  fallbackUsed: boolean;
+  fallbackReason: string | null;
+  transcriptionFallbackReason: string | null;
+  intelligenceFallbackReason: string | null;
   consentNoticeStatus: 'unknown' | 'detected' | 'missing';
   failureCode: string | null;
   failureMessage: string | null;
@@ -157,11 +181,13 @@ export interface SyncHealthRecord {
 
 export interface AppNotification {
   id: string;
-  type: 'sync_health' | 'invite_reminder' | 'weekly_nudge' | 'account_issue' | 'call_analysis_ready' | 'call_analysis_failed';
+  type: 'sync_health' | 'invite_reminder' | 'weekly_nudge' | 'account_issue' | 'call_analysis_ready' | 'call_analysis_failed' | 'deal_health_at_risk';
   severity: 'info' | 'warning' | 'critical';
   title: string;
   message: string;
   actionUrl: string | null;
+  actionType?: 'call' | 'lead' | null;
+  actionId?: string | null;
   readAt: string | null;
   createdAt: string | null;
   updatedAt: string | null;
@@ -339,6 +365,77 @@ export interface PlatformSettings {
   updatedAt?: string | null;
 }
 
+export interface DealHealth {
+  status: 'unscored' | 'scored' | 'closed';
+  score: number | null;
+  label: 'strong' | 'healthy' | 'watch' | 'at_risk' | null;
+  trend: 'improving' | 'stable' | 'declining' | null;
+  confidence: 'low' | 'medium' | 'high';
+  components: { sentiment: number; recency: number; frequency: number; momentum: number };
+  reasons: string[];
+  analyzedCallCount: number;
+  calculatedAt: string | null;
+}
+
+export interface LeadRecord {
+  id: string;
+  name: string;
+  company: string | null;
+  primaryPhone: string;
+  normalizedPhone: string;
+  ownerRepId: string;
+  assignedRepIds: string[];
+  stage: 'new' | 'contacted' | 'qualified' | 'proposal' | 'won' | 'lost';
+  notes: string | null;
+  nextAction: string | null;
+  followUpAt: string | null;
+  followUpStatus: 'none' | 'open' | 'completed';
+  latestAnalysisId: string | null;
+  latestSuggestion: { analysisId: string; text: string; rationale: string; dueAt: string | null; appliedAt: string | null } | null;
+  lastCallAt: string | null;
+  lastConnectedCallAt: string | null;
+  connectedCallCount: number;
+  health: DealHealth;
+  createdSource: 'call' | 'manual';
+  createdAt: string | null;
+  updatedAt: string | null;
+  archivedAt: string | null;
+  archivedBy: string | null;
+}
+
+export interface LeadCallRecord {
+  id: string;
+  repId: string;
+  direction: 'incoming' | 'outgoing' | 'missed';
+  startTime: string | null;
+  durationSeconds: number;
+  analysisStatus: CallRecord['analysisStatus'];
+  analysis: null | {
+    id: string;
+    status: CallAnalysis['status'];
+    summary: string | null;
+    sentimentLabel: CallAnalysis['sentimentLabel'];
+    sentimentScore: number | null;
+    suggestedNextAction: CallAnalysis['suggestedNextAction'];
+  };
+}
+
+export interface AiPlatformConfiguration {
+  settings: {
+    transcriptionProvider: 'google' | 'openai' | 'assemblyai';
+    intelligenceProvider: 'google' | 'openai';
+    fallbackProvider: 'google';
+    configVersion: number;
+  };
+  providers: Record<'google' | 'openai' | 'assemblyai', {
+    configured: boolean;
+    maskedKey: string | null;
+    validatedAt: string | null;
+    updatedAt: string | null;
+  }>;
+  models: Record<string, { transcription?: string; intelligence?: string }>;
+}
+
 export interface OrganizationDetails {
   id: string;
   name: string;
@@ -351,6 +448,7 @@ export interface OrganizationDetails {
     workingHoursEnd?: string;
     weeklyReportsEnabled?: boolean;
     managerCanEditSalesMembers?: boolean;
+    defaultPhoneCountry?: string;
   };
   createdAt: string | null;
   updatedAt: string | null;

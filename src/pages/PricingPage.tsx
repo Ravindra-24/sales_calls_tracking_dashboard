@@ -13,10 +13,12 @@ import type { BillingCatalogPlan } from '../types/billing';
 import { publicPlanDetails } from './publicContent';
 
 const comparisons = [
-  { label: 'Call history dashboard', lite: true, pro: true, max: true, enterprise: true },
+  { label: 'Call history and lead workspace', lite: true, pro: true, max: true, enterprise: true },
   { label: 'Team member access', lite: true, pro: true, max: true, enterprise: true },
+  { label: 'Field shifts and visit records', lite: true, pro: true, max: true, enterprise: true },
   { label: 'Manager and organization controls', lite: false, pro: true, max: true, enterprise: true },
   { label: 'Advanced team reporting', lite: false, pro: true, max: true, enterprise: true },
+  { label: 'Optional call intelligence', lite: false, pro: false, max: true, enterprise: true },
   { label: 'API access and signed webhooks', lite: false, pro: false, max: true, enterprise: true },
   { label: 'Custom limits and commercial terms', lite: false, pro: false, max: false, enterprise: true },
 ];
@@ -27,7 +29,7 @@ export const PricingPage = () => {
 
   usePublicMetadata({
     title: 'Pricing | Smartly Manage',
-    description: 'Compare Smartly Manage Lite, Pro, Max, and Enterprise plans using the current live billing catalog.',
+    description: 'Compare Smartly Manage Lite, Pro, Max, and Enterprise plans for call tracking, leads, field visits, call intelligence, and integrations.',
     path: '/pricing',
   });
 
@@ -59,8 +61,8 @@ export const PricingPage = () => {
           <div className="lw-container lw-pricing-hero-grid">
             <Reveal>
               <p className="lw-eyebrow">Simple starting point, room to grow</p>
-              <h1>Choose the visibility your operation needs today.</h1>
-              <p>Start with Lite, add manager tools with Pro, connect other systems with Max, or design an Enterprise arrangement.</p>
+              <h1>Choose the workflow your sales operation needs today.</h1>
+              <p>Start with calls and leads on Lite, add manager workflows with Pro, unlock call intelligence and integrations with Max, or design an Enterprise arrangement.</p>
             </Reveal>
             <Reveal className="lw-pricing-assurance" delay={100}>
               <ShieldCheck size={25} />
@@ -132,7 +134,7 @@ export const PricingPage = () => {
             <div className="lw-section-heading">
               <p className="lw-eyebrow">Feature comparison</p>
               <h2>See where each capability begins.</h2>
-              <p>This summary helps you quickly identify the right tier. Live pricing and provider readiness remain shown above.</p>
+              <p>This summary shows where each major capability begins. Optional features still require the relevant organization approval, representative disclosure, and device permissions.</p>
             </div>
             <div className="lw-comparison-wrap">
               <table>

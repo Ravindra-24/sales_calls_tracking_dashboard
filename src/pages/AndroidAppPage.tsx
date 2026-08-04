@@ -19,7 +19,7 @@ import { fetchAndroidRelease, type AndroidRelease } from '../api/mobile';
 import { BACKEND_URL } from '../api/client';
 import { PublicFooter, PublicHeader, Reveal, usePublicMetadata } from '../components/public';
 
-const bundledVersion = { versionName: '1.3', versionCode: 7 };
+const bundledVersion = { versionName: '1.4', versionCode: 8 };
 
 const formatReleaseDate = (value?: string) => {
   if (!value) return 'Release listing pending';
@@ -31,9 +31,9 @@ const formatReleaseDate = (value?: string) => {
 const releaseNoteLines = (release: AndroidRelease | null) => {
   if (!release?.releaseNotes) {
     return [
-      'Field shift tracking and visit visibility',
-      'Clearer permissions and tracking readiness',
-      'Website release updates with version verification',
+      'Lead workspace and follow-up actions',
+      'Optional call intelligence on eligible plans',
+      'Field shift, visit, and route-review controls',
     ];
   }
   return release.releaseNotes
@@ -53,7 +53,7 @@ export const AndroidAppPage = () => {
 
   usePublicMetadata({
     title: 'Android App | Smartly Manage',
-    description: 'Download Smartly Manage for Android and review the current version, release notes, permissions, data use, and APK checksum.',
+    description: 'Download Smartly Manage for Android and review the current version, calls, leads, field shifts, permissions, data use, and APK checksum.',
     path: '/download',
   });
 
@@ -109,7 +109,7 @@ export const AndroidAppPage = () => {
             <Reveal className="lw-store-phone" delay={100}>
               <span className="lw-store-phone-speaker" />
               <div className="lw-app-screen-head">
-                <span className="lw-mini-brand"><img src="/favicon.svg" alt="" /></span>
+                <span className="lw-mini-brand"><img src="/smartly-manage-icon.webp" alt="" /></span>
                 <div><small>Welcome back</small><strong>Today’s activity</strong></div>
                 <span className="lw-app-avatar">RP</span>
               </div>
@@ -133,8 +133,8 @@ export const AndroidAppPage = () => {
           <div className="lw-container">
             <div className="lw-section-heading">
               <p className="lw-eyebrow">Inside the app</p>
-              <h2>Call history, shift context, and account controls in one place.</h2>
-              <p>The Android companion is designed for quick daily use, with clear permission states and no hidden background activity.</p>
+              <h2>Calls, leads, shift context, and account controls in one place.</h2>
+              <p>The Android companion is designed for quick daily use, with clear permission states and visible controls for every background feature.</p>
             </div>
             <div className="lw-app-screenshot-strip">
               <Reveal as="article" className="lw-app-shot lw-shot-calls">
@@ -180,12 +180,12 @@ export const AndroidAppPage = () => {
             <div className="lw-section-heading lw-section-heading-center">
               <p className="lw-eyebrow">How the app works</p>
               <h2>Permissions are explained at the moment they matter.</h2>
-              <p>Nothing should run silently. Representatives choose when to enable call tracking or start a field shift.</p>
+              <p>Nothing should run silently. Representatives choose when to enable call tracking, optional recording processing, or a field shift.</p>
             </div>
             <div className="lw-app-data-grid">
-              <article><PhoneCall size={22} /><h3>Call log access</h3><p>Used to read eligible call metadata for sync. Smartly Manage does not route or capture the call itself.</p></article>
-              <article><MapPin size={22} /><h3>Location during a shift</h3><p>Precise location is collected only during a shift the representative starts, to detect field visits for the organization.</p></article>
-              <article><ShieldCheck size={22} /><h3>Signed-in organization access</h3><p>Activity is connected to the authenticated account and shown according to organization role and permissions.</p></article>
+              <article><PhoneCall size={22} /><h3>Call logs and contacts</h3><p>Eligible call metadata can sync after permission is granted. Contacts are used only on the device for caller-name display and are never uploaded.</p></article>
+              <article><MapPin size={22} /><h3>Location during a shift</h3><p>Precise location is collected only during a representative-started shift after disclosure and permission, with a persistent notification while active.</p></article>
+              <article><ShieldCheck size={22} /><h3>Optional recording processing</h3><p>On eligible plans, representatives can select native-dialer recordings for private transcription and call intelligence. Smartly Manage never records the call itself.</p></article>
             </div>
             <div className="lw-app-data-links">
               <Link to="/faq">Read Android FAQs <ArrowRight size={16} /></Link>

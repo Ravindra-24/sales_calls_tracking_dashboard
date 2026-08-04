@@ -8,7 +8,7 @@ import { useAuth } from '../context/auth';
 import { api, getApiErrorMessage } from '../api/client';
 import { GoogleOneTap } from '../components/auth/GoogleOneTap';
 
-const appIcon = '/favicon.svg';
+const appIcon = '/smartly-manage-icon.webp';
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');

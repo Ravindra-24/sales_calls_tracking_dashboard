@@ -26,7 +26,7 @@ export const ProductDetailsPage = () => {
 
   usePublicMetadata({
     title: 'Product | Smartly Manage',
-    description: 'Explore the Smartly Manage Android-to-dashboard workflow, role-based team experience, security controls, and integrations.',
+    description: 'Explore Smartly Manage call history, lead follow-up, field visits, optional call intelligence, role-aware controls, and integrations.',
     path: '/product',
   });
 
@@ -38,8 +38,8 @@ export const ProductDetailsPage = () => {
           <div className="lw-container lw-page-hero-grid">
             <Reveal>
               <p className="lw-eyebrow">The complete product</p>
-              <h1>Call activity that becomes useful team context.</h1>
-              <p>Smartly Manage connects the representative’s Android workflow with the manager’s web workspace—without adding a second reporting routine.</p>
+              <h1>Sales activity that stays connected from call to follow-up.</h1>
+              <p>Smartly Manage connects the representative’s Android workflow with the manager’s web workspace across calls, leads, and field visits—without adding a second reporting routine.</p>
               <div className="lw-page-hero-actions">
                 <Link className="lw-button lw-button-primary" to={user ? '/dashboard' : '/signup'}>
                   {user ? 'Open dashboard' : 'Start free'} <ArrowRight size={18} />
@@ -48,11 +48,11 @@ export const ProductDetailsPage = () => {
               </div>
             </Reveal>
             <Reveal className="lw-product-map" delay={100}>
-              <div><span>01</span><strong>Android activity</strong><small>Permitted call metadata</small></div>
+              <div><span>01</span><strong>Android activity</strong><small>Permitted calls and shifts</small></div>
               <ArrowRight aria-hidden="true" />
               <div><span>02</span><strong>Secure sync</strong><small>Signed-in organization access</small></div>
               <ArrowRight aria-hidden="true" />
-              <div><span>03</span><strong>Manager view</strong><small>Context for coaching</small></div>
+              <div><span>03</span><strong>Shared workspace</strong><small>Leads, visits, and coaching context</small></div>
             </Reveal>
           </div>
         </section>
@@ -62,7 +62,7 @@ export const ProductDetailsPage = () => {
             <div className="lw-section-heading">
               <p className="lw-eyebrow">What the team gets</p>
               <h2>One workflow, four practical outcomes.</h2>
-              <p>Each part is designed to make call activity easier to understand and act on.</p>
+              <p>Each part is designed to make sales activity easier to understand and act on.</p>
             </div>
             <MobileSlider className="lw-outcome-grid" count={productOutcomes.length} label="Product outcomes">
               {productOutcomes.map((outcome, index) => (
@@ -80,8 +80,8 @@ export const ProductDetailsPage = () => {
           <div className="lw-container lw-tour-layout">
             <div className="lw-tour-copy">
               <p className="lw-eyebrow">A connected workflow</p>
-              <h2>From the phone call to the manager view.</h2>
-              <p>The account, Android companion, and web dashboard move together in one understandable flow.</p>
+              <h2>From the first call to the next action.</h2>
+              <p>The organization account, Android companion, and web dashboard move together in one understandable flow.</p>
               <Link className="lw-text-link" to="/download">See app details <ArrowRight size={17} /></Link>
             </div>
             <div className="lw-workflow-list">
@@ -101,11 +101,11 @@ export const ProductDetailsPage = () => {
             <div className="lw-field-copy">
               <p className="lw-eyebrow">Field activity, when your team needs it</p>
               <h2>Start a shift. Understand customer visits. End tracking clearly.</h2>
-              <p>Representatives can start a field shift from Android after reviewing the location disclosure. During that active shift, Smartly Manage can detect visits and give authorized managers a live team view.</p>
+              <p>Representatives can start a field shift from Android after reviewing the current location disclosure and granting the required permission. During that active shift, Smartly Manage can detect visits and give authorized managers a live team view.</p>
               <ul>
                 <li><Clock3 size={18} /><span><strong>Representative-controlled shifts</strong><small>Tracking begins only after the representative starts a shift and stops when they end it.</small></span></li>
-                <li><MapPin size={18} /><span><strong>Automatic visit context</strong><small>Eligible customer-site arrivals and dwell time can become visit summaries.</small></span></li>
-                <li><ShieldCheck size={18} /><span><strong>Prominent disclosure</strong><small>Location use, visibility, and retention are explained before permissions are requested.</small></span></li>
+                <li><MapPin size={18} /><span><strong>Visit and route context</strong><small>Eligible customer-site arrivals and dwell time can become visit summaries; short-window route review is available only when enabled.</small></span></li>
+                <li><ShieldCheck size={18} /><span><strong>Visible, revocable collection</strong><small>A persistent Android notification remains visible, and ending the shift or withdrawing permission stops collection.</small></span></li>
               </ul>
               <Link className="lw-text-link lw-text-link-dark" to="/download">See the Android experience <ArrowRight size={17} /></Link>
             </div>
@@ -134,18 +134,18 @@ export const ProductDetailsPage = () => {
           <div className="lw-container">
             <div className="lw-section-heading lw-section-heading-center">
               <p className="lw-eyebrow">Designed for both sides of the team</p>
-              <h2>Useful for managers. Lightweight for representatives.</h2>
-              <p>Leadership gets consistent context while representatives stay focused on customer conversations.</p>
+              <h2>Useful for managers. Actionable for representatives.</h2>
+              <p>Leadership gets consistent context while representatives keep calls, leads, and next actions close to the work.</p>
             </div>
             <MobileSlider className="lw-role-grid" count={2} label="Role benefits">
               <Reveal as="article" className="lw-role-card lw-role-manager">
                 <div className="lw-role-card-heading"><span className="lw-icon-tile"><BriefcaseBusiness size={22} /></span><div><small>For owners and managers</small><h3>Coach with a clearer view</h3></div></div>
-                <p>Bring call activity into the same place you manage people, follow-up, and performance conversations.</p>
+                <p>Bring calls, lead status, visits, and performance patterns into the same place you manage people and follow-up.</p>
                 <ul>{managerBenefits.map((benefit) => <li key={benefit}><CheckCircle2 size={17} /> {benefit}</li>)}</ul>
               </Reveal>
               <Reveal as="article" className="lw-role-card lw-role-rep" delay={100}>
                 <div className="lw-role-card-heading"><span className="lw-icon-tile"><UserRoundCheck size={22} /></span><div><small>For sales representatives</small><h3>Spend less time reporting</h3></div></div>
-                <p>Use the Android companion to keep eligible activity connected to the organization account with less repetitive administration.</p>
+                <p>Use the Android companion to keep eligible activity, assigned leads, and field work connected to the organization account.</p>
                 <ul>{representativeBenefits.map((benefit) => <li key={benefit}><CheckCircle2 size={17} /> {benefit}</li>)}</ul>
               </Reveal>
             </MobileSlider>
@@ -157,8 +157,8 @@ export const ProductDetailsPage = () => {
             <div className="lw-security-copy">
               <p className="lw-eyebrow">Privacy made understandable</p>
               <h2>Clear about what the product uses—and what it does not.</h2>
-              <p>Smartly Manage centers the product experience on permitted metadata, authenticated users, and role-aware access.</p>
-              <Link className="lw-text-link lw-text-link-dark" to="/faq">Read common questions <ArrowRight size={17} /></Link>
+              <p>Smartly Manage centers the product experience on permitted metadata, authenticated users, explicit disclosures, and role-aware access. Device contacts stay on the phone and are not uploaded.</p>
+              <Link className="lw-text-link lw-text-link-dark" to="/privacy">Review the privacy details <ArrowRight size={17} /></Link>
             </div>
             <MobileSlider className="lw-security-grid" count={securityPoints.length} label="Security features">
               {securityPoints.map((point, index) => (
@@ -198,8 +198,8 @@ export const ProductDetailsPage = () => {
           <div className="lw-container">
             <Reveal className="lw-final-cta-card">
               <p className="lw-eyebrow">Ready to choose a starting point?</p>
-              <h2>Start free, then add deeper reporting and integrations as you grow.</h2>
-              <p>Compare the live catalog and see exactly what each plan includes.</p>
+              <h2>Start free, then add deeper reporting, call intelligence, and integrations as you grow.</h2>
+              <p>Compare the live catalog and see the current price, billing cadence, and capabilities of each plan.</p>
               <div>
                 <Link className="lw-button lw-button-primary" to="/pricing">Compare plans <ArrowRight size={18} /></Link>
                 <Link className="lw-button lw-button-secondary" to="/download">Get the Android app</Link>

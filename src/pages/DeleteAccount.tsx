@@ -1,30 +1,34 @@
 import { UserX } from 'lucide-react';
 import { PublicFooter, PublicHeader, Reveal, usePublicMetadata } from '../components/public';
 
-const deleteAccountVersion = '2026-07-17';
+const deleteAccountVersion = '2026-07-31';
 
 const intro = 'How to delete your Smartly Manage account and the data associated with it, whether from inside the app or by contacting us.';
 
 const sections: Array<{ title: string; body: string }> = [
   {
     title: 'Delete from the app',
-    body: 'Open the Smartly Manage Android app, go to Profile > Delete Account, and confirm. For regular (non-admin) members, deletion requests are processed within 48 hours.',
+    body: 'Open the Smartly Manage Android app, go to Profile > Delete Account, enter a reason, and confirm the request. A non-admin request enters a 48-hour grace period and is normally completed by the next daily deletion sweep. You can contact support during the grace period if the request was made in error.',
   },
   {
     title: 'Request by email',
-    body: 'If you no longer have access to the app, email info@smartlymanage.com with the subject "Account Deletion Request" from the email address registered to your account. We verify the request and process it within 48 hours of confirmation.',
+    body: 'If you no longer have access to the app, email info@smartlymanage.com with the subject "Account Deletion Request" from the email address registered to your account. We will verify your identity and explain whether the request can enter the automated grace period or requires manual review.',
   },
   {
-    title: 'What is deleted',
-    body: 'Deleting your account removes your profile and personal details (name, email, phone number) and the call and contact records synced from your device, along with your access to the organization.',
+    title: 'What happens when deletion completes',
+    body: 'Your Smartly Manage profile is marked deleted and disabled, refresh tokens are revoked, and you lose access to the organization. Your shifts, visits, live location status, archived raw location points, uploaded call recordings, transcripts, derived call analyses, and lead assignments are removed. Your phone contacts were never uploaded to Smartly Manage.',
   },
   {
     title: 'What may be retained',
-    body: 'Billing and invoice records may be retained where required for legal, tax, or accounting compliance. When an individual member’s account is deleted, data owned by the organization (such as its own billing history and other members’ records) is not affected.',
+    body: 'Organization-owned call and lead business records may remain for continuity, reporting, and accountability after your access is removed. Consent decisions are retained for the account lifetime plus 3 years as compliance evidence, and security audit, billing, invoice, payment, and support records may remain for applicable legal, tax, accounting, fraud-prevention, and reconciliation obligations. Other members’ and organization-level records are not affected by an individual request.',
   },
   {
     title: 'Organization admins and owners',
-    body: 'An account that administers an organization cannot be deleted directly, because it manages that organization’s data and billing. Contact support and we will help transfer organization ownership first, then delete the account.',
+    body: 'An organization administrator or platform owner request is placed in manual review because the account controls organization data, access, or billing. Contact support and we will help transfer ownership or resolve those responsibilities before completing deletion.',
+  },
+  {
+    title: 'Deleting an organization',
+    body: 'Deleting one member account does not delete the organization. If you are authorized to request closure of an entire organization and deletion of its data, email info@smartlymanage.com from the registered administrator address. We will verify authority, address active billing and required record retention, and confirm the scope and timing separately.',
   },
 ];
 

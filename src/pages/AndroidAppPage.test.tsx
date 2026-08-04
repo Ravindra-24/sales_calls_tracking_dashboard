@@ -49,8 +49,8 @@ describe('AndroidAppPage', () => {
     renderPage();
 
     await waitFor(() => expect(screen.getByText(/Android download coming soon/)).toBeInTheDocument());
-    expect(screen.getByRole('heading', { level: 2, name: 'Version 1.3' })).toBeInTheDocument();
-    expect(screen.getByText('7', { selector: '.lw-store-metadata strong' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Version 1.4' })).toBeInTheDocument();
+    expect(screen.getByText('8', { selector: '.lw-store-metadata strong' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Download current APK/ })).not.toBeInTheDocument();
   });
 });

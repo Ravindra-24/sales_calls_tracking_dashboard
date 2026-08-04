@@ -68,9 +68,9 @@ export const FALLBACK_BILLING_CATALOG: BillingCatalog = {
   checkoutAvailable: false,
   fallback: true,
   policyVersions: {
-    terms: '2026-07-11',
-    refund: '2026-07-12',
-    cancellation: '2026-07-11',
+    terms: '2026-07-31',
+    refund: '2026-07-31',
+    cancellation: '2026-07-31',
   },
   plans: fallbackPlans,
 };

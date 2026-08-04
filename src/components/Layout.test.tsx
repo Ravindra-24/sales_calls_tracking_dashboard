@@ -50,6 +50,11 @@ describe('Layout impersonation banner', () => {
     const user = userEvent.setup();
     render(<MemoryRouter><Layout /></MemoryRouter>);
 
+    expect(screen.getByRole('group', { name: 'Overview navigation' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Sales activity navigation' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Team & field navigation' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Manage navigation' })).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Platform administration navigation' })).not.toBeInTheDocument();
     expect(screen.getByText('Viewing as Asha Admin')).toBeInTheDocument();
     expect(screen.getByText(/Investigating ticket 1234/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sign out completely' })).toBeInTheDocument();

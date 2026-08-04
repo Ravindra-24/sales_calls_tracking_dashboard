@@ -378,7 +378,7 @@ export const PlatformOrganization = () => {
           <StatCard title="Connect rate" value={analyticsLoading ? '—' : `${connectRate}%`} icon={<Activity />} tone="green" />
           <StatCard title="Active reps" value={analyticsLoading ? '—' : analytics?.byRep.length ?? 0} icon={<Users />} tone="blue" />
         </div>
-        <div className="analytics-grid">
+        <div className="platform-org-analytics-grid">
           <article className="section-card trend-card">
             <div className="section-heading"><div><h3>Call trend</h3><p>{from} to {to}</p></div><Clock size={20} /></div>
             {trend.some((point) => point.calls > 0) ? <div className="bar-chart">{trend.map((point) => <div className="bar-column" key={point.key}><span className="bar-value">{point.calls}</span><div className="bar" style={{ height: `${Math.max((point.calls / maximumCalls) * 100, 4)}%` }} /><span className="bar-label">{point.label}</span></div>)}</div> : <div className="empty-state">No calls were recorded in this range.</div>}

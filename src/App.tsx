@@ -36,6 +36,7 @@ const PrivacyPolicy = React.lazy(() => import('./pages/PrivacyPolicy').then((mod
 const DeleteAccount = React.lazy(() => import('./pages/DeleteAccount').then((module) => ({ default: module.DeleteAccount })));
 const LiveTracking = React.lazy(() => import('./pages/LiveTracking').then((module) => ({ default: module.LiveTracking })));
 const Clients = React.lazy(() => import('./pages/Clients').then((module) => ({ default: module.Clients })));
+const Leads = React.lazy(() => import('./pages/Leads').then((module) => ({ default: module.Leads })));
 const Visits = React.lazy(() => import('./pages/Visits').then((module) => ({ default: module.Visits })));
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -96,6 +97,8 @@ function App() {
                 >
                   <Route index element={<Dashboard />} />
                   <Route path="calls" element={<CallHistory />} />
+                  <Route path="leads" element={<RoleRoute allowed={['org_admin', 'manager', 'sales_member']}><Leads /></RoleRoute>} />
+                  <Route path="leads/:leadId" element={<RoleRoute allowed={['org_admin', 'manager', 'sales_member']}><Leads /></RoleRoute>} />
                   <Route path="team" element={<Team />} />
                   <Route path="live" element={<RoleRoute allowed={['org_admin', 'manager']}><LiveTracking /></RoleRoute>} />
                   <Route path="clients" element={<RoleRoute allowed={['org_admin', 'manager']}><Clients /></RoleRoute>} />

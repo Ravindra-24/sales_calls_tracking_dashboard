@@ -28,7 +28,7 @@ describe('ProductPage', () => {
   it('keeps the homepage focused and routes detailed subjects to dedicated pages', () => {
     renderPage();
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Every sales call. One clear picture.' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Calls, follow-ups, and field activity. One clear picture.' })).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /Start free/ }).some((link) => link.getAttribute('href') === '/signup')).toBe(true);
     expect(screen.getAllByRole('link', { name: 'Explore the product' }).some((link) => link.getAttribute('href') === '/product')).toBe(true);
     expect(screen.getByRole('link', { name: 'View Android app' })).toHaveAttribute('href', '/download');

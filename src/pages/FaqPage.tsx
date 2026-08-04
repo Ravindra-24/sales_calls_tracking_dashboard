@@ -6,7 +6,7 @@ import { faqGroups } from './publicContent';
 export const FaqPage = () => {
   usePublicMetadata({
     title: 'FAQ | Smartly Manage',
-    description: 'Answers about Smartly Manage product workflows, Android permissions, plans, recordings, integrations, and APK verification.',
+    description: 'Answers about Smartly Manage calls, leads, field shifts, Android permissions, privacy, plans, call intelligence, and integrations.',
     path: '/faq',
   });
 
@@ -19,7 +19,7 @@ export const FaqPage = () => {
             <Reveal>
               <p className="lw-eyebrow"><HelpCircle size={15} /> Frequently asked questions</p>
               <h1>Understand the product before your team adopts it.</h1>
-              <p>Clear answers about the workflow, Android app, data access, recordings, plans, and integrations.</p>
+              <p>Clear answers about calls, leads, field shifts, Android permissions, data use, call intelligence, plans, and integrations.</p>
             </Reveal>
             <Reveal className="lw-help-card" delay={100}>
               <Mail size={24} />

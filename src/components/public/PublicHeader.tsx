@@ -87,7 +87,7 @@ export const PublicHeader = ({ contextLabel }: PublicHeaderProps) => {
     <header className="lw-public-header">
       <div className="lw-header-inner">
         <Link className="lw-public-brand" to="/" aria-label="Smartly Manage home">
-          <span className="lw-brand-mark"><img src="/favicon.svg" alt="" /></span>
+          <span className="lw-brand-mark"><img src="/smartly-manage-icon.webp" alt="" /></span>
           <span>Smartly Manage</span>
           {contextLabel && <small>{contextLabel}</small>}
         </Link>
