@@ -40,6 +40,7 @@ export const Settings = () => {
   const [platformLoading, setPlatformLoading] = useState(false);
   const [aiConfiguration, setAiConfiguration] = useState<AiOrganizationConfiguration | null>(null);
   const [providerKey, setProviderKey] = useState('');
+  const [selectedProvider, setSelectedProvider] = useState<'openai' | 'gemini' | 'anthropic'>('openai');
   const [aiBusy, setAiBusy] = useState('');
   const [aiMessage, setAiMessage] = useState('');
 
@@ -68,6 +69,7 @@ export const Settings = () => {
         ]);
         setOrgSettings({ ...defaultOrgSettings, ...orgResponse.data.data.settings });
         setAiConfiguration(aiResponse.data.data);
+        setSelectedProvider(aiResponse.data.data.provider);
       } catch (err) {
         setOrgMessage(getApiErrorMessage(err, 'Failed to load organization settings.'));
       } finally {
@@ -164,12 +166,12 @@ export const Settings = () => {
     setAiBusy('save');
     setAiMessage('');
     try {
-      const response = await api.put<ApiResponse<AiOrganizationConfiguration>>(`/orgs/${claims.orgId}/ai-provider/credential`, { apiKey });
+      const response = await api.put<ApiResponse<AiOrganizationConfiguration>>(`/orgs/${claims.orgId}/ai-provider/credential`, { provider: selectedProvider, apiKey });
       setAiConfiguration(response.data.data);
       setProviderKey('');
-      setAiMessage('OpenAI credential validated and saved. New analysis jobs can now be processed.');
+      setAiMessage(`${selectedProvider === 'openai' ? 'OpenAI' : selectedProvider === 'gemini' ? 'Google Gemini' : 'Anthropic Claude'} credential validated and saved.`);
     } catch (err) {
-      setAiMessage(getApiErrorMessage(err, 'Failed to validate the OpenAI credential.'));
+      setAiMessage(getApiErrorMessage(err, 'Failed to validate the AI provider credential.'));
     } finally {
       setAiBusy('');
     }
@@ -183,9 +185,9 @@ export const Settings = () => {
       await api.post(`/orgs/${claims.orgId}/ai-provider/test`);
       const response = await api.get<ApiResponse<AiOrganizationConfiguration>>(`/orgs/${claims.orgId}/ai-settings`);
       setAiConfiguration(response.data.data);
-      setAiMessage('OpenAI is ready for transcription and call intelligence.');
+      setAiMessage('The connected AI provider is ready.');
     } catch (err) {
-      setAiMessage(getApiErrorMessage(err, 'OpenAI readiness check failed.'));
+      setAiMessage(getApiErrorMessage(err, 'AI provider readiness check failed.'));
       const response = await api.get<ApiResponse<AiOrganizationConfiguration>>(`/orgs/${claims.orgId}/ai-settings`).catch(() => null);
       if (response) setAiConfiguration(response.data.data);
     } finally {
@@ -206,9 +208,9 @@ export const Settings = () => {
         validatedAt: null,
         updatedAt: null,
       } : current);
-      setAiMessage('OpenAI credential deleted. New and active AI processing is disabled until another key is connected.');
+      setAiMessage('AI provider credential deleted. New and active AI processing is disabled until another key is connected.');
     } catch (err) {
-      setAiMessage(getApiErrorMessage(err, 'Failed to delete the OpenAI credential.'));
+      setAiMessage(getApiErrorMessage(err, 'Failed to delete the AI provider credential.'));
     } finally {
       setAiBusy('');
     }
@@ -387,7 +389,7 @@ export const Settings = () => {
                 <div className="stat-icon violet"><Bot size={18} /></div>
                 <div>
                   <h2>AI Processing</h2>
-                  <p>Connect your organization&apos;s OpenAI key for call transcription and intelligence.</p>
+                  <p>Connect your organization&apos;s OpenAI, Gemini, or Claude API key.</p>
                 </div>
               </div>
             </div>
@@ -401,14 +403,20 @@ export const Settings = () => {
                     <div className="provider-card-heading">
                       <KeyRound size={17} />
                       <div>
-                        <h3>OpenAI</h3>
+                        <h3>{aiConfiguration.provider === 'openai' ? 'OpenAI' : aiConfiguration.provider === 'gemini' ? 'Google Gemini' : 'Anthropic Claude'}</h3>
                         <p>{aiConfiguration.configured ? `Connected ${aiConfiguration.maskedKey}` : 'Not connected · AI processing is unavailable'}</p>
                       </div>
                     </div>
                     <div className="subtle-text">
-                      Transcription: {aiConfiguration.models.transcription} · Intelligence: {aiConfiguration.models.intelligence}
+                      Transcription: {aiConfiguration.models.transcription ?? 'Not supported'} · Intelligence: {aiConfiguration.models.intelligence}
                     </div>
-                    <input type="password" autoComplete="new-password" className="input-field" placeholder={aiConfiguration.configured ? 'Enter a replacement OpenAI API key' : 'Enter your OpenAI API key'} value={providerKey} onChange={(event) => setProviderKey(event.target.value)} />
+                    <select className="input-field" aria-label="AI provider" value={selectedProvider} onChange={(event) => setSelectedProvider(event.target.value as typeof selectedProvider)}>
+                      <option value="openai">OpenAI</option>
+                      <option value="gemini">Google Gemini</option>
+                      <option value="anthropic">Anthropic Claude</option>
+                    </select>
+                    <input type="password" autoComplete="new-password" className="input-field" placeholder={`Enter ${selectedProvider === 'openai' ? 'OpenAI' : selectedProvider === 'gemini' ? 'Gemini' : 'Claude'} API key`} value={providerKey} onChange={(event) => setProviderKey(event.target.value)} />
+                    {selectedProvider === 'anthropic' && <small>Claude can analyze an existing transcript but cannot transcribe recording audio. Use OpenAI or Gemini for the complete recording workflow.</small>}
                     <div className="settings-actions">
                       <button type="button" className="secondary-button" disabled={!providerKey.trim() || aiBusy === 'save'} onClick={() => void saveProviderKey()}>{aiBusy === 'save' ? 'Validating...' : aiConfiguration.configured ? 'Validate & Replace' : 'Validate & Connect'}</button>
                       {aiConfiguration.configured && <button type="button" className="secondary-button" disabled={aiBusy === 'test'} onClick={() => void testProvider()}>{aiBusy === 'test' ? 'Testing...' : 'Test Connection'}</button>}

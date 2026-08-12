@@ -102,7 +102,7 @@ export const CallRecordings = () => {
       {error && <div className="notice error-notice">{error}</div>}
       {config?.planEligible && !config.aiConfigured && (
         <div className="notice error-notice">
-          AI processing is unavailable until an organization admin connects an OpenAI key in Organization Settings. Recordings can still be imported and kept for a later manual retry.
+          Recording processing is unavailable until an organization admin connects an OpenAI or Gemini key in Organization Settings. Claude keys support transcript intelligence but not audio transcription. Recordings can still be imported and kept for a later manual retry.
         </div>
       )}
 

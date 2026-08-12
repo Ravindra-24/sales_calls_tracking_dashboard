@@ -53,6 +53,7 @@ const aiConfiguration = {
     transcription: 'gpt-4o-transcribe-diarize',
     intelligence: 'gpt-5.6-luna',
   },
+  capabilities: { transcription: true, intelligence: true },
 };
 
 afterEach(() => {
@@ -73,12 +74,12 @@ describe('organization AI settings', () => {
     render(<Settings />);
 
     expect(await screen.findByText(/AI processing is unavailable/i)).toBeInTheDocument();
-    await user.type(screen.getByPlaceholderText('Enter your OpenAI API key'), 'sk-organization-test-key');
+    await user.type(screen.getByPlaceholderText('Enter OpenAI API key'), 'sk-organization-test-key');
     await user.click(screen.getByRole('button', { name: 'Validate & Connect' }));
 
     await waitFor(() => expect(mocks.put).toHaveBeenCalledWith(
       '/orgs/org-1/ai-provider/credential',
-      { apiKey: 'sk-organization-test-key' },
+      { provider: 'openai', apiKey: 'sk-organization-test-key' },
     ));
     expect(await screen.findByText(/Connected ••••1234/)).toBeInTheDocument();
   });

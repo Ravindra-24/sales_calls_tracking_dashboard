@@ -423,14 +423,18 @@ export interface LeadCallRecord {
 }
 
 export interface AiOrganizationConfiguration {
-  provider: 'openai';
+  provider: 'openai' | 'gemini' | 'anthropic';
   configured: boolean;
   maskedKey: string | null;
   validatedAt: string | null;
   updatedAt: string | null;
   models: {
-    transcription: string;
+    transcription: string | null;
     intelligence: string;
+  };
+  capabilities: {
+    transcription: boolean;
+    intelligence: boolean;
   };
 }
 
