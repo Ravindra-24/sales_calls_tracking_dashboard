@@ -1,7 +1,7 @@
 import { ShieldCheck } from 'lucide-react';
 import { PublicFooter, PublicHeader, Reveal, usePublicMetadata } from '../components/public';
 
-const privacyPolicyVersion = '2026-07-31';
+const privacyPolicyVersion = '2026-08-12';
 
 const intro = 'This policy explains the personal data Smartly Manage handles across the Android app and web dashboard, why it is used, who can access it, how long it is kept, and the choices available to you.';
 
@@ -24,7 +24,7 @@ const sections: Array<{ title: string; body: string }> = [
   },
   {
     title: 'Optional call recordings and AI analysis',
-    body: 'On Max and Enterprise, an organization may optionally enable processing of recordings already created by a representative’s native Android dialer. Processing requires organization approval of the current policy, the representative’s current disclosure decision, and representative-selected folder access. We may receive the selected audio and produce a speaker-labelled transcript where supported, summary, sentiment, buying and risk signals, objections, customer concerns, suggested follow-up, and deal-health inputs. Audio may be processed by Google Cloud, OpenAI, or AssemblyAI; transcripts may be processed by Google Cloud or OpenAI. Google can be used as a fallback if another selected provider fails. The representative and authorized organization managers and admins can view the result; platform owners can configure providers but cannot view tenant recording or lead content. Organizations and representatives are responsible for any notice or consent legally required from call participants.',
+    body: 'On Max and Enterprise, an organization may optionally enable processing of recordings already created by a representative’s native Android dialer. Processing requires organization approval of the current policy, the representative’s current disclosure decision, representative-selected folder access, and an OpenAI API key supplied by the organization administrator. We may receive the selected audio and send it to OpenAI to produce a speaker-labelled transcript where supported, summary, sentiment, buying and risk signals, objections, customer concerns, suggested follow-up, and deal-health inputs. Smartly Manage does not provide a platform AI key or fallback provider. The representative and authorized organization managers and admins can view the result; platform owners cannot manage tenant AI credentials or view tenant recording or lead content. Organizations and representatives are responsible for any notice or consent legally required from call participants.',
   },
   {
     title: 'Location data (shift-based visit tracking)',
@@ -44,7 +44,7 @@ const sections: Array<{ title: string; body: string }> = [
   },
   {
     title: 'Data sharing and service providers',
-    body: 'We disclose data only as needed to operate Smartly Manage: Google Cloud and Firebase for hosting, authentication, databases, storage, analytics infrastructure, Speech-to-Text, and Vertex AI; Razorpay for paid-plan checkout and payment processing; a configured transactional email provider; and, only for optional call intelligence, the organization-independent processor selected by the platform configuration—Google Cloud, OpenAI, or AssemblyAI. Processing providers may operate outside India under their own terms and security commitments. We may also disclose information when required by law, to investigate misuse, or to protect users and the service. We do not share data with advertisers or data brokers.',
+    body: 'We disclose data only as needed to operate Smartly Manage: Google Cloud and Firebase for hosting, authentication, databases, storage, and analytics infrastructure; Razorpay for paid-plan checkout and payment processing; a configured transactional email provider; and, only for optional call intelligence, OpenAI using the organization’s supplied API key. OpenAI may process data outside India under its own terms and security commitments. We may also disclose information when required by law, to investigate misuse, or to protect users and the service. We do not share data with advertisers or data brokers.',
   },
   {
     title: 'Data storage and security',

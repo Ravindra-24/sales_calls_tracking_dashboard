@@ -5,7 +5,7 @@ import { api, getApiErrorMessage } from '../api/client';
 import { auth } from '../config/firebase';
 import { useAuth } from '../context/auth';
 import { useTheme, type ThemeMode } from '../context/theme';
-import type { AiPlatformConfiguration, ApiResponse, OrganizationDetails, PlatformSettings } from '../types/api';
+import type { AiOrganizationConfiguration, ApiResponse, OrganizationDetails, PlatformSettings } from '../types/api';
 
 const defaultOrgSettings: OrganizationDetails['settings'] = {
   timezone: 'Asia/Kolkata',
@@ -38,8 +38,8 @@ export const Settings = () => {
   const [platformSaving, setPlatformSaving] = useState(false);
   const [platformMessage, setPlatformMessage] = useState('');
   const [platformLoading, setPlatformLoading] = useState(false);
-  const [aiConfiguration, setAiConfiguration] = useState<AiPlatformConfiguration | null>(null);
-  const [providerKeys, setProviderKeys] = useState({ openai: '', assemblyai: '' });
+  const [aiConfiguration, setAiConfiguration] = useState<AiOrganizationConfiguration | null>(null);
+  const [providerKey, setProviderKey] = useState('');
   const [aiBusy, setAiBusy] = useState('');
   const [aiMessage, setAiMessage] = useState('');
 
@@ -62,8 +62,12 @@ export const Settings = () => {
     const loadOrg = async () => {
       setOrgLoading(true);
       try {
-        const response = await api.get<ApiResponse<OrganizationDetails>>(`/orgs/${claims.orgId}`);
-        setOrgSettings({ ...defaultOrgSettings, ...response.data.data.settings });
+        const [orgResponse, aiResponse] = await Promise.all([
+          api.get<ApiResponse<OrganizationDetails>>(`/orgs/${claims.orgId}`),
+          api.get<ApiResponse<AiOrganizationConfiguration>>(`/orgs/${claims.orgId}/ai-settings`),
+        ]);
+        setOrgSettings({ ...defaultOrgSettings, ...orgResponse.data.data.settings });
+        setAiConfiguration(aiResponse.data.data);
       } catch (err) {
         setOrgMessage(getApiErrorMessage(err, 'Failed to load organization settings.'));
       } finally {
@@ -80,12 +84,8 @@ export const Settings = () => {
     const loadPlatform = async () => {
       setPlatformLoading(true);
       try {
-        const [settingsResponse, aiResponse] = await Promise.all([
-          api.get<ApiResponse<PlatformSettings>>('/admin/settings'),
-          api.get<ApiResponse<AiPlatformConfiguration>>('/admin/ai-settings'),
-        ]);
+        const settingsResponse = await api.get<ApiResponse<PlatformSettings>>('/admin/settings');
         setPlatformSettings(settingsResponse.data.data);
-        setAiConfiguration(aiResponse.data.data);
       } catch (err) {
         setPlatformMessage(getApiErrorMessage(err, 'Failed to load platform settings.'));
       } finally {
@@ -158,72 +158,57 @@ export const Settings = () => {
     reader.readAsDataURL(file);
   };
 
-  const saveAiRouting = async () => {
-    if (!aiConfiguration) return;
-    setAiBusy('routing');
+  const saveProviderKey = async () => {
+    const apiKey = providerKey.trim();
+    if (!apiKey || !claims.orgId) return;
+    setAiBusy('save');
     setAiMessage('');
     try {
-      const response = await api.patch<ApiResponse<AiPlatformConfiguration['settings']>>('/admin/ai-settings', {
-        transcriptionProvider: aiConfiguration.settings.transcriptionProvider,
-        intelligenceProvider: aiConfiguration.settings.intelligenceProvider,
-      });
-      setAiConfiguration((current) => current ? { ...current, settings: response.data.data } : current);
-      setAiMessage('AI routing updated. New analysis jobs will use this configuration.');
+      const response = await api.put<ApiResponse<AiOrganizationConfiguration>>(`/orgs/${claims.orgId}/ai-provider/credential`, { apiKey });
+      setAiConfiguration(response.data.data);
+      setProviderKey('');
+      setAiMessage('OpenAI credential validated and saved. New analysis jobs can now be processed.');
     } catch (err) {
-      setAiMessage(getApiErrorMessage(err, 'Failed to update AI routing. Sign in again if recent authentication is required.'));
+      setAiMessage(getApiErrorMessage(err, 'Failed to validate the OpenAI credential.'));
     } finally {
       setAiBusy('');
     }
   };
 
-  const saveProviderKey = async (provider: 'openai' | 'assemblyai') => {
-    const apiKey = providerKeys[provider].trim();
-    if (!apiKey) return;
-    setAiBusy(provider);
+  const testProvider = async () => {
+    if (!claims.orgId) return;
+    setAiBusy('test');
     setAiMessage('');
     try {
-      const response = await api.put<ApiResponse<AiPlatformConfiguration['providers'][typeof provider]>>(`/admin/ai-providers/${provider}/credential`, { apiKey });
+      await api.post(`/orgs/${claims.orgId}/ai-provider/test`);
+      const response = await api.get<ApiResponse<AiOrganizationConfiguration>>(`/orgs/${claims.orgId}/ai-settings`);
+      setAiConfiguration(response.data.data);
+      setAiMessage('OpenAI is ready for transcription and call intelligence.');
+    } catch (err) {
+      setAiMessage(getApiErrorMessage(err, 'OpenAI readiness check failed.'));
+      const response = await api.get<ApiResponse<AiOrganizationConfiguration>>(`/orgs/${claims.orgId}/ai-settings`).catch(() => null);
+      if (response) setAiConfiguration(response.data.data);
+    } finally {
+      setAiBusy('');
+    }
+  };
+
+  const deleteProviderKey = async () => {
+    if (!claims.orgId) return;
+    setAiBusy('delete');
+    setAiMessage('');
+    try {
+      await api.delete(`/orgs/${claims.orgId}/ai-provider/credential`);
       setAiConfiguration((current) => current ? {
         ...current,
-        providers: { ...current.providers, [provider]: response.data.data },
+        configured: false,
+        maskedKey: null,
+        validatedAt: null,
+        updatedAt: null,
       } : current);
-      setProviderKeys((current) => ({ ...current, [provider]: '' }));
-      setAiMessage(`${provider} credential validated and saved.`);
+      setAiMessage('OpenAI credential deleted. New and active AI processing is disabled until another key is connected.');
     } catch (err) {
-      setAiMessage(getApiErrorMessage(err, `Failed to validate the ${provider} credential.`));
-    } finally {
-      setAiBusy('');
-    }
-  };
-
-  const testProvider = async (provider: 'google' | 'openai' | 'assemblyai') => {
-    setAiBusy(`test-${provider}`);
-    setAiMessage('');
-    try {
-      await api.post(`/admin/ai-providers/${provider}/test`);
-      setAiMessage(`${provider} is ready.`);
-    } catch (err) {
-      setAiMessage(getApiErrorMessage(err, `${provider} readiness check failed.`));
-    } finally {
-      setAiBusy('');
-    }
-  };
-
-  const deleteProviderKey = async (provider: 'openai' | 'assemblyai') => {
-    setAiBusy(`delete-${provider}`);
-    setAiMessage('');
-    try {
-      await api.delete(`/admin/ai-providers/${provider}/credential`);
-      setAiConfiguration((current) => current ? {
-        ...current,
-        providers: {
-          ...current.providers,
-          [provider]: { configured: false, maskedKey: null, validatedAt: null, updatedAt: null },
-        },
-      } : current);
-      setAiMessage(`${provider} credential deleted. Jobs routed there will fall back to Google.`);
-    } catch (err) {
-      setAiMessage(getApiErrorMessage(err, `Failed to delete the ${provider} credential.`));
+      setAiMessage(getApiErrorMessage(err, 'Failed to delete the OpenAI credential.'));
     } finally {
       setAiBusy('');
     }
@@ -395,61 +380,45 @@ export const Settings = () => {
           </section>
         )}
 
-        {claims.role === 'platform_owner' && (
+        {claims.role === 'org_admin' && (
           <section className="section-card settings-card">
             <div className="section-heading">
               <div className="settings-heading-content">
                 <div className="stat-icon violet"><Bot size={18} /></div>
                 <div>
-                  <h2>AI Call Providers</h2>
-                  <p>Select independent transcription and intelligence providers. Google is always the fallback.</p>
+                  <h2>AI Processing</h2>
+                  <p>Connect your organization&apos;s OpenAI key for call transcription and intelligence.</p>
                 </div>
               </div>
             </div>
 
-            {platformLoading || !aiConfiguration ? (
-              <div className="empty-state">Loading AI provider settings...</div>
+            {orgLoading || !aiConfiguration ? (
+              <div className="empty-state">Loading AI settings...</div>
             ) : (
               <div className="settings-form">
-                <div className="settings-grid">
-                  <label>Transcription Provider
-                    <select className="input-field" value={aiConfiguration.settings.transcriptionProvider} onChange={(event) => setAiConfiguration((current) => current ? { ...current, settings: { ...current.settings, transcriptionProvider: event.target.value as AiPlatformConfiguration['settings']['transcriptionProvider'] } } : current)}>
-                      <option value="google">Google · {aiConfiguration.models.google.transcription}</option>
-                      <option value="openai">OpenAI · {aiConfiguration.models.openai.transcription}</option>
-                      <option value="assemblyai">AssemblyAI · {aiConfiguration.models.assemblyai.transcription}</option>
-                    </select>
-                  </label>
-                  <label>Intelligence Provider
-                    <select className="input-field" value={aiConfiguration.settings.intelligenceProvider} onChange={(event) => setAiConfiguration((current) => current ? { ...current, settings: { ...current.settings, intelligenceProvider: event.target.value as AiPlatformConfiguration['settings']['intelligenceProvider'] } } : current)}>
-                      <option value="google">Google · {aiConfiguration.models.google.intelligence}</option>
-                      <option value="openai">OpenAI · {aiConfiguration.models.openai.intelligence}</option>
-                    </select>
-                  </label>
-                </div>
-                <div className="settings-actions">
-                  <button type="button" className="btn-primary" disabled={aiBusy === 'routing'} onClick={() => void saveAiRouting()}><Save size={16} /> {aiBusy === 'routing' ? 'Saving...' : 'Save Routing'}</button>
-                  <span className="subtle-text">Fallback: Google · configuration v{aiConfiguration.settings.configVersion}</span>
-                </div>
-
                 <div className="provider-card-grid">
-                  {(['google', 'openai', 'assemblyai'] as const).map((provider) => {
-                    const status = aiConfiguration.providers[provider];
-                    const isManaged = provider === 'google';
-                    return (
-                      <div className="provider-card" key={provider}>
-                        <div className="provider-card-heading"><KeyRound size={17} /><div><h3>{provider === 'assemblyai' ? 'AssemblyAI' : provider === 'openai' ? 'OpenAI' : 'Google'}</h3><p>{status.configured ? `Ready ${status.maskedKey || '(server managed)'}` : 'Credential not configured'}</p></div></div>
-                        {!isManaged && <input type="password" autoComplete="new-password" className="input-field" placeholder={`New ${provider} API key`} value={providerKeys[provider]} onChange={(event) => setProviderKeys((current) => ({ ...current, [provider]: event.target.value }))} />}
-                        <div className="settings-actions">
-                          {!isManaged && <button type="button" className="secondary-button" disabled={!providerKeys[provider].trim() || aiBusy === provider} onClick={() => void saveProviderKey(provider)}>{aiBusy === provider ? 'Validating...' : 'Validate & Save'}</button>}
-                          <button type="button" className="secondary-button" disabled={aiBusy === `test-${provider}`} onClick={() => void testProvider(provider)}>{aiBusy === `test-${provider}` ? 'Testing...' : 'Test'}</button>
-                          {!isManaged && status.configured && <button type="button" className="danger-button" disabled={aiBusy === `delete-${provider}`} onClick={() => void deleteProviderKey(provider)}>{aiBusy === `delete-${provider}` ? 'Deleting...' : 'Delete'}</button>}
-                        </div>
-                        {status.validatedAt && <small>Last validated {new Date(status.validatedAt).toLocaleString()}</small>}
+                  <div className="provider-card">
+                    <div className="provider-card-heading">
+                      <KeyRound size={17} />
+                      <div>
+                        <h3>OpenAI</h3>
+                        <p>{aiConfiguration.configured ? `Connected ${aiConfiguration.maskedKey}` : 'Not connected · AI processing is unavailable'}</p>
                       </div>
-                    );
-                  })}
+                    </div>
+                    <div className="subtle-text">
+                      Transcription: {aiConfiguration.models.transcription} · Intelligence: {aiConfiguration.models.intelligence}
+                    </div>
+                    <input type="password" autoComplete="new-password" className="input-field" placeholder={aiConfiguration.configured ? 'Enter a replacement OpenAI API key' : 'Enter your OpenAI API key'} value={providerKey} onChange={(event) => setProviderKey(event.target.value)} />
+                    <div className="settings-actions">
+                      <button type="button" className="secondary-button" disabled={!providerKey.trim() || aiBusy === 'save'} onClick={() => void saveProviderKey()}>{aiBusy === 'save' ? 'Validating...' : aiConfiguration.configured ? 'Validate & Replace' : 'Validate & Connect'}</button>
+                      {aiConfiguration.configured && <button type="button" className="secondary-button" disabled={aiBusy === 'test'} onClick={() => void testProvider()}>{aiBusy === 'test' ? 'Testing...' : 'Test Connection'}</button>}
+                      {aiConfiguration.configured && <button type="button" className="danger-button" disabled={aiBusy === 'delete'} onClick={() => void deleteProviderKey()}>{aiBusy === 'delete' ? 'Deleting...' : 'Delete Key'}</button>}
+                    </div>
+                    {aiConfiguration.validatedAt && <small>Last validated {new Date(aiConfiguration.validatedAt).toLocaleString()}</small>}
+                    <small>The key is encrypted, write-only, and used only for this organization&apos;s processing.</small>
+                  </div>
                 </div>
-                {aiMessage && <div className={`notice ${/(fail|error|required)/i.test(aiMessage) ? 'error-notice' : 'success-notice'}`}>{aiMessage}</div>}
+                {aiMessage && <div className={`notice ${/(fail|error|required|rejected|invalid|unavailable)/i.test(aiMessage) ? 'error-notice' : 'success-notice'}`}>{aiMessage}</div>}
               </div>
             )}
           </section>

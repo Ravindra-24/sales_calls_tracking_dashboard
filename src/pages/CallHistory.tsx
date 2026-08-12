@@ -525,6 +525,9 @@ export const CallHistory = () => {
             <CallSummaryCard label="Connected" value={summaryLoading ? '—' : summary?.connectedCalls ?? '—'} icon={<PhoneIncoming />} tone="green" />
             <CallSummaryCard label="Not connected" value={summaryLoading ? '—' : summary?.notConnectedCalls ?? '—'} icon={<PhoneMissed />} tone="orange" />
             <CallSummaryCard label="Missed" value={summaryLoading ? '—' : summary?.missedCalls ?? '—'} icon={<PhoneMissed />} tone="orange" />
+            <CallSummaryCard label="Unique incoming" value={summaryLoading ? '—' : summary?.uniqueIncomingCalls ?? '—'} icon={<PhoneIncoming />} tone="green" />
+            <CallSummaryCard label="Unique outgoing" value={summaryLoading ? '—' : summary?.uniqueOutgoingCalls ?? '—'} icon={<PhoneCall />} tone="blue" />
+            <CallSummaryCard label="Unique connected" value={summaryLoading ? '—' : summary?.uniqueConnectedCalls ?? '—'} icon={<PhoneIncoming />} tone="green" />
           </div>
           {summaryError && <div className="call-summary-error" role="status">{summaryError}</div>}
         </>
@@ -615,7 +618,7 @@ export const CallHistory = () => {
                 {analysis.riskSignals.length > 0 && <section><h3>Risks and objections</h3><ul>{[...analysis.riskSignals, ...analysis.objections, ...analysis.customerConcerns].map(item => <li key={item}>{item}</li>)}</ul></section>}
                 {analysis.nextStep && <section><h3>Next step</h3><p>{analysis.nextStep}</p></section>}
                 {analysis.suggestedNextAction && <section className="suggestion-box"><Sparkles size={18} /><div><h3>Suggested next action</h3><p><strong>{analysis.suggestedNextAction.text}</strong></p><p>{analysis.suggestedNextAction.rationale}</p></div>{analysisCall.leadId && !analysis.suggestedNextAction.appliedAt && <button className="btn-primary" type="button" onClick={() => void applyAnalysisSuggestion()}>Apply to lead</button>}</section>}
-                <small>Processed by {analysis.transcriptionProvider} transcription{analysis.transcriptionModel ? ` (${analysis.transcriptionModel})` : ''} and {analysis.intelligenceProvider} intelligence{analysis.intelligenceModel ? ` (${analysis.intelligenceModel})` : ''}{analysis.fallbackUsed ? ` · Google fallback used (${analysis.fallbackReason || 'provider unavailable'})` : ''}</small>
+                <small>Processed by {analysis.transcriptionProvider} transcription{analysis.transcriptionModel ? ` (${analysis.transcriptionModel})` : ''} and {analysis.intelligenceProvider} intelligence{analysis.intelligenceModel ? ` (${analysis.intelligenceModel})` : ''}</small>
                 {analysis.transcript && <details><summary>Transcript</summary><pre className="analysis-transcript">{analysis.transcript}</pre></details>}
                 {analysis.failureMessage && <div className="notice error-notice">{analysis.failureMessage}</div>}
                 <div className="analysis-actions">

@@ -80,14 +80,10 @@ export interface CallAnalysis {
     dueAt: string | null;
     appliedAt: string | null;
   } | null;
-  transcriptionProvider: 'google' | 'openai' | 'assemblyai';
+  transcriptionProvider: string;
   transcriptionModel: string | null;
-  intelligenceProvider: 'google' | 'openai';
+  intelligenceProvider: string;
   intelligenceModel: string | null;
-  fallbackUsed: boolean;
-  fallbackReason: string | null;
-  transcriptionFallbackReason: string | null;
-  intelligenceFallbackReason: string | null;
   consentNoticeStatus: 'unknown' | 'detected' | 'missing';
   failureCode: string | null;
   failureMessage: string | null;
@@ -104,11 +100,14 @@ export interface RecordingUsage {
   limitMinutes: number;
   remainingMinutes: number;
   enabled: boolean;
+  aiConfigured: boolean;
   policyVersion: string | null;
 }
 
 export interface RecordingConfig {
   enabled: boolean;
+  configuredEnabled: boolean;
+  aiConfigured: boolean;
   policyVersion: string | null;
   currentPolicyVersion: string;
   planEligible: boolean;
@@ -138,6 +137,9 @@ export interface CallSummary {
   connectedCalls: number;
   notConnectedCalls: number;
   missedCalls: number;
+  uniqueIncomingCalls: number;
+  uniqueOutgoingCalls: number;
+  uniqueConnectedCalls: number;
 }
 
 export interface OnboardingItem {
@@ -420,20 +422,16 @@ export interface LeadCallRecord {
   };
 }
 
-export interface AiPlatformConfiguration {
-  settings: {
-    transcriptionProvider: 'google' | 'openai' | 'assemblyai';
-    intelligenceProvider: 'google' | 'openai';
-    fallbackProvider: 'google';
-    configVersion: number;
+export interface AiOrganizationConfiguration {
+  provider: 'openai';
+  configured: boolean;
+  maskedKey: string | null;
+  validatedAt: string | null;
+  updatedAt: string | null;
+  models: {
+    transcription: string;
+    intelligence: string;
   };
-  providers: Record<'google' | 'openai' | 'assemblyai', {
-    configured: boolean;
-    maskedKey: string | null;
-    validatedAt: string | null;
-    updatedAt: string | null;
-  }>;
-  models: Record<string, { transcription?: string; intelligence?: string }>;
 }
 
 export interface OrganizationDetails {

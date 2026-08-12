@@ -100,6 +100,11 @@ export const CallRecordings = () => {
       </header>
 
       {error && <div className="notice error-notice">{error}</div>}
+      {config?.planEligible && !config.aiConfigured && (
+        <div className="notice error-notice">
+          AI processing is unavailable until an organization admin connects an OpenAI key in Organization Settings. Recordings can still be imported and kept for a later manual retry.
+        </div>
+      )}
 
       <div className="call-summary-grid">
         <section className="call-summary-card section-card">

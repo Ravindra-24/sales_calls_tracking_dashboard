@@ -47,7 +47,15 @@ const installApiMock = () => {
       id: 'rep-1', name: 'Asha', email: 'asha@example.com', role: 'sales_member', status: 'active', createdAt: '', updatedAt: '',
     }] } });
     if (url === '/calls/filters') return Promise.resolve({ data: { data: [] } });
-    if (url === '/calls/summary') return Promise.resolve({ data: { data: { totalCalls: 8, connectedCalls: 5, notConnectedCalls: 1, missedCalls: 2 } } });
+    if (url === '/calls/summary') return Promise.resolve({ data: { data: {
+      totalCalls: 8,
+      connectedCalls: 5,
+      notConnectedCalls: 1,
+      missedCalls: 2,
+      uniqueIncomingCalls: 3,
+      uniqueOutgoingCalls: 4,
+      uniqueConnectedCalls: 5,
+    } } });
     if (url === '/calls') {
       const secondPage = config?.params?.cursor === 'page-2';
       return Promise.resolve({ data: {
@@ -83,6 +91,10 @@ describe('CallHistory', () => {
     render(<CallHistory />);
 
     expect(await screen.findByText('8')).toBeInTheDocument();
+    expect(screen.getByText('Unique incoming')).toBeInTheDocument();
+    expect(screen.getByText('Unique outgoing')).toBeInTheDocument();
+    expect(screen.getByText('Unique connected')).toBeInTheDocument();
+    expect(document.querySelectorAll('.call-summary-card')).toHaveLength(7);
     expect(screen.getByRole('cell', { name: '1' })).toBeInTheDocument();
     const initialListRequests = mocks.get.mock.calls.filter(([url]) => url === '/calls').length;
 
