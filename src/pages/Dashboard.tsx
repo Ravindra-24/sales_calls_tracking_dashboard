@@ -14,7 +14,7 @@ import {
 import { format, parseISO } from 'date-fns';
 import { api, getApiErrorMessage } from '../api/client';
 import { useAuth } from '../context/auth';
-import type { ApiResponse, PlatformAnalytics, RepStats, TeamMember, TeamStats } from '../types/api';
+import type { ApiResponse, CallSummary, PlatformAnalytics, RepStats, TeamMember, TeamStats } from '../types/api';
 import { OnboardingChecklist } from '../components/OnboardingChecklist';
 import { SyncHealthPanel } from '../components/SyncHealthPanel';
 import {
@@ -66,10 +66,13 @@ export const Dashboard = () => {
     claims.role === 'sales_member' ? '' : readDashboardFilters(dashboardFilterStorageKey).repId
   ));
   const [stats, setStats] = useState<TeamStats | null>(null);
+  const [callSummary, setCallSummary] = useState<CallSummary | null>(null);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [platformStats, setPlatformStats] = useState<PlatformAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [summaryLoading, setSummaryLoading] = useState(true);
   const [error, setError] = useState('');
+  const [summaryError, setSummaryError] = useState('');
   const { from, to } = useMemo(() => resolveDashboardRange(rangePreset), [rangePreset]);
 
   useEffect(() => {
@@ -108,6 +111,38 @@ export const Dashboard = () => {
       })
       .finally(() => {
         if (active) setLoading(false);
+      });
+
+    return () => { active = false; };
+  }, [claims.role, from, repId, to]);
+
+  useEffect(() => {
+    if (claims.role === 'platform_owner') {
+      setCallSummary(null);
+      setSummaryLoading(false);
+      return;
+    }
+
+    let active = true;
+    setSummaryLoading(true);
+    setSummaryError('');
+    api.get<ApiResponse<CallSummary>>('/calls/summary', {
+      params: {
+        from: new Date(`${from}T00:00:00`).toISOString(),
+        to: new Date(`${to}T23:59:59.999`).toISOString(),
+        ...(repId ? { repId } : {}),
+      },
+    })
+      .then((response) => {
+        if (active) setCallSummary(response.data.data);
+      })
+      .catch((requestError) => {
+        if (!active) return;
+        setCallSummary(null);
+        setSummaryError(getApiErrorMessage(requestError, 'Unique call totals are temporarily unavailable.'));
+      })
+      .finally(() => {
+        if (active) setSummaryLoading(false);
       });
 
     return () => { active = false; };
@@ -227,7 +262,11 @@ export const Dashboard = () => {
         <StatCard title="Talk time" value={loading ? '—' : formatDuration(totals?.totalDurationSeconds ?? 0)} icon={<Clock />} tone="violet" />
         <StatCard title="Connect rate" value={loading ? '—' : `${connectRate}%`} icon={<Percent />} tone="green" />
         <StatCard title="Avg. duration" value={loading ? '—' : formatAverageDuration(averageDuration)} icon={<Timer />} tone="blue" />
+        <StatCard title="Unique incoming" value={summaryLoading ? '—' : callSummary?.uniqueIncomingCalls ?? '—'} icon={<PhoneIncoming />} tone="green" />
+        <StatCard title="Unique outgoing" value={summaryLoading ? '—' : callSummary?.uniqueOutgoingCalls ?? '—'} icon={<PhoneCall />} tone="blue" />
+        <StatCard title="Unique connected" value={summaryLoading ? '—' : callSummary?.uniqueConnectedCalls ?? '—'} icon={<PhoneIncoming />} tone="green" />
       </div>
+      {summaryError && <div className="call-summary-error" role="status">{summaryError}</div>}
 
       <SyncHealthPanel />
 

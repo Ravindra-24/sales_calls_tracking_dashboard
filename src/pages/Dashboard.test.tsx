@@ -50,6 +50,16 @@ const stats = {
   }],
 };
 
+const callSummary = {
+  totalCalls: 10,
+  connectedCalls: 7,
+  notConnectedCalls: 1,
+  missedCalls: 2,
+  uniqueIncomingCalls: 2,
+  uniqueOutgoingCalls: 4,
+  uniqueConnectedCalls: 5,
+};
+
 afterEach(() => {
   cleanup();
   mocks.get.mockReset();
@@ -58,9 +68,11 @@ afterEach(() => {
 
 describe('Dashboard', () => {
   it('renders balanced KPIs and applies the representative filter', async () => {
-    mocks.get.mockImplementation((url: string) => Promise.resolve({ data: { data: url.includes('/users') ? [{
-      id: 'rep-1', name: 'Asha', email: 'asha@example.com', role: 'sales_member', status: 'disabled', createdAt: '', updatedAt: '',
-    }] : stats } }));
+    mocks.get.mockImplementation((url: string) => Promise.resolve({ data: { data:
+      url.includes('/users') ? [{
+        id: 'rep-1', name: 'Asha', email: 'asha@example.com', role: 'sales_member', status: 'disabled', createdAt: '', updatedAt: '',
+      }] : url === '/calls/summary' ? callSummary : stats,
+    } }));
     const user = userEvent.setup();
     render(<Dashboard />);
 
@@ -68,11 +80,18 @@ describe('Dashboard', () => {
     expect(await screen.findByText('70%')).toBeInTheDocument();
     expect(screen.getByText('1m 31s')).toBeInTheDocument();
     expect(screen.getByText('Not connected')).toBeInTheDocument();
+    expect(screen.getByText('Unique incoming')).toBeInTheDocument();
+    expect(screen.getByText('Unique outgoing')).toBeInTheDocument();
+    expect(screen.getByText('Unique connected')).toBeInTheDocument();
+    expect(screen.getByText('4')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /5 outgoing, 3 incoming, 2 missed/ })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Asha (inactive)' })).toBeInTheDocument();
 
     await user.selectOptions(screen.getByLabelText('Representative'), 'rep-1');
     await waitFor(() => expect(mocks.get).toHaveBeenCalledWith('/stats/team', expect.objectContaining({
+      params: expect.objectContaining({ repId: 'rep-1' }),
+    })));
+    await waitFor(() => expect(mocks.get).toHaveBeenCalledWith('/calls/summary', expect.objectContaining({
       params: expect.objectContaining({ repId: 'rep-1' }),
     })));
   });
