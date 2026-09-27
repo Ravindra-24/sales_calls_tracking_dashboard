@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import {
   Activity,
   ArrowLeft,
+  Bot,
   Building2,
   Clock,
   CreditCard,
@@ -32,6 +33,8 @@ import type {
   TeamStats,
 } from '../types/api';
 import { buildDashboardTrend, type DashboardRangePreset } from './dashboardAnalytics';
+import { AiProviderPanel } from '../components/org/AiProviderPanel';
+import { OrgProfileForm } from '../components/org/OrgProfileForm';
 
 type RangePreset = '7' | '30' | '90' | 'custom';
 type EmployeeRoleFilter = 'all' | PlatformEmployee['role'];
@@ -326,6 +329,27 @@ export const PlatformOrganization = () => {
               <div><dt>Disabled employees</dt><dd>{users.disabled}</dd></div>
               <div><dt>Managers / sales members</dt><dd>{users.roleCounts.manager ?? 0} / {users.roleCounts.sales_member ?? 0}</dd></div>
             </dl>
+          </article>
+        </div>
+      </section>
+
+      <section className="platform-org-section" aria-labelledby="org-profile-heading">
+        <div className="section-heading"><div><h2 id="org-profile-heading">Profile &amp; AI on behalf of this organization</h2><p>Changes apply to {organization.name} as if its admin had made them, and are recorded under your account.</p></div><Bot size={21} /></div>
+        <div className="platform-org-overview-grid">
+          <article className="section-card platform-org-info-card">
+            <h3>Organization profile</h3>
+            <OrgProfileForm
+              orgId={organization.id}
+              initial={{ name: organization.name, logoUrl: organization.logoUrl ?? null }}
+              onSaved={(branding) => setOverview((current) => current ? {
+                ...current,
+                organization: { ...current.organization, ...branding },
+              } : current)}
+            />
+          </article>
+          <article className="section-card platform-org-info-card">
+            <h3>AI processing</h3>
+            <AiProviderPanel orgId={organization.id} />
           </article>
         </div>
       </section>

@@ -455,6 +455,7 @@ export interface OrganizationDetails {
   plan: string;
   status: 'active' | 'disabled';
   ownerUserId: string;
+  logoUrl?: string | null;
   settings: {
     timezone?: string;
     workingHoursStart?: string;

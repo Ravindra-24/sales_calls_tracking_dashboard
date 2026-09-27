@@ -1,10 +1,12 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Layout } from './Layout';
+import { announceOrgBranding } from '../utils/orgBranding';
 
 const mocks = vi.hoisted(() => ({
+  get: vi.fn(),
   post: vi.fn(),
   signInWithCustomToken: vi.fn(),
   toast: vi.fn(),
@@ -12,7 +14,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../api/client', () => ({
-  api: { post: mocks.post },
+  api: { get: mocks.get, post: mocks.post },
   getApiErrorMessage: (_error: unknown, fallback: string) => fallback,
 }));
 vi.mock('../config/firebase', () => ({
@@ -44,6 +46,7 @@ afterEach(() => {
 
 describe('Layout impersonation banner', () => {
   it('keeps impersonation visible and restores the platform owner through the stop endpoint', async () => {
+    mocks.get.mockResolvedValue({ data: { data: { organization: { id: 'org-1', name: 'Acme', logoUrl: null } } } });
     mocks.post.mockResolvedValue({
       data: { data: { customToken: 'owner-custom-token' } },
     });
@@ -65,5 +68,34 @@ describe('Layout impersonation banner', () => {
       expect.anything(),
       'owner-custom-token',
     );
+  });
+});
+
+describe('Layout organization branding', () => {
+  it('keeps Smartly Manage branding until the organization uploads a logo', async () => {
+    mocks.get.mockResolvedValue({ data: { data: { organization: { id: 'org-1', name: 'Acme', logoUrl: null } } } });
+    render(<MemoryRouter><Layout /></MemoryRouter>);
+
+    await waitFor(() => expect(mocks.get).toHaveBeenCalledWith('/auth/me'));
+    expect(screen.getByRole('heading', { name: 'Smartly Manage' })).toBeInTheDocument();
+    expect(screen.queryByText('Powered by Smartly Manage')).not.toBeInTheDocument();
+  });
+
+  it('shows the organization logo and name with a powered-by line', async () => {
+    mocks.get.mockResolvedValue({ data: { data: { organization: { id: 'org-1', name: 'Acme Field Sales', logoUrl: 'data:image/webp;base64,AAAA' } } } });
+    render(<MemoryRouter><Layout /></MemoryRouter>);
+
+    expect(await screen.findByRole('heading', { name: 'Acme Field Sales' })).toBeInTheDocument();
+    expect(screen.getAllByText('Powered by Smartly Manage')).toHaveLength(2);
+    expect(screen.queryByRole('heading', { name: 'Smartly Manage' })).not.toBeInTheDocument();
+  });
+
+  it('updates the sidebar when the organization profile is saved', async () => {
+    mocks.get.mockResolvedValue({ data: { data: { organization: { id: 'org-1', name: 'Acme', logoUrl: null } } } });
+    render(<MemoryRouter><Layout /></MemoryRouter>);
+    await waitFor(() => expect(mocks.get).toHaveBeenCalled());
+
+    act(() => announceOrgBranding({ name: 'Acme Rebrand', logoUrl: 'data:image/webp;base64,BBBB' }));
+    expect(await screen.findByRole('heading', { name: 'Acme Rebrand' })).toBeInTheDocument();
   });
 });

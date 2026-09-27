@@ -47,6 +47,16 @@ const overview = {
   },
 };
 
+const aiConfiguration = {
+  provider: 'openai',
+  configured: true,
+  maskedKey: '••••9876',
+  validatedAt: null,
+  updatedAt: null,
+  models: { transcription: 'gpt-4o-transcribe-diarize', intelligence: 'gpt-5.6-luna' },
+  capabilities: { transcription: true, intelligence: true },
+};
+
 const employees = [
   { id: 'admin-1', orgId: 'org-1', name: 'Asha Admin', email: 'asha@example.com', role: 'org_admin', status: 'active', phoneNumber: '', accountDisabled: false, lastSignInAt: '2026-07-29T09:00:00.000Z', lastSeenAt: null, createdAt: '2026-07-01T00:00:00.000Z', updatedAt: '' },
   { id: 'rep-1', orgId: 'org-1', name: 'Ravi Rep', email: 'ravi@example.com', role: 'sales_member', status: 'active', phoneNumber: '+919000000001', accountDisabled: false, lastSignInAt: null, lastSeenAt: '2026-07-29T08:00:00.000Z', createdAt: '2026-07-02T00:00:00.000Z', updatedAt: '' },
@@ -68,6 +78,7 @@ describe('PlatformOrganization', () => {
     mocks.get.mockImplementation((url: string) => {
       if (url.endsWith('/users')) return Promise.resolve({ data: { data: employees, meta: {} } });
       if (url.endsWith('/analytics')) return Promise.resolve({ data: { data: analytics } });
+      if (url.endsWith('/ai-settings')) return Promise.resolve({ data: { data: aiConfiguration } });
       return Promise.resolve({ data: { data: overview } });
     });
     mocks.confirm.mockResolvedValue(true);
@@ -99,5 +110,36 @@ describe('PlatformOrganization', () => {
       { status: 'disabled' },
     ));
     expect(await screen.findByRole('button', { name: 'Enable' })).toBeInTheDocument();
+  });
+
+  it('lets the platform owner update the profile and see the AI key on the organization\'s behalf', async () => {
+    mocks.get.mockImplementation((url: string) => {
+      if (url.endsWith('/users')) return Promise.resolve({ data: { data: employees, meta: {} } });
+      if (url.endsWith('/analytics')) return Promise.resolve({ data: { data: analytics } });
+      if (url.endsWith('/ai-settings')) return Promise.resolve({ data: { data: aiConfiguration } });
+      return Promise.resolve({ data: { data: overview } });
+    });
+    mocks.patch.mockResolvedValue({ data: { data: { id: 'org-1', name: 'Acme Field Sales', logoUrl: null } } });
+    const user = userEvent.setup();
+
+    render(
+      <MemoryRouter initialEntries={['/dashboard/platform/organizations/org-1']}>
+        <Routes>
+          <Route path="/dashboard/platform/organizations/:orgId" element={<PlatformOrganization />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText(/Connected ••••9876/)).toBeInTheDocument();
+    const nameInput = screen.getByLabelText('Organization Name');
+    await user.clear(nameInput);
+    await user.type(nameInput, 'Acme Field Sales');
+    await user.click(screen.getByRole('button', { name: 'Save Organization Profile' }));
+
+    await waitFor(() => expect(mocks.patch).toHaveBeenCalledWith(
+      '/orgs/org-1/profile',
+      { name: 'Acme Field Sales', logoUrl: null },
+    ));
+    expect(await screen.findByRole('heading', { name: 'Acme Field Sales' })).toBeInTheDocument();
   });
 });

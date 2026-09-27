@@ -84,6 +84,31 @@ describe('organization AI settings', () => {
     expect(await screen.findByText(/Connected ••••1234/)).toBeInTheDocument();
   });
 
+  it('lets a manager edit the organization profile and AI key but not org-wide settings', async () => {
+    mocks.authState.claims = { orgId: 'org-1', role: 'manager' };
+    mocks.get.mockImplementation((url: string) => Promise.resolve({
+      data: { data: url.endsWith('/ai-settings') ? aiConfiguration : url === '/auth/me' ? {} : organization },
+    }));
+    mocks.patch.mockResolvedValue({ data: { data: { id: 'org-1', name: 'Acme Sales', logoUrl: null } } });
+    const user = userEvent.setup();
+    render(<Settings />);
+
+    expect(await screen.findByText('Organization Profile')).toBeInTheDocument();
+    expect(await screen.findByText(/AI processing is unavailable/i)).toBeInTheDocument();
+    expect(screen.queryByText('Organization Settings')).not.toBeInTheDocument();
+
+    const nameInput = await screen.findByLabelText('Organization Name');
+    await user.clear(nameInput);
+    await user.type(nameInput, 'Acme Sales');
+    await user.click(screen.getByRole('button', { name: 'Save Organization Profile' }));
+
+    await waitFor(() => expect(mocks.patch).toHaveBeenCalledWith(
+      '/orgs/org-1/profile',
+      { name: 'Acme Sales', logoUrl: null },
+    ));
+    expect(await screen.findByText('Organization profile updated.')).toBeInTheDocument();
+  });
+
   it('does not expose tenant AI controls to the platform owner', async () => {
     mocks.authState.claims = { orgId: '', role: 'platform_owner' };
     mocks.get.mockImplementation((url: string) => Promise.resolve({

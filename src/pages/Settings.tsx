@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
-import { AlertCircle, Bot, Building2, KeyRound, Lock, Monitor, Moon, Save, Shield, Sun, User } from 'lucide-react';
+import { AlertCircle, Bot, Building2, Lock, Monitor, Moon, Save, Shield, SlidersHorizontal, Sun, User } from 'lucide-react';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { api, getApiErrorMessage } from '../api/client';
 import { auth } from '../config/firebase';
 import { useAuth } from '../context/auth';
 import { useTheme, type ThemeMode } from '../context/theme';
-import type { AiOrganizationConfiguration, ApiResponse, OrganizationDetails, PlatformSettings } from '../types/api';
+import type { ApiResponse, OrganizationDetails, PlatformSettings } from '../types/api';
+import { AiProviderPanel } from '../components/org/AiProviderPanel';
+import { OrgProfileForm } from '../components/org/OrgProfileForm';
+import { announceOrgBranding, type OrgBranding } from '../utils/orgBranding';
 
 const defaultOrgSettings: OrganizationDetails['settings'] = {
   timezone: 'Asia/Kolkata',
@@ -51,6 +54,7 @@ export const Settings = () => {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMessage, setProfileMessage] = useState('');
 
+  const [orgProfile, setOrgProfile] = useState<OrgBranding | null>(null);
   const [orgSettings, setOrgSettings] = useState<OrganizationDetails['settings']>(defaultOrgSettings);
   const [orgSaving, setOrgSaving] = useState(false);
   const [orgMessage, setOrgMessage] = useState('');
@@ -60,11 +64,7 @@ export const Settings = () => {
   const [platformSaving, setPlatformSaving] = useState(false);
   const [platformMessage, setPlatformMessage] = useState('');
   const [platformLoading, setPlatformLoading] = useState(false);
-  const [aiConfiguration, setAiConfiguration] = useState<AiOrganizationConfiguration | null>(null);
-  const [providerKey, setProviderKey] = useState('');
-  const [selectedProvider, setSelectedProvider] = useState<'openai' | 'gemini' | 'anthropic'>('openai');
-  const [aiBusy, setAiBusy] = useState('');
-  const [aiMessage, setAiMessage] = useState('');
+  const canManageOrgProfile = claims.role === 'org_admin' || claims.role === 'manager';
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -80,18 +80,14 @@ export const Settings = () => {
   }, [user]);
 
   useEffect(() => {
-    if (claims.role !== 'org_admin' || !claims.orgId) return;
+    if (!canManageOrgProfile || !claims.orgId) return;
 
     const loadOrg = async () => {
       setOrgLoading(true);
       try {
-        const [orgResponse, aiResponse] = await Promise.all([
-          api.get<ApiResponse<OrganizationDetails>>(`/orgs/${claims.orgId}`),
-          api.get<ApiResponse<AiOrganizationConfiguration>>(`/orgs/${claims.orgId}/ai-settings`),
-        ]);
+        const orgResponse = await api.get<ApiResponse<OrganizationDetails>>(`/orgs/${claims.orgId}`);
+        setOrgProfile({ name: orgResponse.data.data.name, logoUrl: orgResponse.data.data.logoUrl ?? null });
         setOrgSettings({ ...defaultOrgSettings, ...orgResponse.data.data.settings });
-        setAiConfiguration(aiResponse.data.data);
-        setSelectedProvider(aiResponse.data.data.provider);
       } catch (err) {
         setOrgMessage(getApiErrorMessage(err, 'Failed to load organization settings.'));
       } finally {
@@ -100,7 +96,7 @@ export const Settings = () => {
     };
 
     void loadOrg();
-  }, [claims.orgId, claims.role]);
+  }, [canManageOrgProfile, claims.orgId]);
 
   useEffect(() => {
     if (claims.role !== 'platform_owner') return;
@@ -187,62 +183,6 @@ export const Settings = () => {
     reader.readAsDataURL(file);
   };
 
-  const saveProviderKey = async () => {
-    const apiKey = providerKey.trim();
-    if (!apiKey || !claims.orgId) return;
-    setAiBusy('save');
-    setAiMessage('');
-    try {
-      const response = await api.put<ApiResponse<AiOrganizationConfiguration>>(`/orgs/${claims.orgId}/ai-provider/credential`, { provider: selectedProvider, apiKey });
-      setAiConfiguration(response.data.data);
-      setProviderKey('');
-      setAiMessage(`${selectedProvider === 'openai' ? 'OpenAI' : selectedProvider === 'gemini' ? 'Google Gemini' : 'Anthropic Claude'} credential validated and saved.`);
-    } catch (err) {
-      setAiMessage(getApiErrorMessage(err, 'Failed to validate the AI provider credential.'));
-    } finally {
-      setAiBusy('');
-    }
-  };
-
-  const testProvider = async () => {
-    if (!claims.orgId) return;
-    setAiBusy('test');
-    setAiMessage('');
-    try {
-      await api.post(`/orgs/${claims.orgId}/ai-provider/test`);
-      const response = await api.get<ApiResponse<AiOrganizationConfiguration>>(`/orgs/${claims.orgId}/ai-settings`);
-      setAiConfiguration(response.data.data);
-      setAiMessage('The connected AI provider is ready.');
-    } catch (err) {
-      setAiMessage(getApiErrorMessage(err, 'AI provider readiness check failed.'));
-      const response = await api.get<ApiResponse<AiOrganizationConfiguration>>(`/orgs/${claims.orgId}/ai-settings`).catch(() => null);
-      if (response) setAiConfiguration(response.data.data);
-    } finally {
-      setAiBusy('');
-    }
-  };
-
-  const deleteProviderKey = async () => {
-    if (!claims.orgId) return;
-    setAiBusy('delete');
-    setAiMessage('');
-    try {
-      await api.delete(`/orgs/${claims.orgId}/ai-provider/credential`);
-      setAiConfiguration((current) => current ? {
-        ...current,
-        configured: false,
-        maskedKey: null,
-        validatedAt: null,
-        updatedAt: null,
-      } : current);
-      setAiMessage('AI provider credential deleted. New and active AI processing is disabled until another key is connected.');
-    } catch (err) {
-      setAiMessage(getApiErrorMessage(err, 'Failed to delete the AI provider credential.'));
-    } finally {
-      setAiBusy('');
-    }
-  };
-
   return (
     <div className="page animate-fade-in">
       <header className="page-header">
@@ -312,11 +252,37 @@ export const Settings = () => {
           </div>
         </section>
 
+        {canManageOrgProfile && (
+          <section className="section-card settings-card">
+            <div className="section-heading">
+              <div className="settings-heading-content">
+                <div className="stat-icon violet"><Building2 size={18} /></div>
+                <div>
+                  <h2>Organization Profile</h2>
+                  <p>Your organization&apos;s name and logo, shown at the top of the sidebar for everyone in your team.</p>
+                </div>
+              </div>
+            </div>
+            {orgLoading || !orgProfile ? (
+              <div className="empty-state">{orgLoading ? 'Loading organization profile...' : orgMessage || 'Organization profile is unavailable.'}</div>
+            ) : (
+              <OrgProfileForm
+                orgId={claims.orgId}
+                initial={orgProfile}
+                onSaved={(branding) => {
+                  setOrgProfile(branding);
+                  announceOrgBranding(branding);
+                }}
+              />
+            )}
+          </section>
+        )}
+
         {claims.role === 'org_admin' && (
           <section className="section-card settings-card">
             <div className="section-heading">
               <div className="settings-heading-content">
-                <div className="stat-icon blue"><Building2 size={18} /></div>
+                <div className="stat-icon blue"><SlidersHorizontal size={18} /></div>
                 <div>
                   <h2>Organization Settings</h2>
                   <p>Controls shared by dashboard and mobile app.</p>
@@ -441,7 +407,7 @@ export const Settings = () => {
           </section>
         )}
 
-        {claims.role === 'org_admin' && (
+        {canManageOrgProfile && (
           <section className="section-card settings-card">
             <div className="section-heading">
               <div className="settings-heading-content">
@@ -452,42 +418,7 @@ export const Settings = () => {
                 </div>
               </div>
             </div>
-
-            {orgLoading || !aiConfiguration ? (
-              <div className="empty-state">Loading AI settings...</div>
-            ) : (
-              <div className="settings-form">
-                <div className="provider-card-grid">
-                  <div className="provider-card">
-                    <div className="provider-card-heading">
-                      <KeyRound size={17} />
-                      <div>
-                        <h3>{aiConfiguration.provider === 'openai' ? 'OpenAI' : aiConfiguration.provider === 'gemini' ? 'Google Gemini' : 'Anthropic Claude'}</h3>
-                        <p>{aiConfiguration.configured ? `Connected ${aiConfiguration.maskedKey}` : 'Not connected · AI processing is unavailable'}</p>
-                      </div>
-                    </div>
-                    <div className="subtle-text">
-                      Transcription: {aiConfiguration.models.transcription ?? 'Not supported'} · Intelligence: {aiConfiguration.models.intelligence}
-                    </div>
-                    <select className="input-field" aria-label="AI provider" value={selectedProvider} onChange={(event) => setSelectedProvider(event.target.value as typeof selectedProvider)}>
-                      <option value="openai">OpenAI</option>
-                      <option value="gemini">Google Gemini</option>
-                      <option value="anthropic">Anthropic Claude</option>
-                    </select>
-                    <input type="password" autoComplete="new-password" className="input-field" placeholder={`Enter ${selectedProvider === 'openai' ? 'OpenAI' : selectedProvider === 'gemini' ? 'Gemini' : 'Claude'} API key`} value={providerKey} onChange={(event) => setProviderKey(event.target.value)} />
-                    {selectedProvider === 'anthropic' && <small>Claude can analyze an existing transcript but cannot transcribe recording audio. Use OpenAI or Gemini for the complete recording workflow.</small>}
-                    <div className="settings-actions">
-                      <button type="button" className="secondary-button" disabled={!providerKey.trim() || aiBusy === 'save'} onClick={() => void saveProviderKey()}>{aiBusy === 'save' ? 'Validating...' : aiConfiguration.configured ? 'Validate & Replace' : 'Validate & Connect'}</button>
-                      {aiConfiguration.configured && <button type="button" className="secondary-button" disabled={aiBusy === 'test'} onClick={() => void testProvider()}>{aiBusy === 'test' ? 'Testing...' : 'Test Connection'}</button>}
-                      {aiConfiguration.configured && <button type="button" className="danger-button" disabled={aiBusy === 'delete'} onClick={() => void deleteProviderKey()}>{aiBusy === 'delete' ? 'Deleting...' : 'Delete Key'}</button>}
-                    </div>
-                    {aiConfiguration.validatedAt && <small>Last validated {new Date(aiConfiguration.validatedAt).toLocaleString()}</small>}
-                    <small>The key is encrypted, write-only, and used only for this organization&apos;s processing.</small>
-                  </div>
-                </div>
-                {aiMessage && <div className={`notice ${/(fail|error|required|rejected|invalid|unavailable)/i.test(aiMessage) ? 'error-notice' : 'success-notice'}`}>{aiMessage}</div>}
-              </div>
-            )}
+            <AiProviderPanel orgId={claims.orgId} />
           </section>
         )}
       </div>

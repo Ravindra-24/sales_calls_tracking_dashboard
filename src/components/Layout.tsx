@@ -7,8 +7,8 @@ import { auth } from '../config/firebase';
 import { useAuth } from '../context/auth';
 import { useFeedback } from '../context/feedback';
 import type { ApiResponse } from '../types/api';
-
-const appIcon = '/smartly-manage-icon.webp';
+import { ORG_BRANDING_EVENT, type OrgBranding } from '../utils/orgBranding';
+import { OrgBrand } from './org/OrgBrand';
 
 interface SidebarNavItem {
   path: string;
@@ -29,6 +29,7 @@ export const Layout: React.FC = () => {
   const { toast } = useFeedback();
   const [menuOpen, setMenuOpen] = useState(false);
   const [returningToPlatform, setReturningToPlatform] = useState(false);
+  const [orgBranding, setOrgBranding] = useState<OrgBranding | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
@@ -36,6 +37,23 @@ export const Layout: React.FC = () => {
   useEffect(() => {
     setMenuOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    setOrgBranding(null);
+    if (!claims.orgId) return;
+    let active = true;
+    api.get<ApiResponse<{ organization?: OrgBranding | null }>>('/auth/me')
+      .then((response) => {
+        if (active) setOrgBranding(response.data.data.organization ?? null);
+      })
+      .catch(() => undefined);
+    const applyBranding = (event: Event) => setOrgBranding((event as CustomEvent<OrgBranding>).detail);
+    window.addEventListener(ORG_BRANDING_EVENT, applyBranding);
+    return () => {
+      active = false;
+      window.removeEventListener(ORG_BRANDING_EVENT, applyBranding);
+    };
+  }, [claims.orgId]);
 
   useEffect(() => {
     const desktopQuery = window.matchMedia('(min-width: 901px)');
@@ -172,9 +190,8 @@ export const Layout: React.FC = () => {
   return (
     <div className="app-shell">
       <header className="mobile-header glass-panel">
-        <NavLink to="/dashboard" className="mobile-brand" aria-label="Smartly Manage dashboard">
-          <span className="brand-mark"><img src={appIcon} alt="" /></span>
-          <strong>Smartly Manage</strong>
+        <NavLink to="/dashboard" className="mobile-brand" aria-label={`${orgBranding?.logoUrl ? orgBranding.name : 'Smartly Manage'} dashboard`}>
+          <OrgBrand branding={orgBranding} as="strong" />
         </NavLink>
         <button
           ref={menuButtonRef}
@@ -200,10 +217,7 @@ export const Layout: React.FC = () => {
       <aside ref={sidebarRef} id="dashboard-navigation" className={`sidebar glass-panel${menuOpen ? ' open' : ''}`} aria-label="Dashboard navigation">
         <div className="brand">
           <div className="brand-lockup">
-            <div className="brand-mark">
-              <img src={appIcon} alt="" />
-            </div>
-            <h2>Smartly Manage</h2>
+            <OrgBrand branding={orgBranding} />
           </div>
           <button
             ref={closeButtonRef}
