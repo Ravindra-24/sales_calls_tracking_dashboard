@@ -1,0 +1,147 @@
+/* Platform owner dashboard (pages/PlatformDashboard.tsx). Colors come from
+   theme tokens so light and dark both follow index.css; health and severity
+   always pair color with an icon and a text label. */
+
+.platform-dashboard {
+  --platform-good: var(--success);
+  --platform-warn: var(--warning);
+  --platform-bad: var(--danger);
+  --platform-neutral: var(--text-secondary);
+}
+
+.platform-stats-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.platform-attention {
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.platform-attention-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.platform-attention-row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--platform-neutral);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card-soft);
+}
+
+.platform-attention-row.high { border-left-color: var(--platform-bad); }
+.platform-attention-row.medium { border-left-color: var(--platform-warn); }
+
+.platform-attention-row > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.platform-attention-row a strong {
+  color: var(--text-primary);
+}
+
+.platform-attention-row span {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.platform-severity,
+.platform-health {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--platform-neutral);
+  background: color-mix(in srgb, var(--platform-neutral) 12%, transparent);
+}
+
+.platform-severity.high,
+.platform-health.at_risk { color: var(--platform-bad); background: color-mix(in srgb, var(--platform-bad) 12%, transparent); }
+.platform-severity.medium,
+.platform-health.dormant { color: var(--platform-warn); background: color-mix(in srgb, var(--platform-warn) 12%, transparent); }
+.platform-health.healthy { color: var(--platform-good); background: color-mix(in srgb, var(--platform-good) 12%, transparent); }
+
+.platform-health-row {
+  text-transform: none;
+}
+
+.platform-footnote,
+.platform-muted {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.platform-footnote {
+  margin: 12px 0 0;
+  line-height: 1.5;
+}
+
+.platform-subheading {
+  margin: 18px 0 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.platform-renewals {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.platform-renewals li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.platform-renewals span {
+  color: var(--text-secondary);
+}
+
+.platform-growth-totals {
+  display: flex;
+  gap: 14px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.platform-growth-totals strong {
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+@media (max-width: 900px) {
+  .platform-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .platform-stats-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .platform-attention-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+}

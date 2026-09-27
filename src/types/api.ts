@@ -282,16 +282,101 @@ export interface InviteLog {
   inviteLink?: string;
 }
 
-export interface PlatformAnalytics {
-  totalOrganizations: number;
-  totalUsers: number;
-  roleCounts: Record<string, number>;
+export type OrganizationHealth = 'healthy' | 'at_risk' | 'dormant' | 'never_activated' | 'disabled';
+
+export type PlatformAttentionKind =
+  | 'payment_read_only'
+  | 'payment_grace'
+  | 'subscription_payment_issue'
+  | 'stuck_checkout'
+  | 'disabled_with_subscription'
+  | 'no_sales_reps'
+  | 'reps_without_app'
+  | 'sync_failures'
+  | 'activity_drop'
+  | 'dormant';
+
+export interface PlatformTenantSummary {
+  orgId: string;
+  name: string;
+  status: 'active' | 'disabled';
+  plan: string;
+  planSource: string | null;
+  health: OrganizationHealth;
+  members: number;
+  activeReps: number;
+  callsInRange: number;
+  callsLast7Days: number;
+  callsPrevious7Days: number;
+  lastCallAt: string | null;
+  createdAt: string | null;
+}
+
+export interface PlatformOverview {
+  range: { from: string; to: string; timezone: string };
+  generatedAt: string;
+  organizations: {
+    total: number;
+    active: number;
+    disabled: number;
+    newInRange: number;
+    activeLast7Days: number;
+    byHealth: Record<OrganizationHealth, number>;
+  };
+  people: {
+    total: number;
+    active: number;
+    disabled: number;
+    newInRange: number;
+    roleCounts: Record<string, number>;
+    activeReps: number;
+    repsCallingInRange: number;
+    repsWithoutApp: number;
+  };
+  calls: {
+    totalCalls: number;
+    connectedCount: number;
+    notConnectedCount: number;
+    missedCount: number;
+    incomingCount: number;
+    outgoingCount: number;
+    totalDurationSeconds: number;
+  };
+  revenue: {
+    mrrPaise: number;
+    payingOrganizations: number;
+    testMrrPaise: number;
+    testPayingOrganizations: number;
+    planMix: Record<string, number>;
+    planSourceMix: Record<string, number>;
+    renewalsDue: Array<{
+      orgId: string;
+      orgName: string;
+      planCode: string;
+      mode: 'test' | 'live';
+      currentPeriodEnd: string;
+      cancelAtCycleEnd: boolean;
+    }>;
+  };
+  trends: {
+    daily: Array<{ date: string; totalCalls: number; connectedCount: number; activeOrganizations: number }>;
+    weekly: Array<{ weekStart: string; newOrganizations: number; newUsers: number; totalOrganizations: number; totalUsers: number }>;
+  };
+  tenants: PlatformTenantSummary[];
+  attention: Array<{
+    kind: PlatformAttentionKind;
+    severity: 'high' | 'medium' | 'low';
+    orgId: string;
+    orgName: string;
+    message: string;
+  }>;
 }
 
 export interface PlatformOrganization {
   id: string;
   name: string;
   plan: string;
+  planSource?: string | null;
   status: 'active' | 'disabled';
   ownerUserId: string;
   settings?: {

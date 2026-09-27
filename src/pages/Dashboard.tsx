@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import {
-  Activity,
-  Building2,
   Clock,
   Percent,
   PhoneCall,
@@ -12,14 +10,14 @@ import {
   ThumbsDown,
   ThumbsUp,
   Timer,
-  Users,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { api, getApiErrorMessage } from '../api/client';
 import { useAuth } from '../context/auth';
-import type { ApiResponse, CallSummary, PlatformAnalytics, RepStats, TeamMember, TeamStats } from '../types/api';
+import type { ApiResponse, CallSummary, RepStats, TeamMember, TeamStats } from '../types/api';
 import { OnboardingChecklist } from '../components/OnboardingChecklist';
 import { SyncHealthPanel } from '../components/SyncHealthPanel';
+import { PlatformDashboard } from './PlatformDashboard';
 import {
   buildDashboardTrend,
   DASHBOARD_RANGE_OPTIONS,
@@ -68,6 +66,11 @@ const readDashboardFilters = (storageKey: string) => {
 };
 
 export const Dashboard = () => {
+  const { claims } = useAuth();
+  return claims.role === 'platform_owner' ? <PlatformDashboard /> : <TeamDashboard />;
+};
+
+const TeamDashboard = () => {
   const { user, claims } = useAuth();
   const dashboardFilterStorageKey = `smartlymanage.dashboard.filters:${claims.orgId || user?.uid || claims.role || 'default'}`;
   const [rangePreset, setRangePreset] = useState<DashboardRangePreset>(() => (
@@ -79,7 +82,6 @@ export const Dashboard = () => {
   const [stats, setStats] = useState<TeamStats | null>(null);
   const [callSummary, setCallSummary] = useState<CallSummary | null>(null);
   const [members, setMembers] = useState<TeamMember[]>([]);
-  const [platformStats, setPlatformStats] = useState<PlatformAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [error, setError] = useState('');
@@ -87,29 +89,13 @@ export const Dashboard = () => {
   const { from, to } = useMemo(() => resolveDashboardRange(rangePreset), [rangePreset]);
 
   useEffect(() => {
-    if (claims.role === 'platform_owner') return;
     window.sessionStorage.setItem(dashboardFilterStorageKey, JSON.stringify({ rangePreset, repId }));
-  }, [claims.role, dashboardFilterStorageKey, rangePreset, repId]);
+  }, [dashboardFilterStorageKey, rangePreset, repId]);
 
   useEffect(() => {
     let active = true;
     setLoading(true);
     setError('');
-
-    if (claims.role === 'platform_owner') {
-      api.get<ApiResponse<PlatformAnalytics>>('/admin/analytics')
-        .then((response) => {
-          if (active) setPlatformStats(response.data.data);
-        })
-        .catch((requestError) => {
-          if (active) setError(getApiErrorMessage(requestError, 'Failed to load platform analytics.'));
-        })
-        .finally(() => {
-          if (active) setLoading(false);
-        });
-      return () => { active = false; };
-    }
-
     setStats(null);
     api.get<ApiResponse<TeamStats>>('/stats/team', {
       params: { from, to, ...(repId ? { repId } : {}) },
@@ -125,15 +111,9 @@ export const Dashboard = () => {
       });
 
     return () => { active = false; };
-  }, [claims.role, from, repId, to]);
+  }, [from, repId, to]);
 
   useEffect(() => {
-    if (claims.role === 'platform_owner') {
-      setCallSummary(null);
-      setSummaryLoading(false);
-      return;
-    }
-
     let active = true;
     setSummaryLoading(true);
     setSummaryError('');
@@ -157,10 +137,9 @@ export const Dashboard = () => {
       });
 
     return () => { active = false; };
-  }, [claims.role, from, repId, to]);
+  }, [from, repId, to]);
 
   useEffect(() => {
-    if (claims.role === 'platform_owner') return;
     let active = true;
     if (claims.role !== 'sales_member' && claims.orgId) {
       api.get<ApiResponse<TeamMember[]>>(`/orgs/${claims.orgId}/users`, { params: { limit: 100 } })
@@ -202,39 +181,6 @@ export const Dashboard = () => {
   const analyzedCalls = totals?.analyzedCount ?? 0;
   const positiveCalls = totals?.positiveCount ?? 0;
   const negativeCalls = totals?.negativeCount ?? 0;
-
-  if (claims.role === 'platform_owner') {
-    return (
-      <div className="page animate-fade-in">
-        <div className="page-header">
-          <div>
-            <p className="eyebrow">Platform</p>
-            <h1>Owner dashboard</h1>
-            <p>Monitor tenant growth and users across the Smartly Manage service.</p>
-          </div>
-        </div>
-
-        {error && <div className="notice error-notice">{error}</div>}
-
-        <div className="stats-grid" aria-busy={loading}>
-          <StatCard title="Organizations" value={loading ? '—' : platformStats?.totalOrganizations ?? 0} icon={<Building2 />} tone="blue" />
-          <StatCard title="Total users" value={loading ? '—' : platformStats?.totalUsers ?? 0} icon={<Users />} tone="green" />
-          <StatCard title="Org admins" value={loading ? '—' : platformStats?.roleCounts.org_admin ?? 0} icon={<Activity />} tone="violet" />
-          <StatCard title="Sales members" value={loading ? '—' : platformStats?.roleCounts.sales_member ?? 0} icon={<PhoneCall />} tone="orange" />
-        </div>
-
-        <section className="section-card platform-summary">
-          <div className="section-heading"><div><h2>Role distribution</h2><p>Current user mix across all tenant accounts.</p></div></div>
-          <div className="summary-list">
-            {Object.entries(platformStats?.roleCounts ?? {}).map(([role, count]) => (
-              <div className="summary-row" key={role}><span>{role.replace('_', ' ')}</span><strong>{count}</strong></div>
-            ))}
-            {!loading && Object.keys(platformStats?.roleCounts ?? {}).length === 0 && <EmptyState message="No users have been created yet." />}
-          </div>
-        </section>
-      </div>
-    );
-  }
 
   const selectedRepName = repId ? memberNames.get(repId) : undefined;
   const rangeLabel = `${format(parseISO(from), 'd MMM')} to ${format(parseISO(to), 'd MMM yyyy')}`;
