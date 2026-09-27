@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
+import { endOfToday, format, isAfter, isValid } from 'date-fns';
+import TextField from '@mui/material/TextField';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import {
   ArrowLeft,
   ArrowRight,
@@ -21,6 +23,7 @@ import {
 import { api, getApiErrorMessage } from '../api/client';
 import { useAuth } from '../context/auth';
 import { useFeedback } from '../context/feedback';
+import { MuiFieldProvider } from '../components/MuiFieldProvider';
 import type { ApiResponse, CallAnalysis, CallRecord, CallSummary, SavedCallFilter, TeamMember } from '../types/api';
 
 interface CallFilters {
@@ -33,6 +36,8 @@ interface CallFilters {
   followUpStatus: string;
   minDurationSeconds: string;
   maxDurationSeconds: string;
+  /** Call start-time order: 'desc' (newest first) or 'asc'. Not a filter. */
+  sort: string;
 }
 
 interface CursorPage {
@@ -50,6 +55,7 @@ const createDefaultFilters = (): CallFilters => ({
   followUpStatus: '',
   minDurationSeconds: '',
   maxDurationSeconds: '',
+  sort: 'desc',
 });
 
 const initialFilters = createDefaultFilters();
@@ -67,6 +73,7 @@ const readCallFilters = (storageKey: string, salesMember: boolean): CallFilters 
       ]),
     ) as unknown as CallFilters;
     if (salesMember) restored.repId = '';
+    if (restored.sort !== 'asc') restored.sort = 'desc';
     return restored;
   } catch {
     return createDefaultFilters();
@@ -84,6 +91,8 @@ const filterParams = (filters: CallFilters) => ({
   minDurationSeconds: filters.minDurationSeconds ? Number(filters.minDurationSeconds) : undefined,
   maxDurationSeconds: filters.maxDurationSeconds ? Number(filters.maxDurationSeconds) : undefined,
 });
+
+const toDate = (value: string) => new Date(`${value}T00:00:00`);
 
 const useMobileFilterDialog = () => {
   const [isMobile, setIsMobile] = useState(() => (
@@ -119,7 +128,9 @@ export const CallHistory = () => {
     readCallFilters(filterStorageKey, claims.role === 'sales_member')
   ));
   const [filterName, setFilterName] = useState('');
-  const [filterOpen, setFilterOpen] = useState(false);
+  // Open inline on desktop; on phones the panel is a modal, so start closed.
+  const [filterOpen, setFilterOpen] = useState(() => !window.matchMedia('(max-width: 640px)').matches);
+  const [savedFilterId, setSavedFilterId] = useState('');
   const [cursorHistory, setCursorHistory] = useState<CursorPage[]>([{ offset: 0 }]);
   const [nextCursor, setNextCursor] = useState<string>();
   const [refreshVersion, setRefreshVersion] = useState(0);
@@ -180,6 +191,7 @@ export const CallHistory = () => {
     api.get<ApiResponse<CallRecord[]>>('/calls', {
       params: {
         ...appliedParams,
+        sort: appliedFilters.sort,
         limit: 20,
         ...(currentPage.cursor ? { cursor: currentPage.cursor } : {}),
       },
@@ -194,7 +206,7 @@ export const CallHistory = () => {
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [appliedParams, claims.role, currentPage.cursor, refreshVersion]);
+  }, [appliedFilters.sort, appliedParams, claims.role, currentPage.cursor, refreshVersion]);
 
   useEffect(() => {
     if (claims.role === 'platform_owner') {
@@ -281,7 +293,27 @@ export const CallHistory = () => {
     setFilterOpen(false);
   };
 
+  // Quick controls outside the filter card apply at once and keep the draft in step.
+  const applyQuickFilters = (patch: Partial<CallFilters>) => {
+    setAppliedFilters((current) => ({ ...current, ...patch }));
+    setDraftFilters((current) => ({ ...current, ...patch }));
+    setCursorHistory([{ offset: 0 }]);
+    if (!('sort' in patch)) setSavedFilterId('');
+  };
+
+  const changeDate = (field: 'from' | 'to', value: Date | null) => {
+    // Typed or keyboard-stepped dates can land in the future; the pickers flag those, so ignore them.
+    if (!value || !isValid(value) || isAfter(value, endOfToday())) return;
+    const date = format(value, 'yyyy-MM-dd');
+    if (field === 'from') {
+      applyQuickFilters({ from: date, ...(date > appliedFilters.to ? { to: date } : {}) });
+    } else {
+      applyQuickFilters({ to: date, ...(date < appliedFilters.from ? { from: date } : {}) });
+    }
+  };
+
   const applyFilters = () => {
+    setSavedFilterId('');
     setAppliedFilters({
       ...draftFilters,
       repId: claims.role === 'sales_member' ? '' : draftFilters.repId,
@@ -294,7 +326,7 @@ export const CallHistory = () => {
 
   const applySavedFilter = (filter: SavedCallFilter) => {
     const values = filter.filters;
-    setDraftFilters({
+    const next: CallFilters = {
       repId: claims.role === 'sales_member' ? '' : typeof values.repId === 'string' ? values.repId : '',
       direction: typeof values.direction === 'string' ? values.direction : '',
       phoneSearch: typeof values.phoneSearch === 'string' ? values.phoneSearch : '',
@@ -304,7 +336,12 @@ export const CallHistory = () => {
       maxDurationSeconds: values.maxDurationSeconds === undefined ? '' : String(values.maxDurationSeconds),
       from: typeof values.from === 'string' ? values.from.slice(0, 10) : initialFilters.from,
       to: typeof values.to === 'string' ? values.to.slice(0, 10) : initialFilters.to,
-    });
+      sort: appliedFilters.sort,
+    };
+    setAppliedFilters(next);
+    setDraftFilters(next);
+    setCursorHistory([{ offset: 0 }]);
+    setSavedFilterId(filter.id);
   };
 
   const saveFilter = async () => {
@@ -328,7 +365,7 @@ export const CallHistory = () => {
 
   const exportCsv = async () => {
     try {
-      const response = await api.get('/calls/export.csv', { params: appliedParams, responseType: 'blob' });
+      const response = await api.get('/calls/export.csv', { params: { ...appliedParams, sort: appliedFilters.sort }, responseType: 'blob' });
       const url = URL.createObjectURL(response.data as Blob);
       const link = document.createElement('a');
       link.href = url;
@@ -451,23 +488,15 @@ export const CallHistory = () => {
         aria-labelledby="call-filter-title"
       >
         <div className="call-filter-heading">
-          <div><h2 id="call-filter-title">Filters</h2><p>Adjust filters, then apply them together.</p></div>
+          <div><h2 id="call-filter-title">Filters</h2><p>Adjust call details, then apply them together.</p></div>
           <button className="icon-button" type="button" onClick={cancelFilters} aria-label="Close filters"><X size={18} /></button>
         </div>
         <div className="call-filter-grid">
-          {claims.role !== 'sales_member' && <label>Representative
-            <select className="input-field" value={draftFilters.repId} onChange={(event) => updateDraft({ repId: event.target.value })}>
-              <option value="">All representatives</option>
-              {reps.map((rep) => <option key={rep.id} value={rep.id}>{rep.name || rep.email}</option>)}
-            </select>
-          </label>}
           <label>Direction
             <select className="input-field" value={draftFilters.direction} onChange={(event) => updateDraft({ direction: event.target.value })}>
               <option value="">All directions</option><option value="outgoing">Outgoing</option><option value="incoming">Incoming</option><option value="missed">Missed</option>
             </select>
           </label>
-          <label>From<input className="input-field" type="date" value={draftFilters.from} max={draftFilters.to} onChange={(event) => updateDraft({ from: event.target.value })} /></label>
-          <label>To<input className="input-field" type="date" value={draftFilters.to} min={draftFilters.from} onChange={(event) => updateDraft({ to: event.target.value })} /></label>
           <label>Phone<input className="input-field" value={draftFilters.phoneSearch} onChange={(event) => updateDraft({ phoneSearch: event.target.value })} placeholder="Search number" /></label>
           <label>Tag<input className="input-field" value={draftFilters.tag} onChange={(event) => updateDraft({ tag: event.target.value })} placeholder="e.g. interested" /></label>
           <label>Follow-up
@@ -477,22 +506,19 @@ export const CallHistory = () => {
           </label>
           <label>Min duration<input className="input-field" type="number" min="0" value={draftFilters.minDurationSeconds} onChange={(event) => updateDraft({ minDurationSeconds: event.target.value })} /></label>
           <label>Max duration<input className="input-field" type="number" min="0" value={draftFilters.maxDurationSeconds} onChange={(event) => updateDraft({ maxDurationSeconds: event.target.value })} /></label>
-          <label>Saved filter
-            <select className="input-field" value="" onChange={(event) => {
-              const selected = savedFilters.find((filter) => filter.id === event.target.value);
-              if (selected) applySavedFilter(selected);
-            }}>
-              <option value="">Choose a saved filter</option>
-              {savedFilters.map((filter) => <option key={filter.id} value={filter.id}>{filter.name}</option>)}
-            </select>
-          </label>
         </div>
         <div className="call-filter-save">
           <input className="input-field" value={filterName} onChange={(event) => setFilterName(event.target.value)} placeholder="Saved filter name" />
           <button className="secondary-button" type="button" onClick={() => void saveFilter()}><Save size={16} /> Save filter</button>
         </div>
         <div className="call-filter-actions">
-          <button className="secondary-button" type="button" onClick={() => setDraftFilters(createDefaultFilters())}>Reset</button>
+          <button className="secondary-button" type="button" onClick={() => setDraftFilters((current) => ({
+            ...createDefaultFilters(),
+            repId: current.repId,
+            from: current.from,
+            to: current.to,
+            sort: current.sort,
+          }))}>Reset</button>
           <button className="secondary-button" type="button" onClick={cancelFilters}>Cancel</button>
           <button className="btn-primary" type="button" onClick={applyFilters}>Apply filters</button>
         </div>
@@ -517,6 +543,29 @@ export const CallHistory = () => {
               <button className="secondary-button" type="button" onClick={() => void exportCsv()}><Download size={16} /> CSV</button>
               <button ref={filterButtonRef} className="btn-primary" type="button" aria-expanded={filterOpen} aria-controls="call-history-filters" onClick={() => filterOpen ? cancelFilters() : openFilters()}><Filter size={16} /> {filterOpen && !isMobile ? 'Hide filters' : 'Filters'}</button>
             </div>
+            <MuiFieldProvider>
+              <div className="call-quick-filters">
+                {claims.role !== 'sales_member' && (
+                  <TextField select size="small" label="Salesperson" value={appliedFilters.repId} onChange={(event) => applyQuickFilters({ repId: event.target.value })} slotProps={{ select: { native: true }, inputLabel: { shrink: true } }}>
+                    <option value="">All salespeople</option>
+                    {reps.map((rep) => <option key={rep.id} value={rep.id}>{rep.name || rep.email}{rep.status === 'disabled' ? ' (inactive)' : ''}</option>)}
+                  </TextField>
+                )}
+                <DatePicker label="From" format="d MMM yyyy" value={toDate(appliedFilters.from)} maxDate={toDate(appliedFilters.to)} disableFuture onChange={(value) => changeDate('from', value)} slotProps={{ textField: { size: 'small' } }} />
+                <DatePicker label="To" format="d MMM yyyy" value={toDate(appliedFilters.to)} minDate={toDate(appliedFilters.from)} disableFuture onChange={(value) => changeDate('to', value)} slotProps={{ textField: { size: 'small' } }} />
+                <TextField select size="small" label="Sort by call time" value={appliedFilters.sort} onChange={(event) => applyQuickFilters({ sort: event.target.value })} slotProps={{ select: { native: true } }}>
+                  <option value="desc">Newest first</option>
+                  <option value="asc">Oldest first</option>
+                </TextField>
+                <TextField select size="small" label="Saved filter" value={savedFilterId} disabled={savedFilters.length === 0} onChange={(event) => {
+                  const selected = savedFilters.find((filter) => filter.id === event.target.value);
+                  if (selected) applySavedFilter(selected);
+                }} slotProps={{ select: { native: true }, inputLabel: { shrink: true } }}>
+                  <option value="">{savedFilters.length ? 'Choose a saved filter' : 'No saved filters'}</option>
+                  {savedFilters.map((filter) => <option key={filter.id} value={filter.id}>{filter.name}</option>)}
+                </TextField>
+              </div>
+            </MuiFieldProvider>
           </div>
           {renderedFilterPanel}
 

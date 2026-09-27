@@ -8,6 +8,9 @@ import {
   PhoneCall,
   PhoneIncoming,
   PhoneMissed,
+  PhoneOutgoing,
+  ThumbsDown,
+  ThumbsUp,
   Timer,
   Users,
 } from 'lucide-react';
@@ -36,6 +39,14 @@ const formatAverageDuration = (seconds: number) => {
   const remainder = roundedSeconds % 60;
   return `${minutes}m ${remainder.toString().padStart(2, '0')}s`;
 };
+
+const sentimentShare = (count: number, analyzed: number) => (
+  analyzed ? `${Math.round((count / analyzed) * 100)}%` : '—'
+);
+
+const sentimentDetail = (count: number, analyzed: number) => (
+  analyzed ? `${count} of ${analyzed} analyzed` : 'No analyzed calls'
+);
 
 const readDashboardFilters = (storageKey: string) => {
   const fallback: { rangePreset: DashboardRangePreset; repId: string } = {
@@ -187,6 +198,10 @@ export const Dashboard = () => {
   const missedCalls = totals?.missedCount ?? 0;
   const connectRate = totals?.totalCalls ? Math.round((connectedCalls / totals.totalCalls) * 100) : 0;
   const averageDuration = connectedCalls ? (totals?.totalDurationSeconds ?? 0) / connectedCalls : 0;
+  const attemptedCalls = totals?.outgoingCount ?? 0;
+  const analyzedCalls = totals?.analyzedCount ?? 0;
+  const positiveCalls = totals?.positiveCount ?? 0;
+  const negativeCalls = totals?.negativeCount ?? 0;
 
   if (claims.role === 'platform_owner') {
     return (
@@ -256,12 +271,15 @@ export const Dashboard = () => {
 
       <div className="stats-grid analytics-stats-grid" aria-busy={loading}>
         <StatCard title="Total calls" value={loading ? '—' : totals?.totalCalls ?? 0} icon={<PhoneCall />} tone="blue" />
+        <StatCard title="Attempted" value={loading ? '—' : attemptedCalls} icon={<PhoneOutgoing />} tone="blue" />
         <StatCard title="Connected" value={loading ? '—' : connectedCalls} icon={<PhoneIncoming />} tone="green" />
         <StatCard title="Not connected" value={loading ? '—' : notConnectedCalls} icon={<PhoneMissed />} tone="orange" />
         <StatCard title="Missed" value={loading ? '—' : missedCalls} icon={<PhoneMissed />} tone="orange" />
         <StatCard title="Talk time" value={loading ? '—' : formatDuration(totals?.totalDurationSeconds ?? 0)} icon={<Clock />} tone="violet" />
         <StatCard title="Connect rate" value={loading ? '—' : `${connectRate}%`} icon={<Percent />} tone="green" />
         <StatCard title="Avg. duration" value={loading ? '—' : formatAverageDuration(averageDuration)} icon={<Timer />} tone="blue" />
+        <StatCard title="Positive calls" value={loading ? '—' : sentimentShare(positiveCalls, analyzedCalls)} detail={loading ? undefined : sentimentDetail(positiveCalls, analyzedCalls)} icon={<ThumbsUp />} tone="green" />
+        <StatCard title="Negative calls" value={loading ? '—' : sentimentShare(negativeCalls, analyzedCalls)} detail={loading ? undefined : sentimentDetail(negativeCalls, analyzedCalls)} icon={<ThumbsDown />} tone="orange" />
         <StatCard title="Unique incoming" value={summaryLoading ? '—' : callSummary?.uniqueIncomingCalls ?? '—'} icon={<PhoneIncoming />} tone="green" />
         <StatCard title="Unique outgoing" value={summaryLoading ? '—' : callSummary?.uniqueOutgoingCalls ?? '—'} icon={<PhoneCall />} tone="blue" />
         <StatCard title="Unique connected" value={summaryLoading ? '—' : callSummary?.uniqueConnectedCalls ?? '—'} icon={<PhoneIncoming />} tone="green" />
@@ -298,8 +316,8 @@ export const Dashboard = () => {
   );
 };
 
-const StatCard = ({ title, value, icon, tone }: { title: string; value: string | number; icon: ReactNode; tone: string }) => (
-  <div className="stat-card section-card"><div className={`stat-icon ${tone}`}>{icon}</div><div><p>{title}</p><strong>{value}</strong></div></div>
+const StatCard = ({ title, value, detail, icon, tone }: { title: string; value: string | number; detail?: string; icon: ReactNode; tone: string }) => (
+  <div className="stat-card section-card"><div className={`stat-icon ${tone}`}>{icon}</div><div><p>{title}</p><strong>{value}</strong>{detail && <small>{detail}</small>}</div></div>
 );
 
 const OutcomeChart = ({ incoming, outgoing, missed }: { incoming: number; outgoing: number; missed: number }) => {

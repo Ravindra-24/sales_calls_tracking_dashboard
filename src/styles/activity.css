@@ -1,0 +1,344 @@
+/* Team activity page (pages/Activity.tsx). Colors come from theme tokens so
+   light and dark both follow index.css; gaps also carry a stripe texture so
+   they never rely on hue alone. */
+
+.activity-page {
+  --activity-active: var(--accent-primary);
+  --activity-gap: var(--warning);
+  --activity-pause: color-mix(in srgb, var(--text-secondary) 16%, transparent);
+  --activity-outside: color-mix(in srgb, var(--text-secondary) 5%, transparent);
+  --activity-break-line: color-mix(in srgb, var(--text-secondary) 38%, transparent);
+}
+
+.activity-page .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.activity-caveat {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.activity-caveat svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.activity-table-row {
+  cursor: pointer;
+}
+
+.activity-rep-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+}
+
+.activity-rep-link:hover,
+.activity-rep-link:focus-visible {
+  color: var(--accent-primary);
+  text-decoration: underline;
+}
+
+.activity-cell-detail {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.activity-share {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 120px;
+}
+
+.activity-share-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--activity-pause);
+  overflow: hidden;
+}
+
+.activity-share-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--activity-active);
+}
+
+.activity-timeline-card,
+.activity-heatmap-card {
+  margin-top: var(--section-gap);
+  padding: 20px;
+}
+
+.activity-section-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.activity-heading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.activity-heading-actions label {
+  display: grid;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.activity-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: 14px 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.activity-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.activity-swatch {
+  width: 14px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.activity-swatch.is-active,
+.activity-slot.is-active {
+  background: var(--activity-active);
+}
+
+.activity-swatch.is-gap,
+.activity-gap {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--activity-gap) 0 3px,
+    color-mix(in srgb, var(--activity-gap) 45%, transparent) 3px 6px
+  );
+}
+
+.activity-swatch.is-pause,
+.activity-slot.is-pause {
+  background: var(--activity-pause);
+}
+
+.activity-swatch.is-break,
+.activity-slot.is-break {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--activity-break-line) 0 1.5px,
+    transparent 1.5px 5px
+  );
+}
+
+.activity-slot.is-outside {
+  background: var(--activity-outside);
+}
+
+.activity-timeline {
+  display: grid;
+  gap: 10px;
+}
+
+.activity-timeline-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) minmax(0, 1fr) 72px;
+  gap: 14px;
+  align-items: center;
+}
+
+.activity-timeline-label,
+.activity-timeline-meta {
+  display: grid;
+  min-width: 0;
+}
+
+.activity-timeline-label strong {
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activity-timeline-label small,
+.activity-timeline-meta small {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.activity-timeline-meta {
+  text-align: right;
+}
+
+.activity-timeline-meta strong {
+  font-size: 13px;
+}
+
+.activity-timeline-track {
+  position: relative;
+  display: flex;
+  gap: 1px;
+  height: 22px;
+}
+
+.activity-slot {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.activity-slot:first-child {
+  border-radius: 4px 0 0 4px;
+}
+
+.activity-slot:nth-last-child(1 of .activity-slot) {
+  border-radius: 0 4px 4px 0;
+}
+
+.activity-gap {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px var(--bg-card);
+  cursor: help;
+}
+
+.activity-axis-ticks {
+  position: relative;
+  height: 16px;
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+
+.activity-axis-ticks span {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.activity-hover {
+  min-height: 18px;
+  margin-top: 12px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.activity-heatmap {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 2px;
+  font-size: 11px;
+}
+
+.activity-heatmap th {
+  padding: 4px 6px;
+  color: var(--text-secondary);
+  font-weight: 700;
+  text-align: center;
+}
+
+.activity-heatmap tbody th {
+  text-align: left;
+}
+
+.activity-heatmap td {
+  min-width: 38px;
+  height: 30px;
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  cursor: default;
+}
+
+.heat-none { background: var(--activity-outside); }
+.heat-1 { background: color-mix(in srgb, var(--accent-primary) 16%, transparent); }
+.heat-2 { background: color-mix(in srgb, var(--accent-primary) 34%, transparent); }
+.heat-3 { background: color-mix(in srgb, var(--accent-primary) 52%, transparent); }
+.heat-4 { background: color-mix(in srgb, var(--accent-primary) 70%, transparent); }
+.heat-5 { background: color-mix(in srgb, var(--accent-primary) 90%, transparent); }
+
+.activity-heatmap td.heat-5 {
+  color: #fff;
+}
+
+.activity-heat-scale {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 12px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.activity-heat-scale i {
+  width: 22px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.activity-heat-scale span:first-child {
+  margin-right: 6px;
+}
+
+.activity-heat-scale span:last-child {
+  margin-left: 6px;
+}
+
+@media (max-width: 640px) {
+  .activity-timeline-card,
+  .activity-heatmap-card {
+    padding: 14px;
+  }
+
+  .activity-timeline-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 10px;
+  }
+
+  .activity-timeline-track {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .activity-timeline-axis {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .activity-timeline-axis > div:empty {
+    display: none;
+  }
+}

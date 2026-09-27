@@ -37,7 +37,9 @@ const DeleteAccount = React.lazy(() => import('./pages/DeleteAccount').then((mod
 const LiveTracking = React.lazy(() => import('./pages/LiveTracking').then((module) => ({ default: module.LiveTracking })));
 const Clients = React.lazy(() => import('./pages/Clients').then((module) => ({ default: module.Clients })));
 const Leads = React.lazy(() => import('./pages/Leads').then((module) => ({ default: module.Leads })));
+const Targets = React.lazy(() => import('./pages/Targets').then((module) => ({ default: module.Targets })));
 const Visits = React.lazy(() => import('./pages/Visits').then((module) => ({ default: module.Visits })));
+const Activity = React.lazy(() => import('./pages/Activity').then((module) => ({ default: module.Activity })));
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, claims } = useAuth();
@@ -99,10 +101,13 @@ function App() {
                   <Route path="calls" element={<CallHistory />} />
                   <Route path="leads" element={<RoleRoute allowed={['org_admin', 'manager', 'sales_member']}><Leads /></RoleRoute>} />
                   <Route path="leads/:leadId" element={<RoleRoute allowed={['org_admin', 'manager', 'sales_member']}><Leads /></RoleRoute>} />
+                  <Route path="targets" element={<RoleRoute allowed={['org_admin', 'manager', 'sales_member']}><Targets /></RoleRoute>} />
+                  <Route path="targets/:targetId" element={<RoleRoute allowed={['org_admin', 'manager', 'sales_member']}><Targets /></RoleRoute>} />
                   <Route path="team" element={<Team />} />
                   <Route path="live" element={<RoleRoute allowed={['org_admin', 'manager']}><LiveTracking /></RoleRoute>} />
                   <Route path="clients" element={<RoleRoute allowed={['org_admin', 'manager']}><Clients /></RoleRoute>} />
                   <Route path="visits" element={<RoleRoute allowed={['org_admin', 'manager']}><Visits /></RoleRoute>} />
+                  <Route path="activity" element={<RoleRoute allowed={['org_admin', 'manager', 'sales_member']}><Activity /></RoleRoute>} />
                   <Route path="platform" element={<Platform />} />
                   <Route path="platform/organizations/:orgId" element={<RoleRoute allowed={['platform_owner']}><PlatformOrganization /></RoleRoute>} />
                   <Route path="notifications" element={<Notifications />} />

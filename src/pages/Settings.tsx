@@ -12,6 +12,28 @@ const defaultOrgSettings: OrganizationDetails['settings'] = {
   weeklyReportsEnabled: true,
   managerCanEditSalesMembers: true,
   defaultPhoneCountry: 'IN',
+  // Mirrors DEFAULT_ACTIVITY_SETTINGS in GCF/functions/src/services/activityCore.ts.
+  workingHoursStart: '10:00',
+  workingHoursEnd: '19:30',
+  breakStart: '13:30',
+  breakEnd: '14:30',
+  idleThresholdMinutes: 30,
+};
+
+const DEFAULT_BREAK = { breakStart: '13:30', breakEnd: '14:30' };
+
+/** Why the working-hours inputs can't be saved, or null when they can. */
+const workingHoursError = (settings: OrganizationDetails['settings']) => {
+  const { workingHoursStart: start, workingHoursEnd: end, breakStart, breakEnd } = settings;
+  if (!start || !end || end <= start) return 'Working hours must end after they start.';
+  if (breakStart && breakEnd && (breakEnd <= breakStart || breakStart < start || breakEnd > end)) {
+    return 'The break must end after it starts and sit inside working hours.';
+  }
+  const threshold = settings.idleThresholdMinutes ?? 30;
+  if (!Number.isInteger(threshold) || threshold < 10 || threshold > 180) {
+    return 'The no-activity threshold must be between 10 and 180 minutes.';
+  }
+  return null;
 };
 
 const themeOptions: Array<{ value: ThemeMode; label: string; icon: typeof Monitor }> = [
@@ -125,6 +147,11 @@ export const Settings = () => {
   const handleOrgSave = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!claims.orgId) return;
+    const hoursError = workingHoursError(orgSettings);
+    if (hoursError) {
+      setOrgMessage(`Failed to save: ${hoursError}`);
+      return;
+    }
     setOrgSaving(true);
     setOrgMessage('');
     try {
@@ -337,6 +364,38 @@ export const Settings = () => {
                     </select>
                   </label>
                 </div>
+
+                <div className="settings-row">
+                  <div><h3>Working Hours &amp; Activity</h3><p>Used by Team Activity to find stretches with no call activity. Calls outside these hours are shown but not scored.</p></div>
+                </div>
+                <div className="settings-grid">
+                  <label>Working hours start
+                    <input className="input-field" type="time" required value={orgSettings.workingHoursStart ?? ''} onChange={(event) => setOrgSettings((settings) => ({ ...settings, workingHoursStart: event.target.value }))} />
+                  </label>
+                  <label>Working hours end
+                    <input className="input-field" type="time" required value={orgSettings.workingHoursEnd ?? ''} onChange={(event) => setOrgSettings((settings) => ({ ...settings, workingHoursEnd: event.target.value }))} />
+                  </label>
+                  <label>No-activity threshold (minutes)
+                    <input className="input-field" type="number" min={10} max={180} step={5} required value={orgSettings.idleThresholdMinutes ?? 30} onChange={(event) => setOrgSettings((settings) => ({ ...settings, idleThresholdMinutes: Number(event.target.value) }))} />
+                  </label>
+                </div>
+                <div className="settings-row">
+                  <div><h3>Scheduled Break</h3><p>Time excluded from activity analysis, such as lunch.</p></div>
+                  <label className="toggle-switch">
+                    <input type="checkbox" checked={Boolean(orgSettings.breakStart && orgSettings.breakEnd)} onChange={(event) => setOrgSettings((settings) => ({ ...settings, ...(event.target.checked ? DEFAULT_BREAK : { breakStart: null, breakEnd: null }) }))} />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+                {orgSettings.breakStart && orgSettings.breakEnd ? (
+                  <div className="settings-grid">
+                    <label>Break start
+                      <input className="input-field" type="time" required value={orgSettings.breakStart} onChange={(event) => setOrgSettings((settings) => ({ ...settings, breakStart: event.target.value }))} />
+                    </label>
+                    <label>Break end
+                      <input className="input-field" type="time" required value={orgSettings.breakEnd} onChange={(event) => setOrgSettings((settings) => ({ ...settings, breakEnd: event.target.value }))} />
+                    </label>
+                  </div>
+                ) : null}
 
                 <div className="settings-actions">
                   <button type="submit" className="btn-primary" disabled={orgSaving}>{orgSaving ? 'Saving...' : <><Save size={16} /> Save Organization</>}</button>

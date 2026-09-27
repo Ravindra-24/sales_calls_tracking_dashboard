@@ -96,10 +96,26 @@ export const LiveTracking = () => {
       .catch(() => setMembers([]));
   }, [claims.orgId, canView]);
 
+  // Poll only while the tab is visible: a backgrounded tab would otherwise
+  // hit the API (and the audit ledger) every 30s for as long as it stays open.
   useEffect(() => {
-    void loadLive();
-    const timer = window.setInterval(() => void loadLive(), POLL_INTERVAL_MS);
-    return () => window.clearInterval(timer);
+    let timer: number | undefined;
+    const start = () => {
+      if (timer !== undefined) return;
+      void loadLive();
+      timer = window.setInterval(() => void loadLive(), POLL_INTERVAL_MS);
+    };
+    const stop = () => {
+      window.clearInterval(timer);
+      timer = undefined;
+    };
+    const onVisibilityChange = () => (document.hidden ? stop() : start());
+    if (!document.hidden) start();
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, [loadLive]);
 
   const loadVisits = useCallback(async () => {

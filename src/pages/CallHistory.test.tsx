@@ -41,12 +41,12 @@ const call = (id: string, direction: 'incoming' | 'outgoing' | 'missed') => ({
   durationSeconds: direction === 'missed' ? 0 : 60,
 });
 
-const installApiMock = () => {
+const installApiMock = (savedFilters: unknown[] = []) => {
   mocks.get.mockImplementation((url: string, config?: { params?: Record<string, unknown> }) => {
     if (url.includes('/users')) return Promise.resolve({ data: { data: [{
       id: 'rep-1', name: 'Asha', email: 'asha@example.com', role: 'sales_member', status: 'active', createdAt: '', updatedAt: '',
     }] } });
-    if (url === '/calls/filters') return Promise.resolve({ data: { data: [] } });
+    if (url === '/calls/filters') return Promise.resolve({ data: { data: savedFilters } });
     if (url === '/calls/summary') return Promise.resolve({ data: { data: {
       totalCalls: 8,
       connectedCalls: 5,
@@ -98,9 +98,9 @@ describe('CallHistory', () => {
     expect(screen.getByRole('cell', { name: '1' })).toBeInTheDocument();
     const initialListRequests = mocks.get.mock.calls.filter(([url]) => url === '/calls').length;
 
-    await user.click(screen.getByRole('button', { name: 'Filters' }));
-    expect(screen.getByLabelText('From')).toHaveValue(format(new Date(), 'yyyy-MM-dd'));
-    expect(screen.getByLabelText('To')).toHaveValue(format(new Date(), 'yyyy-MM-dd'));
+    expect(screen.getByRole('button', { name: 'Hide filters' })).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('group', { name: 'From' })).toHaveTextContent(format(new Date(), 'd MMM yyyy'));
+    expect(screen.getByRole('group', { name: 'To' })).toHaveTextContent(format(new Date(), 'd MMM yyyy'));
     await user.selectOptions(screen.getByLabelText('Direction'), 'missed');
     expect(mocks.get.mock.calls.filter(([url]) => url === '/calls')).toHaveLength(initialListRequests);
     await user.click(screen.getByRole('button', { name: 'Apply filters' }));
@@ -148,7 +148,6 @@ describe('CallHistory', () => {
     const user = userEvent.setup();
     const view = render(<CallHistory />);
     await screen.findByText('Call history');
-    await user.click(screen.getByRole('button', { name: 'Filters' }));
     await user.selectOptions(screen.getByLabelText('Direction'), 'missed');
     await user.click(screen.getByRole('button', { name: 'Apply filters' }));
     await waitFor(() => expect(mocks.get.mock.calls.filter(([url]) => url === '/calls').some(([, config]) => (
@@ -162,4 +161,48 @@ describe('CallHistory', () => {
       config.params.direction === 'missed'
     ))).toBe(true));
   });
+
+  it('applies salesperson, call-time sort, and saved filters from outside the filter card', async () => {
+    installApiMock([{
+      id: 'saved-1',
+      name: 'Missed follow-ups',
+      filters: { direction: 'missed', from: '2026-07-01T00:00:00.000Z', to: '2026-07-22T23:59:59.999Z' },
+    }]);
+    const user = userEvent.setup();
+    render(<CallHistory />);
+    await screen.findByRole('option', { name: 'Asha' });
+    const listParams = () => mocks.get.mock.calls.filter(([url]) => url === '/calls').map(([, config]) => config.params);
+
+    expect(listParams()[0].sort).toBe('desc');
+    const card = document.getElementById('call-history-filters')!;
+    expect(within(card).queryByLabelText('Salesperson')).not.toBeInTheDocument();
+    expect(within(card).queryByLabelText('Saved filter')).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText('Salesperson'), 'rep-1');
+    await waitFor(() => expect(listParams().at(-1).repId).toBe('rep-1'));
+
+    await user.selectOptions(screen.getByLabelText('Sort by call time'), 'asc');
+    await waitFor(() => expect(listParams().at(-1)).toMatchObject({ repId: 'rep-1', sort: 'asc' }));
+
+    await user.selectOptions(screen.getByLabelText('Saved filter'), 'saved-1');
+    await waitFor(() => expect(listParams().at(-1)).toMatchObject({ direction: 'missed', sort: 'asc' }));
+    expect(listParams().at(-1).repId).toBeUndefined();
+    expect(screen.getByLabelText('Saved filter')).toHaveValue('saved-1');
+  });
+
+  it('applies a date picked in the MUI From field immediately', async () => {
+    installApiMock();
+    const user = userEvent.setup();
+    render(<CallHistory />);
+    await screen.findByText('Call history');
+    const year = within(screen.getByRole('group', { name: 'From' })).getByRole('spinbutton', { name: 'Year' });
+    await user.click(year);
+    await user.keyboard('{ArrowDown}');
+
+    const lastYear = new Date();
+    lastYear.setFullYear(lastYear.getFullYear() - 1);
+    const expectedFrom = new Date(`${format(lastYear, 'yyyy-MM-dd')}T00:00:00`).toISOString();
+    await waitFor(() => expect(mocks.get.mock.calls.filter(([url]) => url === '/calls').at(-1)?.[1].params.from).toBe(expectedFrom));
+  });
 });
+

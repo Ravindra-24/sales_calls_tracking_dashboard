@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { signInWithCustomToken } from 'firebase/auth';
-import { Activity, BadgePercent, Bell, BrainCircuit, Building2, ContactRound, CreditCard, LayoutDashboard, MapPin, Mic2, PhoneCall, Route, Users, LogOut, Menu, Settings, ShieldAlert, Webhook, X, type LucideIcon } from 'lucide-react';
+import { Activity, BadgePercent, ChartNoAxesGantt, Bell, BrainCircuit, Building2, ContactRound, CreditCard, LayoutDashboard, MapPin, Mic2, PhoneCall, Route, Users, LogOut, Menu, Settings, ShieldAlert, Target, Webhook, X, type LucideIcon } from 'lucide-react';
 import { api, getApiErrorMessage } from '../api/client';
 import { auth } from '../config/firebase';
 import { useAuth } from '../context/auth';
@@ -130,6 +130,7 @@ export const Layout: React.FC = () => {
       items: [
         ...(canViewCalls ? [{ path: '/dashboard/calls', icon: PhoneCall, label: 'Call History' }] : []),
         ...(canViewCalls ? [{ path: '/dashboard/leads', icon: BrainCircuit, label: 'Leads' }] : []),
+        ...(canViewCalls ? [{ path: '/dashboard/targets', icon: Target, label: claims.role === 'sales_member' ? 'My Targets' : 'Targets' }] : []),
         ...(canViewCalls && claims.role !== 'sales_member' ? [{ path: '/dashboard/call-recordings', icon: Mic2, label: 'Call Recordings' }] : []),
       ],
     },
@@ -137,6 +138,7 @@ export const Layout: React.FC = () => {
       label: 'Team & field',
       items: [
         ...(canManageTeam ? [{ path: '/dashboard/team', icon: Users, label: 'Team Management' }] : []),
+        ...(canViewCalls ? [{ path: '/dashboard/activity', icon: ChartNoAxesGantt, label: claims.role === 'sales_member' ? 'My Activity' : 'Team Activity' }] : []),
         ...(canManageTeam ? [{ path: '/dashboard/live', icon: MapPin, label: 'Live Tracking' }] : []),
         ...(canManageTeam ? [{ path: '/dashboard/clients', icon: ContactRound, label: 'Clients' }] : []),
         ...(canManageTeam ? [{ path: '/dashboard/visits', icon: Route, label: 'Visits & Routes' }] : []),

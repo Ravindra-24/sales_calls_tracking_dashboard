@@ -29,6 +29,11 @@ const stats = {
     missedCount: 2,
     connectedCount: 7,
     notConnectedCount: 1,
+    analyzedCount: 4,
+    positiveCount: 3,
+    neutralCount: 0,
+    negativeCount: 1,
+    mixedCount: 0,
   },
   byRep: [{
     repId: 'rep-1',
@@ -84,6 +89,11 @@ describe('Dashboard', () => {
     expect(screen.getByText('Unique outgoing')).toBeInTheDocument();
     expect(screen.getByText('Unique connected')).toBeInTheDocument();
     expect(screen.getByText('4')).toBeInTheDocument();
+    expect(screen.getByText('Attempted').nextElementSibling).toHaveTextContent('5');
+    expect(screen.getByText('75%')).toBeInTheDocument();
+    expect(screen.getByText('3 of 4 analyzed')).toBeInTheDocument();
+    expect(screen.getByText('25%')).toBeInTheDocument();
+    expect(screen.getByText('1 of 4 analyzed')).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /5 outgoing, 3 incoming, 2 missed/ })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Asha (inactive)' })).toBeInTheDocument();
 
@@ -94,5 +104,16 @@ describe('Dashboard', () => {
     await waitFor(() => expect(mocks.get).toHaveBeenCalledWith('/calls/summary', expect.objectContaining({
       params: expect.objectContaining({ repId: 'rep-1' }),
     })));
+  });
+
+  it('shows no sentiment ratio when no calls were analyzed', async () => {
+    const unanalyzed = { ...stats, teamTotals: { ...stats.teamTotals, analyzedCount: 0, positiveCount: 0, negativeCount: 0 } };
+    mocks.get.mockImplementation((url: string) => Promise.resolve({ data: { data:
+      url.includes('/users') ? [] : url === '/calls/summary' ? callSummary : unanalyzed,
+    } }));
+    render(<Dashboard />);
+
+    expect(await screen.findAllByText('No analyzed calls')).toHaveLength(2);
+    expect(screen.getByText('Positive calls').nextElementSibling).toHaveTextContent('—');
   });
 });

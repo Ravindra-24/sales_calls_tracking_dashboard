@@ -620,6 +620,13 @@ button:disabled {
   font: 700 24px 'Manrope', sans-serif;
 }
 
+.stat-card small {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
 .stat-icon {
   width: 44px;
   height: 44px;
@@ -1186,11 +1193,25 @@ button:disabled {
 .call-filter-toolbar {
   min-height: 68px;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   padding: 12px 14px;
   margin-bottom: 12px;
+}
+
+.call-quick-filters {
+  flex-basis: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.call-quick-filters .MuiFormControl-root {
+  min-width: 0;
 }
 
 .call-filter-summary,
@@ -1404,6 +1425,76 @@ button:disabled {
   .lead-profile-grid { grid-template-columns: 1fr; }
   .suggestion-box { grid-template-columns: auto 1fr; }
   .suggestion-box .btn-primary { grid-column: 1 / -1; }
+}
+
+/* Targets */
+.target-create-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+.target-create-form > label,
+.target-rep-picker legend {
+  display: grid;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.target-create-form .target-description { grid-column: span 3; }
+.target-rep-picker {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.target-rep-picker legend { display: flex; gap: 10px; align-items: center; padding: 0 6px; }
+.target-rep-picker legend button {
+  border: 0;
+  background: none;
+  color: var(--accent-primary);
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+.target-rep-option { display: inline-flex; gap: 8px; align-items: center; color: var(--text-primary); font-size: 14px; }
+.target-filter-bar { grid-template-columns: repeat(3, minmax(150px, 220px)); justify-content: start; }
+.target-progress-cell { display: grid; gap: 6px; min-width: 160px; }
+.target-progress-cell small { color: var(--text-secondary); }
+.target-progress-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+.target-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent-primary);
+}
+.target-progress-fill.achieved,
+.target-progress-fill.on_track { background: var(--success); }
+.target-progress-fill.behind { background: var(--warning); }
+.target-progress-fill.missed { background: var(--danger); }
+.target-lock-notice { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; }
+.lead-profile-grid .target-description { grid-column: 1 / -1; }
+.target-note-body { white-space: pre-wrap; overflow-wrap: anywhere; }
+.target-note-form { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; margin-top: 16px; }
+
+@media (max-width: 900px) {
+  .target-create-form { grid-template-columns: 1fr 1fr; }
+  .target-create-form .target-description { grid-column: 1 / -1; }
+}
+
+@media (max-width: 620px) {
+  .target-create-form,
+  .target-filter-bar,
+  .target-note-form { grid-template-columns: 1fr; }
 }
 
 .call-row-number {

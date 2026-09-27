@@ -183,12 +183,12 @@ export interface SyncHealthRecord {
 
 export interface AppNotification {
   id: string;
-  type: 'sync_health' | 'invite_reminder' | 'weekly_nudge' | 'account_issue' | 'call_analysis_ready' | 'call_analysis_failed' | 'deal_health_at_risk';
+  type: 'sync_health' | 'invite_reminder' | 'weekly_nudge' | 'account_issue' | 'call_analysis_ready' | 'call_analysis_failed' | 'deal_health_at_risk' | 'target_assigned' | 'target_updated';
   severity: 'info' | 'warning' | 'critical';
   title: string;
   message: string;
   actionUrl: string | null;
-  actionType?: 'call' | 'lead' | null;
+  actionType?: 'call' | 'lead' | 'target' | null;
   actionId?: string | null;
   readAt: string | null;
   createdAt: string | null;
@@ -223,6 +223,11 @@ export interface RepStats {
   missedCount: number;
   connectedCount: number;
   notConnectedCount: number;
+  analyzedCount?: number;
+  positiveCount?: number;
+  neutralCount?: number;
+  negativeCount?: number;
+  mixedCount?: number;
   dailyBreakdown: DailyBreakdown[];
 }
 
@@ -236,6 +241,12 @@ export interface TeamStats {
     missedCount: number;
     connectedCount: number;
     notConnectedCount: number;
+    /** AI-analysed calls with a sentiment; ratios use this as denominator. */
+    analyzedCount?: number;
+    positiveCount?: number;
+    neutralCount?: number;
+    negativeCount?: number;
+    mixedCount?: number;
   };
   byRep: RepStats[];
 }
@@ -451,6 +462,9 @@ export interface OrganizationDetails {
     weeklyReportsEnabled?: boolean;
     managerCanEditSalesMembers?: boolean;
     defaultPhoneCountry?: string;
+    breakStart?: string | null;
+    breakEnd?: string | null;
+    idleThresholdMinutes?: number;
   };
   createdAt: string | null;
   updatedAt: string | null;
@@ -538,4 +552,74 @@ export interface IntegrationWebhookDelivery {
   createdAt: string | null;
   updatedAt: string | null;
   deliveredAt: string | null;
+}
+
+export type TargetMetric =
+  | 'calls'
+  | 'connected_calls'
+  | 'outgoing_calls'
+  | 'talk_time_minutes'
+  | 'leads_created'
+  | 'leads_won'
+  | 'client_visits'
+  | 'custom';
+export type TargetPeriodType = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'custom';
+export type TargetStatus = 'upcoming' | 'on_track' | 'behind' | 'achieved' | 'missed';
+
+export interface TargetProgress {
+  achievedValue: number;
+  percent: number;
+  status: TargetStatus;
+  totalDays: number;
+  daysElapsed: number;
+  daysLeft: number;
+  expectedByNow: number;
+  requiredPerDay: number | null;
+}
+
+export interface TargetRevisionRecord {
+  changedBy: string;
+  changedAt: string | null;
+  changes: Record<string, { from: unknown; to: unknown }>;
+}
+
+export interface TargetRecord {
+  id: string;
+  scope: 'rep' | 'team';
+  repId: string | null;
+  source: 'manager' | 'self';
+  title: string;
+  description: string | null;
+  metric: TargetMetric;
+  customUnit: string | null;
+  targetValue: number;
+  periodType: TargetPeriodType;
+  startDate: string;
+  endDate: string;
+  reportedValue: number | null;
+  reportedAt: string | null;
+  reportedBy: string | null;
+  finalized: boolean;
+  progress: TargetProgress;
+  revisions: TargetRevisionRecord[];
+  createdBy: string;
+  createdByRole: UserRole;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface TargetNoteRecord {
+  id: string;
+  targetId: string;
+  authorId: string;
+  authorName: string | null;
+  authorRole: UserRole;
+  body: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+  editedAt: string | null;
+}
+
+export interface TargetDetailRecord extends TargetRecord {
+  notes: TargetNoteRecord[];
 }
