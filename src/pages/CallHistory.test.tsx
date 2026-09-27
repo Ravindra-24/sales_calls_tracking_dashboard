@@ -98,6 +98,9 @@ describe('CallHistory', () => {
     expect(screen.getByRole('cell', { name: '1' })).toBeInTheDocument();
     const initialListRequests = mocks.get.mock.calls.filter(([url]) => url === '/calls').length;
 
+    expect(screen.getByRole('button', { name: 'Filters' })).toHaveAttribute('aria-expanded', 'false');
+    expect(document.getElementById('call-history-filters')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Filters' }));
     expect(screen.getByRole('button', { name: 'Hide filters' })).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByRole('group', { name: 'From' })).toHaveTextContent(format(new Date(), 'd MMM yyyy'));
     expect(screen.getByRole('group', { name: 'To' })).toHaveTextContent(format(new Date(), 'd MMM yyyy'));
@@ -148,6 +151,7 @@ describe('CallHistory', () => {
     const user = userEvent.setup();
     const view = render(<CallHistory />);
     await screen.findByText('Call history');
+    await user.click(screen.getByRole('button', { name: 'Filters' }));
     await user.selectOptions(screen.getByLabelText('Direction'), 'missed');
     await user.click(screen.getByRole('button', { name: 'Apply filters' }));
     await waitFor(() => expect(mocks.get.mock.calls.filter(([url]) => url === '/calls').some(([, config]) => (
@@ -174,6 +178,7 @@ describe('CallHistory', () => {
     const listParams = () => mocks.get.mock.calls.filter(([url]) => url === '/calls').map(([, config]) => config.params);
 
     expect(listParams()[0].sort).toBe('desc');
+    await user.click(screen.getByRole('button', { name: 'Filters' }));
     const card = document.getElementById('call-history-filters')!;
     expect(within(card).queryByLabelText('Salesperson')).not.toBeInTheDocument();
     expect(within(card).queryByLabelText('Saved filter')).not.toBeInTheDocument();

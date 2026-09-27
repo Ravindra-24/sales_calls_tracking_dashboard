@@ -128,8 +128,8 @@ export const CallHistory = () => {
     readCallFilters(filterStorageKey, claims.role === 'sales_member')
   ));
   const [filterName, setFilterName] = useState('');
-  // Open inline on desktop; on phones the panel is a modal, so start closed.
-  const [filterOpen, setFilterOpen] = useState(() => !window.matchMedia('(max-width: 640px)').matches);
+  // Hidden by default; opens inline on desktop and as a modal on phones.
+  const [filterOpen, setFilterOpen] = useState(false);
   const [savedFilterId, setSavedFilterId] = useState('');
   const [cursorHistory, setCursorHistory] = useState<CursorPage[]>([{ offset: 0 }]);
   const [nextCursor, setNextCursor] = useState<string>();
