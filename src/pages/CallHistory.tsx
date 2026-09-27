@@ -25,46 +25,30 @@ import { useAuth } from '../context/auth';
 import { useFeedback } from '../context/feedback';
 import { MuiFieldProvider } from '../components/MuiFieldProvider';
 import type { ApiResponse, CallAnalysis, CallRecord, CallSummary, SavedCallFilter, TeamMember } from '../types/api';
-
-interface CallFilters {
-  repId: string;
-  direction: string;
-  from: string;
-  to: string;
-  phoneSearch: string;
-  tag: string;
-  followUpStatus: string;
-  minDurationSeconds: string;
-  maxDurationSeconds: string;
-  /** Call start-time order: 'desc' (newest first) or 'asc'. Not a filter. */
-  sort: string;
-}
+import {
+  activeFilterChips,
+  CALL_DATE_PRESETS,
+  createDefaultFilters,
+  describeDateRange,
+  formatDurationLabel,
+  matchCallDatePreset,
+  resolveCallDatePreset,
+  rollDatePresetForward,
+  type CallDatePreset,
+  type CallFilters,
+  type ChipKey,
+} from './callHistoryFilters';
 
 interface CursorPage {
   cursor?: string;
   offset: number;
 }
 
-const createDefaultFilters = (): CallFilters => ({
-  repId: '',
-  direction: '',
-  from: format(new Date(), 'yyyy-MM-dd'),
-  to: format(new Date(), 'yyyy-MM-dd'),
-  phoneSearch: '',
-  tag: '',
-  followUpStatus: '',
-  minDurationSeconds: '',
-  maxDurationSeconds: '',
-  sort: 'desc',
-});
-
-const initialFilters = createDefaultFilters();
-
 const readCallFilters = (storageKey: string, salesMember: boolean): CallFilters => {
   try {
     const stored = window.sessionStorage.getItem(storageKey);
     if (!stored) return createDefaultFilters();
-    const parsed = JSON.parse(stored) as Partial<Record<keyof CallFilters, unknown>>;
+    const parsed = JSON.parse(stored) as Partial<Record<keyof CallFilters | 'savedOn', unknown>>;
     const defaults = createDefaultFilters();
     const restored = Object.fromEntries(
       (Object.keys(defaults) as Array<keyof CallFilters>).map((key) => [
@@ -74,7 +58,7 @@ const readCallFilters = (storageKey: string, salesMember: boolean): CallFilters 
     ) as unknown as CallFilters;
     if (salesMember) restored.repId = '';
     if (restored.sort !== 'asc') restored.sort = 'desc';
-    return restored;
+    return rollDatePresetForward(restored, typeof parsed.savedOn === 'string' ? parsed.savedOn : undefined);
   } catch {
     return createDefaultFilters();
   }
@@ -146,7 +130,7 @@ export const CallHistory = () => {
 
   useEffect(() => {
     if (claims.role === 'platform_owner') return;
-    window.sessionStorage.setItem(filterStorageKey, JSON.stringify(appliedFilters));
+    window.sessionStorage.setItem(filterStorageKey, JSON.stringify({ ...appliedFilters, savedOn: format(new Date(), 'yyyy-MM-dd') }));
   }, [appliedFilters, claims.role, filterStorageKey]);
 
   useEffect(() => {
@@ -269,15 +253,10 @@ export const CallHistory = () => {
 
   const names = useMemo(() => new Map(members.map((member) => [member.id, member.name || member.email])), [members]);
   const reps = members.filter((member) => member.role === 'sales_member');
-  const activeFilterCount = 1 + [
-    appliedFilters.repId,
-    appliedFilters.direction,
-    appliedFilters.phoneSearch,
-    appliedFilters.tag,
-    appliedFilters.followUpStatus,
-    appliedFilters.minDurationSeconds,
-    appliedFilters.maxDurationSeconds,
-  ].filter(Boolean).length;
+  const filterChips = activeFilterChips(appliedFilters, names);
+  const dateLabel = describeDateRange(appliedFilters.from, appliedFilters.to);
+  const activeDatePreset = matchCallDatePreset(appliedFilters.from, appliedFilters.to);
+  const showingDefaults = filterChips.length === 0 && activeDatePreset === 'today';
 
   const updateDraft = (patch: Partial<CallFilters>) => {
     setDraftFilters((current) => ({ ...current, ...patch }));
@@ -299,6 +278,18 @@ export const CallHistory = () => {
     setDraftFilters((current) => ({ ...current, ...patch }));
     setCursorHistory([{ offset: 0 }]);
     if (!('sort' in patch)) setSavedFilterId('');
+  };
+
+  const applyDatePreset = (preset: CallDatePreset) => applyQuickFilters(resolveCallDatePreset(preset));
+
+  const removeFilter = (key: ChipKey) => applyQuickFilters({ [key]: '' });
+
+  const clearAllFilters = () => {
+    const cleared = { ...createDefaultFilters(), sort: appliedFilters.sort };
+    setAppliedFilters(cleared);
+    setDraftFilters(cleared);
+    setCursorHistory([{ offset: 0 }]);
+    setSavedFilterId('');
   };
 
   const changeDate = (field: 'from' | 'to', value: Date | null) => {
@@ -334,8 +325,8 @@ export const CallHistory = () => {
       followUpStatus: typeof values.followUpStatus === 'string' ? values.followUpStatus : '',
       minDurationSeconds: values.minDurationSeconds === undefined ? '' : String(values.minDurationSeconds),
       maxDurationSeconds: values.maxDurationSeconds === undefined ? '' : String(values.maxDurationSeconds),
-      from: typeof values.from === 'string' ? values.from.slice(0, 10) : initialFilters.from,
-      to: typeof values.to === 'string' ? values.to.slice(0, 10) : initialFilters.to,
+      from: typeof values.from === 'string' ? values.from.slice(0, 10) : createDefaultFilters().from,
+      to: typeof values.to === 'string' ? values.to.slice(0, 10) : createDefaultFilters().to,
       sort: appliedFilters.sort,
     };
     setAppliedFilters(next);
@@ -504,8 +495,12 @@ export const CallHistory = () => {
               <option value="">Any</option><option value="open">Open</option><option value="completed">Completed</option><option value="none">None</option>
             </select>
           </label>
-          <label>Min duration<input className="input-field" type="number" min="0" value={draftFilters.minDurationSeconds} onChange={(event) => updateDraft({ minDurationSeconds: event.target.value })} /></label>
-          <label>Max duration<input className="input-field" type="number" min="0" value={draftFilters.maxDurationSeconds} onChange={(event) => updateDraft({ maxDurationSeconds: event.target.value })} /></label>
+          <label>Min duration (seconds)<input className="input-field" type="number" min="0" value={draftFilters.minDurationSeconds} onChange={(event) => updateDraft({ minDurationSeconds: event.target.value })} placeholder="e.g. 120 = 2 min" />
+            {draftFilters.minDurationSeconds && <small className="call-duration-hint">= {formatDurationLabel(Number(draftFilters.minDurationSeconds))}</small>}
+          </label>
+          <label>Max duration (seconds)<input className="input-field" type="number" min="0" value={draftFilters.maxDurationSeconds} onChange={(event) => updateDraft({ maxDurationSeconds: event.target.value })} />
+            {draftFilters.maxDurationSeconds && <small className="call-duration-hint">= {formatDurationLabel(Number(draftFilters.maxDurationSeconds))}</small>}
+          </label>
         </div>
         <div className="call-filter-save">
           <input className="input-field" value={filterName} onChange={(event) => setFilterName(event.target.value)} placeholder="Saved filter name" />
@@ -538,7 +533,12 @@ export const CallHistory = () => {
       {claims.role !== 'platform_owner' && (
         <>
           <div className="call-filter-toolbar section-card">
-            <div className="call-filter-summary"><Filter size={18} /><div><strong>{format(new Date(`${appliedFilters.from}T00:00:00`), 'd MMM yyyy')} – {format(new Date(`${appliedFilters.to}T00:00:00`), 'd MMM yyyy')}</strong><span>{activeFilterCount} active {activeFilterCount === 1 ? 'filter' : 'filters'}</span></div></div>
+            <div className="call-filter-summary"><Filter size={18} /><div><strong>{dateLabel}</strong><span>{filterChips.length ? `${filterChips.length} more ${filterChips.length === 1 ? 'filter' : 'filters'} applied` : 'No other filters'}</span></div></div>
+            <div className="call-date-presets" role="group" aria-label="Date range">
+              {CALL_DATE_PRESETS.map((preset) => (
+                <button key={preset.value} type="button" className={activeDatePreset === preset.value ? 'active' : ''} aria-pressed={activeDatePreset === preset.value} onClick={() => applyDatePreset(preset.value)}>{preset.label}</button>
+              ))}
+            </div>
             <div className="call-filter-toolbar-actions">
               <button className="secondary-button" type="button" onClick={() => void exportCsv()}><Download size={16} /> CSV</button>
               <button ref={filterButtonRef} className="btn-primary" type="button" aria-expanded={filterOpen} aria-controls="call-history-filters" onClick={() => filterOpen ? cancelFilters() : openFilters()}><Filter size={16} /> {filterOpen && !isMobile ? 'Hide filters' : 'Filters'}</button>
@@ -568,6 +568,18 @@ export const CallHistory = () => {
             </MuiFieldProvider>
           </div>
           {renderedFilterPanel}
+
+          <div className={`call-active-filters${showingDefaults ? '' : ' filtered'}`} aria-label="Active filters" role="status">
+            <span>Showing</span>
+            <strong>{dateLabel}</strong>
+            {filterChips.map((chip) => (
+              <span className="call-filter-chip" key={chip.key}>
+                {chip.label}
+                <button type="button" aria-label={`Remove filter: ${chip.label}`} onClick={() => removeFilter(chip.key)}><X size={13} /></button>
+              </span>
+            ))}
+            {!showingDefaults && <button className="call-clear-filters" type="button" onClick={clearAllFilters}>Clear all</button>}
+          </div>
 
           <div className="call-summary-grid" aria-busy={summaryLoading}>
             <CallSummaryCard label="Total" value={summaryLoading ? '—' : summary?.totalCalls ?? '—'} icon={<PhoneCall />} tone="blue" />

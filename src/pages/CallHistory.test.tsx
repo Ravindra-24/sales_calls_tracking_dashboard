@@ -209,5 +209,55 @@ describe('CallHistory', () => {
     const expectedFrom = new Date(`${format(lastYear, 'yyyy-MM-dd')}T00:00:00`).toISOString();
     await waitFor(() => expect(mocks.get.mock.calls.filter(([url]) => url === '/calls').at(-1)?.[1].params.from).toBe(expectedFrom));
   });
+
+  it('shows active filters as removable chips and clears everything back to today', async () => {
+    installApiMock();
+    const user = userEvent.setup();
+    window.sessionStorage.setItem('smartlymanage.call-history.filters:admin-1', JSON.stringify({
+      from: '2026-08-27',
+      to: '2026-09-27',
+      direction: 'outgoing',
+      minDurationSeconds: '160',
+      savedOn: format(new Date(), 'yyyy-MM-dd'),
+    }));
+    render(<CallHistory />);
+
+    const bar = await screen.findByRole('status', { name: 'Active filters' });
+    expect(within(bar).getByText('27 Aug – 27 Sep 2026')).toBeInTheDocument();
+    expect(within(bar).getByText('Outgoing calls')).toBeInTheDocument();
+    expect(within(bar).getByText('At least 2 min 40 s')).toBeInTheDocument();
+
+    await user.click(within(bar).getByRole('button', { name: 'Remove filter: Outgoing calls' }));
+    await waitFor(() => expect(mocks.get.mock.calls.filter(([url]) => url === '/calls').at(-1)?.[1]?.params).toMatchObject({ direction: undefined, minDurationSeconds: 160 }));
+    expect(within(bar).queryByText('Outgoing calls')).not.toBeInTheDocument();
+
+    await user.click(within(bar).getByRole('button', { name: 'Clear all' }));
+    const today = format(new Date(), 'yyyy-MM-dd');
+    await waitFor(() => expect(mocks.get.mock.calls.filter(([url]) => url === '/calls').at(-1)?.[1]?.params).toMatchObject({
+      from: new Date(`${today}T00:00:00`).toISOString(),
+      minDurationSeconds: undefined,
+    }));
+    expect(within(bar).getByText(/^Today \(/)).toBeInTheDocument();
+    expect(within(bar).queryByRole('button', { name: 'Clear all' })).not.toBeInTheDocument();
+  });
+
+  it('applies a date preset in one click and rolls a stale "today" forward', async () => {
+    installApiMock();
+    const user = userEvent.setup();
+    window.sessionStorage.setItem('smartlymanage.call-history.filters:admin-1', JSON.stringify({
+      from: '2020-01-05',
+      to: '2020-01-05',
+      savedOn: '2020-01-05',
+    }));
+    render(<CallHistory />);
+
+    const bar = await screen.findByRole('status', { name: 'Active filters' });
+    expect(within(bar).getByText(/^Today \(/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Today' })).toHaveAttribute('aria-pressed', 'true');
+
+    await user.click(screen.getByRole('button', { name: 'Last 7 days' }));
+    expect(within(bar).getByText(/^Last 7 days \(/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Last 7 days' })).toHaveAttribute('aria-pressed', 'true');
+  });
 });
 
