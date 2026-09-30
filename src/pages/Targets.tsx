@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Lock, Pencil, Plus, RefreshCw, Send, Target as TargetIcon, Trash2 } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, CheckCircle2, Lock, Pencil, Plus, RefreshCw, Send, Target as TargetIcon, Trash2, TrendingUp, X, XCircle } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api, getApiErrorMessage } from '../api/client';
@@ -108,6 +108,7 @@ export const Targets = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [form, setForm] = useState(emptyForm);
   const [noteDraft, setNoteDraft] = useState('');
+  const [showForm, setShowForm] = useState(false);
 
   const names = useMemo(() => new Map(members.map((member) => [member.id, member.name || member.email])), [members]);
   const assigneeName = useCallback((target: Pick<TargetRecord, 'scope' | 'repId'>) => {
@@ -188,6 +189,7 @@ export const Targets = () => {
       });
       const count = response.data.data.length;
       setForm({ ...emptyForm, startDate: todayIso() });
+      setShowForm(false);
       feedback.toast({ message: count > 1 ? `${count} targets set.` : 'Target set.', variant: 'success' });
       await load();
     } catch (requestError) {
@@ -402,59 +404,108 @@ export const Targets = () => {
     );
   }
 
+  const stats = view === 'current'
+    ? [
+      { tone: 'blue', icon: <TargetIcon />, title: 'Active & upcoming', value: targets.length, detail: `${summary.upcoming} not started yet` },
+      { tone: 'green', icon: <TrendingUp />, title: 'On track', value: summary.on_track, detail: 'At or above expected pace' },
+      { tone: 'orange', icon: <AlertTriangle />, title: 'Behind', value: summary.behind, detail: 'Below expected pace' },
+      { tone: 'violet', icon: <CheckCircle2 />, title: 'Achieved', value: summary.achieved, detail: 'Target already hit' },
+    ]
+    : [
+      { tone: 'blue', icon: <TargetIcon />, title: 'Past targets', value: targets.length, detail: 'Periods that have ended' },
+      { tone: 'green', icon: <CheckCircle2 />, title: 'Achieved', value: summary.achieved, detail: 'Hit the target' },
+      { tone: 'danger', icon: <XCircle />, title: 'Missed', value: summary.missed, detail: 'Period ended short' },
+      { tone: 'violet', icon: <TrendingUp />, title: 'Hit rate', value: summary.achieved + summary.missed ? `${Math.round((summary.achieved / (summary.achieved + summary.missed)) * 100)}%` : '—', detail: 'Achieved ÷ finished' },
+    ];
+  const allRepsSelected = salesMembers.length > 0 && form.repIds.length === salesMembers.length;
+  const closeForm = () => { setShowForm(false); setForm({ ...emptyForm, startDate: todayIso() }); };
+
   return (
     <div className="page animate-fade-in targets-page">
       <div className="page-header">
         <div><p className="eyebrow">Performance</p><h1>Targets</h1><p>{isManager ? 'Set targets for your sales team and track progress from live activity.' : 'Your targets, live progress, and notes for your manager.'}</p></div>
-        <button className="secondary-button" onClick={() => void load()}><RefreshCw size={16} /> Refresh</button>
+        <div className="target-header-actions">
+          <button className="secondary-button" disabled={loading} onClick={() => void load()}><RefreshCw size={16} className={loading ? 'spin' : undefined} /> Refresh</button>
+          {!showForm && <button className="btn-primary" onClick={() => setShowForm(true)}><Plus size={16} /> New target</button>}
+        </div>
       </div>
       {error && <div className="notice error-notice">{error}</div>}
 
-      <section className="lead-health-grid">
-        <div className="section-card lead-health-card"><p>{view === 'current' ? 'Active & upcoming' : 'Past targets'}</p><strong>{targets.length}</strong><span>{summary.upcoming} upcoming</span></div>
-        <div className="section-card lead-health-card"><p>On track</p><strong>{summary.on_track}</strong><span>{summary.achieved} achieved</span></div>
-        <div className="section-card lead-health-card"><p>Behind</p><strong>{summary.behind}</strong><span>Below expected pace</span></div>
-        <div className="section-card lead-health-card"><p>Missed</p><strong>{summary.missed}</strong><span>Period ended short</span></div>
-      </section>
+      <div className="stats-grid target-stats-grid" aria-busy={loading}>
+        {stats.map((stat) => (
+          <div className="stat-card section-card" key={stat.title}>
+            <div className={`stat-icon ${stat.tone}`}>{stat.icon}</div>
+            <div><p>{stat.title}</p><strong>{loading ? '—' : stat.value}</strong><small>{stat.detail}</small></div>
+          </div>
+        ))}
+      </div>
 
-      <section className="section-card lead-create-card target-create-card">
-        <div className="section-heading"><div><h2>{isManager ? 'Set a target' : 'Set a personal target'}</h2><p>{isManager ? 'Reps can add notes but cannot change targets you set.' : 'Personal targets are yours to edit. Targets from your manager are locked.'}</p></div></div>
-        <form className="target-create-form" onSubmit={createTarget}>
-          <label>Title<input className="input-field" placeholder="e.g. October outreach" value={form.title} maxLength={120} onChange={(event) => setForm({ ...form, title: event.target.value })} required /></label>
-          <label>Metric<select className="input-field" value={form.metric} onChange={(event) => setForm({ ...form, metric: event.target.value as TargetMetric })}>{(Object.keys(metricLabels) as TargetMetric[]).map((metric) => <option key={metric} value={metric}>{metricLabels[metric]}</option>)}</select></label>
-          <label>Target<input className="input-field" type="number" min={1} step="any" placeholder="100" value={form.targetValue} onChange={(event) => setForm({ ...form, targetValue: event.target.value })} required /></label>
-          {form.metric === 'custom' && <label>Unit<input className="input-field" placeholder="e.g. INR, orders" maxLength={24} value={form.customUnit} onChange={(event) => setForm({ ...form, customUnit: event.target.value })} required /></label>}
-          <label>Period<select className="input-field" value={form.periodType} onChange={(event) => setForm({ ...form, periodType: event.target.value as TargetPeriodType })}>{(Object.keys(periodLabels) as TargetPeriodType[]).map((period) => <option key={period} value={period}>{periodLabels[period]}</option>)}</select></label>
-          <label>{form.periodType === 'custom' ? 'Start date' : 'Any date in period'}<input className="input-field" type="date" value={form.startDate} onChange={(event) => setForm({ ...form, startDate: event.target.value })} required /></label>
-          {form.periodType === 'custom' && <label>End date<input className="input-field" type="date" min={form.startDate} value={form.endDate} onChange={(event) => setForm({ ...form, endDate: event.target.value })} required /></label>}
-          {isManager && (
-            <label>Assign to<select className="input-field" value={form.assignTo} onChange={(event) => setForm({ ...form, assignTo: event.target.value as 'reps' | 'team' })}><option value="reps">Selected sales members</option><option value="team">Whole team (combined)</option></select></label>
-          )}
-          {isManager && form.assignTo === 'reps' && (
-            <fieldset className="target-rep-picker">
-              <legend>Sales members <button type="button" className="link-button" onClick={() => setForm({ ...form, repIds: form.repIds.length === salesMembers.length ? [] : salesMembers.map((member) => member.id) })}>{form.repIds.length === salesMembers.length && salesMembers.length > 0 ? 'Clear' : 'Select all'}</button></legend>
-              {salesMembers.length === 0 ? <p className="subtle-text">No active sales members yet.</p> : salesMembers.map((member) => (
-                <label key={member.id} className="target-rep-option">
-                  <input type="checkbox" checked={form.repIds.includes(member.id)} onChange={(event) => setForm({ ...form, repIds: event.target.checked ? [...form.repIds, member.id] : form.repIds.filter((id) => id !== member.id) })} />
-                  {member.name || member.email}
-                </label>
-              ))}
-            </fieldset>
-          )}
-          <label className="target-description">Description (optional)<input className="input-field" maxLength={1000} placeholder="What does success look like?" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label>
-          <button className="btn-primary" disabled={saving}><Plus size={16} /> {saving ? 'Saving…' : 'Set target'}</button>
-        </form>
-      </section>
-
-      <section className="section-card lead-filter-bar target-filter-bar">
-        <select className="input-field" value={view} onChange={(event) => setView(event.target.value as 'current' | 'past')}><option value="current">Active & upcoming</option><option value="past">Past</option></select>
-        <select className="input-field" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="">All statuses</option>{(Object.keys(statusLabels) as TargetStatus[]).map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}</select>
-        {isManager && <select className="input-field" value={repFilter} onChange={(event) => setRepFilter(event.target.value)}><option value="">All assignees</option>{salesMembers.map((member) => <option key={member.id} value={member.id}>{member.name || member.email}</option>)}</select>}
-      </section>
+      {showForm && (
+        <section className="section-card target-create-card">
+          <div className="section-heading">
+            <div><h2>{isManager ? 'New target' : 'New personal target'}</h2><p>{isManager ? 'Reps can add notes but cannot change targets you set.' : 'Personal targets are yours to edit. Targets from your manager are locked.'}</p></div>
+            <button type="button" className="icon-button" aria-label="Close" onClick={closeForm}><X size={16} /></button>
+          </div>
+          <form className="target-create-form" onSubmit={createTarget}>
+            <label className="target-title-field">Title<input className="input-field" placeholder="e.g. October outreach" value={form.title} maxLength={120} onChange={(event) => setForm({ ...form, title: event.target.value })} required autoFocus /></label>
+            <label>Metric<select className="input-field" value={form.metric} onChange={(event) => setForm({ ...form, metric: event.target.value as TargetMetric })}>{(Object.keys(metricLabels) as TargetMetric[]).map((metric) => <option key={metric} value={metric}>{metricLabels[metric]}</option>)}</select></label>
+            <label>Target<input className="input-field" type="number" min={1} step="any" placeholder="100" value={form.targetValue} onChange={(event) => setForm({ ...form, targetValue: event.target.value })} required /></label>
+            {form.metric === 'custom' && <label>Unit<input className="input-field" placeholder="e.g. INR, orders" maxLength={24} value={form.customUnit} onChange={(event) => setForm({ ...form, customUnit: event.target.value })} required /></label>}
+            <label>Period<select className="input-field" value={form.periodType} onChange={(event) => setForm({ ...form, periodType: event.target.value as TargetPeriodType })}>{(Object.keys(periodLabels) as TargetPeriodType[]).map((period) => <option key={period} value={period}>{periodLabels[period]}</option>)}</select></label>
+            <label>{form.periodType === 'custom' ? 'Start date' : 'Any date in period'}<input className="input-field" type="date" value={form.startDate} onChange={(event) => setForm({ ...form, startDate: event.target.value })} required /></label>
+            {form.periodType === 'custom' && <label>End date<input className="input-field" type="date" min={form.startDate} value={form.endDate} onChange={(event) => setForm({ ...form, endDate: event.target.value })} required /></label>}
+            {isManager && (
+              <label>Assign to<select className="input-field" value={form.assignTo} onChange={(event) => setForm({ ...form, assignTo: event.target.value as 'reps' | 'team' })}><option value="reps">Selected sales members</option><option value="team">Whole team (combined)</option></select></label>
+            )}
+            {isManager && form.assignTo === 'reps' && (
+              <fieldset className="target-rep-picker">
+                <legend>
+                  <span>Sales members <small>{form.repIds.length} of {salesMembers.length} selected</small></span>
+                  {salesMembers.length > 0 && <button type="button" onClick={() => setForm({ ...form, repIds: allRepsSelected ? [] : salesMembers.map((member) => member.id) })}>{allRepsSelected ? 'Clear' : 'Select all'}</button>}
+                </legend>
+                {salesMembers.length === 0 ? <p className="subtle-text">No active sales members yet.</p> : (
+                  <div className="target-rep-chips">
+                    {salesMembers.map((member) => (
+                      <label key={member.id} className={`target-rep-chip${form.repIds.includes(member.id) ? ' selected' : ''}`}>
+                        <input type="checkbox" checked={form.repIds.includes(member.id)} onChange={(event) => setForm({ ...form, repIds: event.target.checked ? [...form.repIds, member.id] : form.repIds.filter((id) => id !== member.id) })} />
+                        <span>{member.name || member.email}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </fieldset>
+            )}
+            <label className="target-description">Description (optional)<textarea className="input-field" rows={2} maxLength={1000} placeholder="What does success look like?" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label>
+            <div className="target-form-actions">
+              <button type="button" className="secondary-button" onClick={closeForm}>Cancel</button>
+              <button className="btn-primary" disabled={saving}><Plus size={16} /> {saving ? 'Saving…' : isManager && form.assignTo === 'reps' && form.repIds.length > 1 ? `Set ${form.repIds.length} targets` : 'Set target'}</button>
+            </div>
+          </form>
+        </section>
+      )}
 
       <section className="section-card table-card" aria-busy={loading}>
+        <div className="target-toolbar">
+          <div className="segmented-control" role="group" aria-label="Targets to show">
+            <button type="button" className={view === 'current' ? 'active' : ''} aria-pressed={view === 'current'} onClick={() => setView('current')}>Active & upcoming</button>
+            <button type="button" className={view === 'past' ? 'active' : ''} aria-pressed={view === 'past'} onClick={() => setView('past')}>Past</button>
+          </div>
+          <div className="target-toolbar-filters">
+            <select className="input-field" aria-label="Status" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}><option value="">All statuses</option>{(Object.keys(statusLabels) as TargetStatus[]).map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}</select>
+            {isManager && <select className="input-field" aria-label="Assignee" value={repFilter} onChange={(event) => setRepFilter(event.target.value)}><option value="">All assignees</option>{salesMembers.map((member) => <option key={member.id} value={member.id}>{member.name || member.email}</option>)}</select>}
+          </div>
+        </div>
         <div className="table-scroll"><table className="data-table"><thead><tr><th>Target</th><th>Assignee</th><th>Metric</th><th>Progress</th><th>Status</th><th>Set by</th></tr></thead><tbody>
-          {loading ? <tr><td colSpan={6} className="table-message">Loading targets…</td></tr> : visibleTargets.length === 0 ? <tr><td colSpan={6} className="table-message"><TargetIcon size={16} /> No targets here yet.</td></tr> : visibleTargets.map((target) => (
+          {loading ? <tr><td colSpan={6} className="table-message">Loading targets…</td></tr> : visibleTargets.length === 0 ? (
+            <tr><td colSpan={6} className="table-message">
+              <div className="target-empty">
+                <span className="stat-icon blue"><TargetIcon /></span>
+                <strong>{statusFilter || repFilter ? 'No targets match these filters' : view === 'current' ? 'No active targets' : 'No past targets yet'}</strong>
+                <p>{statusFilter || repFilter ? 'Try a different status or assignee.' : view === 'current' ? (isManager ? 'Set a target for your team, such as monthly calls or leads won, and progress updates from live activity.' : 'Set a personal target, or wait for your manager to assign one.') : 'Targets appear here once their period ends.'}</p>
+                {view === 'current' && !statusFilter && !repFilter && !showForm && <button className="btn-primary" onClick={() => setShowForm(true)}><Plus size={16} /> New target</button>}
+              </div>
+            </td></tr>
+          ) : visibleTargets.map((target) => (
             <tr key={target.id}>
               <td data-label="Target"><Link className="lead-name-link" to={`/dashboard/targets/${target.id}`}><strong>{target.title}</strong><span>{formatPeriod(target)} · {periodLabels[target.periodType]}</span></Link></td>
               <td data-label="Assignee">{assigneeName(target)}</td>
