@@ -24,17 +24,6 @@
   position: relative;
 }
 
-.lw-story-image::before {
-  content: '';
-  width: 75%;
-  aspect-ratio: 1;
-  position: absolute;
-  right: -13%;
-  bottom: -20%;
-  border: 1px solid rgba(118, 88, 246, .14);
-  border-radius: 50%;
-}
-
 .lw-story-image img {
   width: 100%;
   height: 530px;
@@ -69,9 +58,14 @@
 .lw-about-mission h2,
 .lw-whats-new-section h2 {
   margin-top: 14px;
-  font-size: clamp(38px, 5vw, 60px);
-  letter-spacing: -.052em;
-  line-height: 1.06;
+  font-size: clamp(34px, 4.4vw, 52px);
+  letter-spacing: -.038em;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+.lw-story-copy h2:first-child {
+  margin-top: 0;
 }
 
 .lw-story-copy > p:not(.lw-eyebrow) {
@@ -219,9 +213,10 @@
 .lw-pricing-hero h1 {
   max-width: 800px;
   margin-top: 17px;
-  font-size: clamp(50px, 6.5vw, 78px);
-  letter-spacing: -.062em;
-  line-height: .99;
+  font-size: clamp(44px, 5.4vw, 66px);
+  letter-spacing: -.042em;
+  line-height: 1.03;
+  text-wrap: balance;
 }
 
 .lw-page-hero .lw-eyebrow,
@@ -305,9 +300,10 @@
 
 .lw-field-copy h2 {
   margin-top: 14px;
-  font-size: clamp(38px, 5vw, 58px);
-  letter-spacing: -.052em;
-  line-height: 1.07;
+  font-size: clamp(34px, 4.4vw, 52px);
+  letter-spacing: -.038em;
+  line-height: 1.08;
+  text-wrap: balance;
 }
 
 .lw-field-copy > p:not(.lw-eyebrow) {

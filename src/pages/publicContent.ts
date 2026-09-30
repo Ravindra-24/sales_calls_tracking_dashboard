@@ -12,27 +12,37 @@ import {
   UsersRound,
   Webhook,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { BillingPlanCode } from '../types/billing';
 
-export const productOutcomes = [
+export const productOutcomes: {
+  icon: LucideIcon;
+  title: string;
+  visual: 'calls' | 'leads' | 'field' | 'access';
+  copy: string;
+}[] = [
   {
     icon: PhoneCall,
     title: 'A dependable call timeline',
+    visual: 'calls',
     copy: 'Permitted Android call metadata is organized by representative, direction, duration, and time instead of scattered updates and spreadsheets.',
   },
   {
     icon: Target,
     title: 'Leads stay connected to activity',
+    visual: 'leads',
     copy: 'Calls can be linked to lead records with stages, notes, next actions, follow-up dates, and—when enabled—explainable deal-health signals.',
   },
   {
     icon: MapPin,
     title: 'Field work has clear boundaries',
+    visual: 'field',
     copy: 'Representative-started shifts can turn consented location data into live status and visit context for authorized managers.',
   },
   {
     icon: ShieldCheck,
     title: 'Intentional access',
+    visual: 'access',
     copy: 'Role-aware workspaces keep organization controls, manager views, and individual activity appropriately separated.',
   },
 ];

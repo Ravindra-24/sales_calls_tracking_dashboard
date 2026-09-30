@@ -94,6 +94,8 @@ interface GoogleOneTapProps {
   context?: 'signin' | 'signup' | 'use';
   buttonText?: 'signin_with' | 'signup_with' | 'continue_with';
   prompt?: boolean;
+  /** Render Google's sign-in button; false keeps only the One Tap prompt. */
+  showButton?: boolean;
   disabled?: boolean;
   onSuccess: () => Promise<void> | void;
   onError: (message: string) => void;
@@ -103,6 +105,7 @@ export const GoogleOneTap = ({
   context = 'signin',
   buttonText = 'continue_with',
   prompt = true,
+  showButton = true,
   disabled = false,
   onSuccess,
   onError,
@@ -157,7 +160,7 @@ export const GoogleOneTap = ({
       use_fedcm_for_prompt: true,
     });
 
-    if (buttonRef.current) {
+    if (showButton && buttonRef.current) {
       buttonRef.current.innerHTML = '';
       window.google.accounts.id.renderButton(buttonRef.current, {
         theme: 'outline',
@@ -182,7 +185,9 @@ export const GoogleOneTap = ({
     return () => {
       window.google?.accounts?.id.cancel();
     };
-  }, [buttonText, context, disabled, prompt, scriptReady]);
+  }, [buttonText, context, disabled, prompt, scriptReady, showButton]);
+
+  if (!showButton) return null;
 
   if (!isGoogleOneTapConfigured()) {
     return (

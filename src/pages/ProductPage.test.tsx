@@ -28,13 +28,21 @@ describe('ProductPage', () => {
   it('keeps the homepage focused and routes detailed subjects to dedicated pages', () => {
     renderPage();
 
-    expect(screen.getByRole('heading', { level: 1, name: 'Calls, follow-ups, and field activity. One clear picture.' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Calls, leads, and field visits. One clear picture.' })).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: /Start free/ }).some((link) => link.getAttribute('href') === '/signup')).toBe(true);
     expect(screen.getAllByRole('link', { name: 'Explore the product' }).some((link) => link.getAttribute('href') === '/product')).toBe(true);
     expect(screen.getByRole('link', { name: 'View Android app' })).toHaveAttribute('href', '/download');
     expect(screen.getByRole('link', { name: 'Compare plans' })).toHaveAttribute('href', '/pricing');
     expect(screen.queryByText('What happens when the Android download is not available?')).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Lite' })).not.toBeInTheDocument();
+  });
+
+  it('shows the illustrative product preview and every outcome tile', () => {
+    renderPage();
+
+    expect(screen.getByRole('img', { name: /Illustrative Smartly Manage dashboard/ })).toBeInTheDocument();
+    ['A dependable call timeline', 'Leads stay connected to activity', 'Field work has clear boundaries', 'Intentional access']
+      .forEach((title) => expect(screen.getByRole('heading', { level: 3, name: title })).toBeInTheDocument());
   });
 
   it('uses only a project-local team image', () => {
