@@ -752,6 +752,154 @@ button:disabled {
   width: 100%;
 }
 
+.dashboard-date-range-field {
+  position: relative;
+  min-width: 190px;
+  display: grid;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.custom-range-popover {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(360px, calc(100vw - 32px));
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-control);
+  box-shadow: var(--shadow);
+  color: var(--text-primary);
+}
+
+.custom-range-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.custom-range-summary>div {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-control-soft);
+}
+
+.custom-range-summary span,
+.custom-range-summary strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.custom-range-summary span {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.custom-range-summary strong {
+  font-size: 13px;
+}
+
+.custom-range-calendar-header {
+  display: grid;
+  grid-template-columns: 34px 1fr 34px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.custom-range-calendar-header strong {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 14px;
+}
+
+.custom-range-calendar-header button,
+.custom-range-calendar-grid button {
+  border: 0;
+  color: var(--text-primary);
+  background: transparent;
+  cursor: pointer;
+}
+
+.custom-range-calendar-header button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+}
+
+.custom-range-calendar-header button:hover:not(:disabled),
+.custom-range-calendar-grid button:hover:not(:disabled) {
+  background: var(--bg-control-hover);
+}
+
+.custom-range-calendar-header button:disabled,
+.custom-range-calendar-grid button:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+.custom-range-weekdays,
+.custom-range-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.custom-range-weekdays span {
+  padding: 6px 0;
+  color: var(--text-secondary);
+  font-size: 10px;
+  text-align: center;
+}
+
+.custom-range-calendar-grid button {
+  height: 38px;
+  border-radius: 0;
+  font-size: 12px;
+}
+
+.custom-range-calendar-grid button.outside-month {
+  color: var(--text-secondary);
+  opacity: .45;
+}
+
+.custom-range-calendar-grid button.in-range {
+  background: rgba(79, 140, 255, .14);
+  color: var(--badge-text);
+}
+
+.custom-range-calendar-grid button.range-edge {
+  border-radius: var(--radius-sm);
+  background: var(--accent-primary);
+  color: #fff;
+  font-weight: 800;
+}
+
+.custom-range-error {
+  margin: 10px 0 0;
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.custom-range-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
 .dashboard-analytics-grid {
   grid-template-columns: minmax(0, 1.65fr) minmax(280px, .8fr);
 }
@@ -2739,6 +2887,401 @@ button:disabled {
   margin-top: 16px;
 }
 
+.manager-team-member {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-control-soft);
+}
+
+.manager-team-member .status-badge {
+  flex: 0 0 auto;
+}
+
+.manager-team-member > div:nth-child(2) {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.manager-team-member span:not(.status-badge) {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty-team-copy {
+  margin: 0;
+  padding: 14px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.manager-directory-row {
+  background: var(--bg-card-soft);
+}
+
+.manager-directory-row[tabindex] {
+  cursor: pointer;
+  transition: background .18s ease;
+}
+
+.manager-directory-row[tabindex]:hover,
+.manager-directory-row.expanded {
+  background: var(--bg-control-hover);
+}
+
+.manager-directory-row[tabindex]:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: -2px;
+}
+
+.role-avatar.org_admin,
+.role-avatar.platform_owner {
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
+}
+
+.role-avatar.manager {
+  color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-primary) 14%, transparent);
+}
+
+.role-avatar.sales_member {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+}
+
+.manager-team-detail-row > td {
+  padding: 0 !important;
+  background: var(--bg-card-soft);
+}
+
+.manager-team-detail {
+  margin: 0 16px 14px 56px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-primary);
+  border-radius: 12px;
+  background: var(--bg-card);
+}
+
+.manager-team-detail-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.manager-team-detail-heading > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.manager-team-detail-heading span {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.manager-team-inline-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+}
+
+.manager-member-count {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.manager-team-member.is-busy {
+  opacity: .6;
+}
+
+.manager-team-remove {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: transparent;
+  cursor: pointer;
+  transition: color .18s ease, background .18s ease, border-color .18s ease;
+}
+
+.manager-team-remove:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--danger) 35%, var(--border));
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+
+.manager-team-remove:disabled {
+  cursor: progress;
+}
+
+.assignment-badge {
+  flex: 0 0 auto;
+  padding: 3px 8px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.assignment-badge.assigned {
+  border-color: color-mix(in srgb, var(--success) 30%, transparent);
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 10%, transparent);
+}
+
+.assignment-badge.available {
+  border-color: color-mix(in srgb, var(--accent-primary) 30%, transparent);
+  color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
+}
+
+.assignment-badge.other {
+  border-color: color-mix(in srgb, var(--warning) 30%, transparent);
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 10%, transparent);
+}
+
+.team-member-dialog {
+  width: min(100%, 560px);
+  display: flex;
+  flex-direction: column;
+}
+
+.team-member-dialog__heading {
+  padding-right: 40px;
+}
+
+.team-member-dialog__heading h2 {
+  margin: 0 0 6px;
+  font-size: clamp(18px, 3vw, 21px);
+  line-height: 1.25;
+}
+
+.team-member-dialog__heading p,
+.team-member-dialog__note {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.team-member-dialog__note {
+  margin-top: 12px;
+}
+
+.team-member-dialog__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  background: var(--bg-control);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.team-member-dialog__search:focus-within {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 17%, transparent);
+}
+
+.team-member-dialog__search input {
+  flex: 1;
+  min-width: 0;
+  min-height: 42px;
+  border: 0;
+  outline: none;
+  color: var(--text-primary);
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+}
+
+.team-member-dialog__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 14px 0 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.team-member-dialog__select-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.team-member-dialog__select-all input,
+.team-member-option input {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent-primary);
+}
+
+.team-member-dialog__list {
+  display: grid;
+  gap: 8px;
+  max-height: min(360px, 45dvh);
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.team-member-option,
+.team-transfer-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-control-soft);
+}
+
+.team-member-option {
+  cursor: pointer;
+  transition: border-color .18s ease, background .18s ease;
+}
+
+.team-member-option:hover:not(.is-disabled) {
+  background: var(--bg-control-hover);
+}
+
+.team-member-option.selected:not(.is-disabled) {
+  border-color: var(--accent-primary);
+}
+
+.team-member-option.is-disabled {
+  opacity: .6;
+  cursor: default;
+}
+
+.team-member-option__copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.team-member-option__copy strong {
+  font-size: 14px;
+}
+
+.team-member-option__copy small {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.team-transfer-list {
+  display: grid;
+  gap: 8px;
+  max-height: min(320px, 40dvh);
+  overflow-y: auto;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.team-transfer-route {
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.team-transfer-route span {
+  overflow: hidden;
+  max-width: 120px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.team-transfer-route span:last-child {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.team-member-dialog .feedback-dialog__button {
+  gap: 6px;
+}
+
+.team-member-dialog .feedback-dialog__button:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (max-width: 520px) {
+  .team-member-dialog {
+    padding: 20px 16px;
+  }
+
+  .team-transfer-list li {
+    flex-wrap: wrap;
+  }
+
+  .team-transfer-route {
+    width: 100%;
+    padding-left: 40px;
+  }
+
+  .team-member-dialog .feedback-dialog__actions {
+    flex-direction: column-reverse;
+  }
+}
+
+@media (max-width: 720px) {
+  .manager-team-detail {
+    margin: 0 0 12px;
+  }
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .row-actions {
   display: flex;
   align-items: center;
@@ -2806,10 +3349,11 @@ button:disabled {
 .danger-button {
   color: var(--danger-action-text);
   border-color: rgba(248, 113, 113, 0.28);
+  background: var(--danger-action-hover);
 }
 
 .danger-button:hover:not(:disabled) {
-  background: var(--danger-action-hover);
+  border-color: rgba(248, 113, 113, 0.5);
 }
 
 .member-filter-panel {

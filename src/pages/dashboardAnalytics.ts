@@ -8,6 +8,12 @@ import {
 import type { RepStats } from '../types/api';
 
 export type DashboardRangePreset = 'today' | 'yesterday' | 'last_week' | 'last_month' | 'quarterly' | 'yearly';
+export type DashboardRangeSelection = DashboardRangePreset | 'custom';
+
+export interface DashboardCustomRange {
+  from: string;
+  to: string;
+}
 
 export const DASHBOARD_RANGE_OPTIONS: Array<{ value: DashboardRangePreset; label: string }> = [
   { value: 'today', label: 'Today' },
@@ -27,11 +33,14 @@ const RANGE_DAYS: Record<Exclude<DashboardRangePreset, 'yesterday'>, number> = {
 };
 
 export const resolveDashboardRange = (
-  preset: DashboardRangePreset,
+  preset: DashboardRangeSelection,
   now = new Date(),
+  customRange?: DashboardCustomRange,
 ) => {
-  const end = preset === 'yesterday' ? subDays(now, 1) : now;
-  const days = preset === 'yesterday' ? 1 : RANGE_DAYS[preset];
+  if (preset === 'custom' && customRange) return customRange;
+  const resolvedPreset = preset === 'custom' ? 'today' : preset;
+  const end = resolvedPreset === 'yesterday' ? subDays(now, 1) : now;
+  const days = resolvedPreset === 'yesterday' ? 1 : RANGE_DAYS[resolvedPreset];
   return {
     from: format(subDays(end, days - 1), 'yyyy-MM-dd'),
     to: format(end, 'yyyy-MM-dd'),
@@ -48,7 +57,7 @@ export const buildDashboardTrend = (
   reps: RepStats[],
   from: string,
   to: string,
-  preset: DashboardRangePreset,
+  preset: DashboardRangeSelection,
 ): DashboardTrendPoint[] => {
   const dailyTotals = new Map<string, number>();
   reps.forEach((rep) => {
@@ -72,7 +81,7 @@ export const buildDashboardTrend = (
     }));
   }
 
-  if (preset === 'quarterly') {
+  if (preset === 'quarterly' || (preset === 'custom' && dates.length > 31)) {
     const totals = new Map<string, number>();
     dates.forEach((date) => {
       const dayKey = format(date, 'yyyy-MM-dd');
@@ -90,7 +99,7 @@ export const buildDashboardTrend = (
 
   return dates.map((date) => {
     const key = format(date, 'yyyy-MM-dd');
-    const shortRange = preset === 'today' || preset === 'yesterday' || preset === 'last_week';
+    const shortRange = preset === 'today' || preset === 'yesterday' || preset === 'last_week' || (preset === 'custom' && dates.length <= 7);
     return {
       key,
       label: format(date, shortRange ? 'EEE' : 'd MMM'),

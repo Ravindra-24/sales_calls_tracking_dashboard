@@ -12,7 +12,6 @@ import {
   useMapEvents,
 } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useTheme } from '../../context/theme';
 import type {
   LiveRepStatus,
   TrackingClient,
@@ -20,8 +19,8 @@ import type {
 } from '../../types/tracking';
 
 const DEFAULT_CENTER: LatLngTuple = [18.5204, 73.8567];
-const CARTO_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+const OPENSTREETMAP_ATTRIBUTION =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 const escapeHtml = (value: string) =>
   value
@@ -77,15 +76,11 @@ const FitMapToPoints = ({ points }: { points: LatLngTuple[] }) => {
 };
 
 const TileLayerForTheme = () => {
-  const { resolvedTheme } = useTheme();
-  const style = resolvedTheme === 'dark' ? 'dark_all' : 'light_all';
   return (
     <TileLayer
-      key={style}
-      attribution={CARTO_ATTRIBUTION}
-      url={`https://{s}.basemaps.cartocdn.com/${style}/{z}/{x}/{y}{r}.png`}
-      subdomains="abcd"
-      maxZoom={20}
+      attribution={OPENSTREETMAP_ATTRIBUTION}
+      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      maxZoom={19}
     />
   );
 };

@@ -20,6 +20,7 @@ export interface TeamMember {
   role: UserRole;
   status: UserStatus;
   phoneNumber?: string;
+  managerId?: string | null;
   avatarUrl?: string;
   createdAt: string;
   updatedAt: string;

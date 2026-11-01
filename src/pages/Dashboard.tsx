@@ -17,12 +17,14 @@ import { useAuth } from '../context/auth';
 import type { ApiResponse, CallSummary, RepStats, TeamMember, TeamStats } from '../types/api';
 import { OnboardingChecklist } from '../components/OnboardingChecklist';
 import { SyncHealthPanel } from '../components/SyncHealthPanel';
+import { DashboardDateRangePicker } from '../components/DashboardDateRangePicker';
 import { PlatformDashboard } from './PlatformDashboard';
 import {
   buildDashboardTrend,
   DASHBOARD_RANGE_OPTIONS,
   resolveDashboardRange,
-  type DashboardRangePreset,
+  type DashboardCustomRange,
+  type DashboardRangeSelection,
 } from './dashboardAnalytics';
 
 const formatDuration = (seconds: number) => {
@@ -47,18 +49,24 @@ const sentimentDetail = (count: number, analyzed: number) => (
 );
 
 const readDashboardFilters = (storageKey: string) => {
-  const fallback: { rangePreset: DashboardRangePreset; repId: string } = {
+  const today = resolveDashboardRange('today');
+  const fallback: { rangePreset: DashboardRangeSelection; repId: string; customFrom: string; customTo: string } = {
     rangePreset: 'today',
     repId: '',
+    customFrom: today.from,
+    customTo: today.to,
   };
   try {
     const stored = window.sessionStorage.getItem(storageKey);
     if (!stored) return fallback;
-    const parsed = JSON.parse(stored) as { rangePreset?: unknown; repId?: unknown };
-    const validPreset = DASHBOARD_RANGE_OPTIONS.some((option) => option.value === parsed.rangePreset);
+    const parsed = JSON.parse(stored) as { rangePreset?: unknown; repId?: unknown; customFrom?: unknown; customTo?: unknown };
+    const validPreset = parsed.rangePreset === 'custom' || DASHBOARD_RANGE_OPTIONS.some((option) => option.value === parsed.rangePreset);
+    const validDateKey = (value: unknown) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
     return {
-      rangePreset: validPreset ? parsed.rangePreset as DashboardRangePreset : fallback.rangePreset,
+      rangePreset: validPreset ? parsed.rangePreset as DashboardRangeSelection : fallback.rangePreset,
       repId: typeof parsed.repId === 'string' ? parsed.repId : '',
+      customFrom: validDateKey(parsed.customFrom) ? parsed.customFrom as string : fallback.customFrom,
+      customTo: validDateKey(parsed.customTo) ? parsed.customTo as string : fallback.customTo,
     };
   } catch {
     return fallback;
@@ -73,11 +81,14 @@ export const Dashboard = () => {
 const TeamDashboard = () => {
   const { user, claims } = useAuth();
   const dashboardFilterStorageKey = `smartlymanage.dashboard.filters:${claims.orgId || user?.uid || claims.role || 'default'}`;
-  const [rangePreset, setRangePreset] = useState<DashboardRangePreset>(() => (
-    readDashboardFilters(dashboardFilterStorageKey).rangePreset
-  ));
+  const [initialFilters] = useState(() => readDashboardFilters(dashboardFilterStorageKey));
+  const [rangePreset, setRangePreset] = useState<DashboardRangeSelection>(initialFilters.rangePreset);
+  const [customRange, setCustomRange] = useState<DashboardCustomRange>({
+    from: initialFilters.customFrom,
+    to: initialFilters.customTo,
+  });
   const [repId, setRepId] = useState(() => (
-    claims.role === 'sales_member' ? '' : readDashboardFilters(dashboardFilterStorageKey).repId
+    claims.role === 'sales_member' ? '' : initialFilters.repId
   ));
   const [stats, setStats] = useState<TeamStats | null>(null);
   const [callSummary, setCallSummary] = useState<CallSummary | null>(null);
@@ -86,11 +97,16 @@ const TeamDashboard = () => {
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [error, setError] = useState('');
   const [summaryError, setSummaryError] = useState('');
-  const { from, to } = useMemo(() => resolveDashboardRange(rangePreset), [rangePreset]);
+  const { from, to } = useMemo(() => resolveDashboardRange(rangePreset, new Date(), customRange), [customRange, rangePreset]);
 
   useEffect(() => {
-    window.sessionStorage.setItem(dashboardFilterStorageKey, JSON.stringify({ rangePreset, repId }));
-  }, [dashboardFilterStorageKey, rangePreset, repId]);
+    window.sessionStorage.setItem(dashboardFilterStorageKey, JSON.stringify({
+      rangePreset,
+      repId,
+      customFrom: customRange.from,
+      customTo: customRange.to,
+    }));
+  }, [customRange, dashboardFilterStorageKey, rangePreset, repId]);
 
   useEffect(() => {
     let active = true;
@@ -204,11 +220,15 @@ const TeamDashboard = () => {
               </select>
             </label>
           )}
-          <label>Date range
-            <select className="input-field compact-select" value={rangePreset} onChange={(event) => setRangePreset(event.target.value as DashboardRangePreset)}>
-              {DASHBOARD_RANGE_OPTIONS.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}
-            </select>
-          </label>
+          <DashboardDateRangePicker
+            preset={rangePreset}
+            range={customRange}
+            onPresetChange={setRangePreset}
+            onApply={(range) => {
+              setCustomRange(range);
+              setRangePreset('custom');
+            }}
+          />
         </div>
       </div>
 

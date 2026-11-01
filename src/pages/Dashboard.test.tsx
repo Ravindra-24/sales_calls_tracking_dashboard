@@ -1,6 +1,7 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { format, subDays } from 'date-fns';
 import { Dashboard } from './Dashboard';
 
 const mocks = vi.hoisted(() => ({
@@ -104,6 +105,34 @@ describe('Dashboard', () => {
     await waitFor(() => expect(mocks.get).toHaveBeenCalledWith('/calls/summary', expect.objectContaining({
       params: expect.objectContaining({ repId: 'rep-1' }),
     })));
+  });
+
+  it('applies a custom start and end date to every dashboard data request', async () => {
+    mocks.get.mockImplementation((url: string) => Promise.resolve({ data: { data:
+      url.includes('/users') ? [] : url === '/calls/summary' ? callSummary : stats,
+    } }));
+    const user = userEvent.setup();
+    const end = new Date();
+    const start = subDays(end, 1);
+    const from = format(start, 'yyyy-MM-dd');
+    const to = format(end, 'yyyy-MM-dd');
+    render(<Dashboard />);
+
+    await user.selectOptions(screen.getByLabelText('Date range'), 'custom');
+    const calendar = await screen.findByRole('dialog', { name: 'Custom date range' });
+    await user.click(within(calendar).getByRole('button', { name: `Select ${from}` }));
+    await user.click(within(calendar).getByRole('button', { name: `Select ${to}` }));
+    await user.click(within(calendar).getByRole('button', { name: 'Apply range' }));
+
+    await waitFor(() => expect(mocks.get).toHaveBeenCalledWith('/stats/team', {
+      params: { from, to },
+    }));
+    await waitFor(() => expect(mocks.get).toHaveBeenCalledWith('/calls/summary', {
+      params: {
+        from: new Date(`${from}T00:00:00`).toISOString(),
+        to: new Date(`${to}T23:59:59.999`).toISOString(),
+      },
+    }));
   });
 
   it('shows no sentiment ratio when no calls were analyzed', async () => {
