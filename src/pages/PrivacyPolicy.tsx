@@ -1,7 +1,7 @@
 import { ShieldCheck } from 'lucide-react';
 import { PublicFooter, PublicHeader, Reveal, usePublicMetadata } from '../components/public';
 
-const privacyPolicyVersion = '2026-08-12';
+const privacyPolicyVersion = '2026-11-15';
 
 const intro = 'This policy explains the personal data Smartly Manage handles across the Android app and web dashboard, why it is used, who can access it, how long it is kept, and the choices available to you.';
 
@@ -31,6 +31,10 @@ const sections: Array<{ title: string; body: string }> = [
     body: 'Field tracking is optional. The Android app collects precise location, including in the background while the app is closed, only during a work shift the signed-in representative starts after accepting the current in-app disclosure and granting the required device permission. A persistent notification is shown throughout collection. Ending the shift, recording a declined decision, or revoking permission stops collection. During an active shift, the representative and authorized organization managers and admins can see live status. Location points can be used to create visit summaries such as place, arrival, departure, and dwell time, and—only when the separately disclosed route feature is enabled—to review the path traveled during a recent shift.',
   },
   {
+    title: 'Location saved with calls',
+    body: 'Saving location with calls is a separate, optional feature and does not require a work shift. Only after the representative turns it on in Permissions & Tracking, accepts the current in-app disclosure, and grants precise location access set to "Allow all the time", the Android app takes a single reading of the device’s precise location when a tracked call starts—including when the app is closed, because calls are detected in the background—and saves it with that call. No location is collected between calls. A reading is kept only if it was taken close to the call’s start time. The representative and authorized organization managers and admins can see the location saved for each call, and those manager and admin views are audited. Call locations are not included in call exports and are never sold or shared with advertisers. Turning the feature off records a declined decision, and calls after that are saved without a location.',
+  },
+  {
     title: 'Billing and payment data',
     body: 'Razorpay is our payment processor of record for paid plans. We store billing account status, plan, invoices, and payment references needed for subscription management and support. Razorpay independently processes and secures your payment method details; we do not store full card or bank details ourselves.',
   },
@@ -52,11 +56,11 @@ const sections: Array<{ title: string; body: string }> = [
   },
   {
     title: 'Data retention and deletion',
-    body: 'Account, organization, call, lead, visit-summary, and reporting records are generally retained while the organization account is active. Raw location points used for recent route review are automatically deleted after 90 days; live position is cleared when a shift ends; device health keeps the latest state; sensitive access audit records are kept for 1 year; and consent decisions are retained for the account lifetime plus 3 years as compliance evidence. Recordings, transcripts, and derived call intelligence remain until an authorized deletion or associated account deletion. Billing and invoice records may be retained for legal, tax, accounting, fraud-prevention, and reconciliation obligations.',
+    body: 'Account, organization, call, lead, visit-summary, and reporting records are generally retained while the organization account is active. Raw location points used for recent route review, and location saved with calls, are automatically deleted after 90 days; live position is cleared when a shift ends; device health keeps the latest state; sensitive access audit records are kept for 1 year; and consent decisions are retained for the account lifetime plus 3 years as compliance evidence. Recordings, transcripts, and derived call intelligence remain until an authorized deletion or associated account deletion. Billing and invoice records may be retained for legal, tax, accounting, fraud-prevention, and reconciliation obligations.',
   },
   {
     title: 'Account deletion',
-    body: 'You can request account deletion from Profile > Delete Account in the Android app or by following smartlymanage.com/delete-account. A non-admin request enters a 48-hour grace period and is normally completed by the next daily deletion sweep. Completion disables the profile, revokes sign-in tokens, deletes the representative’s shifts, visits, live status, and archived raw location points, deletes their call recordings and derived analyses, and removes their lead assignments. Organization-owned call and lead business records may remain for continuity and accountability, and consent, security, and billing records may remain for the periods described above. Organization administrator and platform owner requests require manual review so ownership, organization data, and billing responsibilities can be handled safely.',
+    body: 'You can request account deletion from Profile > Delete Account in the Android app or by following smartlymanage.com/delete-account. A non-admin request enters a 48-hour grace period and is normally completed by the next daily deletion sweep. Completion disables the profile, revokes sign-in tokens, deletes the representative’s shifts, visits, live status, archived raw location points, and location saved with their calls, deletes their call recordings and derived analyses, and removes their lead assignments. Organization-owned call and lead business records may remain for continuity and accountability, and consent, security, and billing records may remain for the periods described above. Organization administrator and platform owner requests require manual review so ownership, organization data, and billing responsibilities can be handled safely.',
   },
   {
     title: 'Your choices and rights',

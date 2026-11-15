@@ -184,11 +184,11 @@ export const faqGroups = [
       },
       {
         question: 'When is location collected?',
-        answer: 'Only after the representative accepts the current location disclosure, grants the required Android permissions, and starts a work shift. A persistent notification is shown throughout collection. Ending the shift, withdrawing consent, or revoking permission stops collection.',
+        answer: 'In two optional cases, each with its own in-app disclosure. Field tracking collects location only during a work shift the representative starts, with a persistent notification shown throughout; ending the shift, withdrawing consent, or revoking permission stops it. Separately, a representative can turn on saving location with calls, which takes one location reading when a tracked call starts and nothing between calls; turning it off stops it.',
       },
       {
         question: 'How long is location data kept?',
-        answer: 'Raw location points used for short-window route review are automatically deleted after 90 days. Visit summaries remain while the organization account is active, unless they are removed through the applicable deletion process.',
+        answer: 'Raw location points used for short-window route review, and location saved with calls, are automatically deleted after 90 days. Visit summaries remain while the organization account is active, unless they are removed through the applicable deletion process.',
       },
       {
         question: 'Can I delete my account?',
