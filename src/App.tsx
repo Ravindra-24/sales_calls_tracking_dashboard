@@ -11,6 +11,7 @@ const Login = React.lazy(() => import('./pages/Login').then((module) => ({ defau
 const Dashboard = React.lazy(() => import('./pages/Dashboard').then((module) => ({ default: module.Dashboard })));
 const CallHistory = React.lazy(() => import('./pages/CallHistory').then((module) => ({ default: module.CallHistory })));
 const Team = React.lazy(() => import('./pages/Team').then((module) => ({ default: module.Team })));
+const MyTeam = React.lazy(() => import('./pages/MyTeam').then((module) => ({ default: module.MyTeam })));
 const Platform = React.lazy(() => import('./pages/Platform').then((module) => ({ default: module.Platform })));
 const PlatformOrganization = React.lazy(() => import('./pages/PlatformOrganization').then((module) => ({ default: module.PlatformOrganization })));
 const ClaimAccount = React.lazy(() => import('./pages/ClaimAccount').then((module) => ({ default: module.ClaimAccount })));
@@ -104,6 +105,7 @@ function App() {
                   <Route path="targets" element={<RoleRoute allowed={['org_admin', 'manager', 'sales_member']}><Targets /></RoleRoute>} />
                   <Route path="targets/:targetId" element={<RoleRoute allowed={['org_admin', 'manager', 'sales_member']}><Targets /></RoleRoute>} />
                   <Route path="team" element={<Team />} />
+                  <Route path="my-team" element={<RoleRoute allowed={['org_admin', 'manager']}><MyTeam /></RoleRoute>} />
                   <Route path="live" element={<RoleRoute allowed={['org_admin', 'manager']}><LiveTracking /></RoleRoute>} />
                   <Route path="clients" element={<RoleRoute allowed={['org_admin', 'manager']}><Clients /></RoleRoute>} />
                   <Route path="visits" element={<RoleRoute allowed={['org_admin', 'manager']}><Visits /></RoleRoute>} />

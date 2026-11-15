@@ -342,3 +342,18 @@
     display: none;
   }
 }
+
+/* Unanswered dials cut within seconds: worth a manager's look. */
+.activity-quick-hangups,
+.activity-timeline-label small.activity-quick-hangups {
+  display: block;
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* Five summary cards: one row on wide screens; .stats-grid's own breakpoints take over below. */
+@media (min-width: 1101px) {
+  .activity-stats-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}

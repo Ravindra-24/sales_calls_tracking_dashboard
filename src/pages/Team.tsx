@@ -1,10 +1,28 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Check, Copy, KeyRound, Mail, RefreshCw, Shield, User, UserPlus, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { api, getApiErrorMessage } from '../api/client';
 import { ActionMenu } from '../components/ActionMenu';
 import { useAuth } from '../context/auth';
-import type { ApiResponse, InviteLog, InviteResult, OrganizationDetails, TeamMember } from '../types/api';
+import type { ApiResponse, InviteLog, InviteResult, ManagerVisibility, OrganizationDetails, TeamMember } from '../types/api';
+
+const UNASSIGNED = 'unassigned';
+
+/** Everyone below `managerId`, so a manager can't be placed under their own report. */
+const collectReports = (managerId: string, members: TeamMember[]) => {
+  const reports = new Set<string>();
+  const queue = [managerId];
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    for (const member of members) {
+      if (member.managerId === current && member.id !== managerId && !reports.has(member.id)) {
+        reports.add(member.id);
+        queue.push(member.id);
+      }
+    }
+  }
+  return reports;
+};
 
 export const Team = () => {
   const { user, claims } = useAuth();
@@ -27,7 +45,29 @@ export const Team = () => {
   const [editingMemberId, setEditingMemberId] = useState('');
   const [editingName, setEditingName] = useState('');
   const [savingMemberId, setSavingMemberId] = useState('');
+  const [inviteManagerId, setInviteManagerId] = useState(UNASSIGNED);
+  const [inviteVisibility, setInviteVisibility] = useState<ManagerVisibility>('team');
+  const [managerFilter, setManagerFilter] = useState('all');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkManagerId, setBulkManagerId] = useState('');
+  const [movingBulk, setMovingBulk] = useState(false);
   const canManage = claims.role === 'org_admin' || claims.role === 'manager';
+  const isAdmin = claims.role === 'org_admin';
+
+  const managers = useMemo(() => members.filter((member) => member.role === 'manager'), [members]);
+  const memberLabel = useCallback((id: string | null | undefined) => {
+    const member = members.find((candidate) => candidate.id === id);
+    return member ? member.name || member.email : '—';
+  }, [members]);
+  const unassignedReps = useMemo(() => members.filter((member) =>
+    member.role === 'sales_member' && member.status === 'active' && !member.managerId), [members]);
+  const visibleMembers = useMemo(() => {
+    if (managerFilter === 'all') return members;
+    if (managerFilter === UNASSIGNED) return members.filter((member) => member.role !== 'org_admin' && !member.managerId);
+    return members.filter((member) => member.managerId === managerFilter);
+  }, [managerFilter, members]);
+  const isTeamScopedManager = claims.role === 'manager' &&
+    members.find((member) => member.id === user?.uid)?.managerVisibility === 'team';
 
   const loadMembers = useCallback(async () => {
     if (!claims.orgId || !canManage) return;
@@ -85,12 +125,16 @@ export const Team = () => {
         role,
         createAccountNow,
         temporaryPassword: createAccountNow ? temporaryPassword.trim() || undefined : undefined,
+        // Managers' invitees join their team server-side; admins pick.
+        ...(isAdmin && inviteManagerId !== UNASSIGNED ? { managerId: inviteManagerId } : {}),
+        ...(isAdmin && role === 'manager' ? { managerVisibility: inviteVisibility } : {}),
       };
       const response = await api.post<ApiResponse<InviteResult>>(`/orgs/${claims.orgId}/invites`, payload);
       setInvite(response.data.data);
       setEmail('');
       setCreateAccountNow(false);
       setTemporaryPassword('');
+      setInviteManagerId(UNASSIGNED);
       await loadInvites();
       if (response.data.data.createdUser) {
         await loadMembers();
@@ -197,6 +241,82 @@ export const Team = () => {
     }
   };
 
+  const updateHierarchy = async (
+    member: TeamMember,
+    patch: { managerId?: string | null; managerVisibility?: ManagerVisibility },
+    success: string,
+  ) => {
+    setSavingMemberId(member.id);
+    setError('');
+    setMessage('');
+    try {
+      await api.patch(`/orgs/users/${member.id}`, patch);
+      setMessage(success);
+      await loadMembers();
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, 'Failed to update reporting line.'));
+    } finally {
+      setSavingMemberId('');
+    }
+  };
+
+  const changeManager = (member: TeamMember, value: string) => {
+    const managerId = value === UNASSIGNED ? null : value;
+    void updateHierarchy(
+      member,
+      { managerId },
+      managerId ? `${member.name || member.email} now reports to ${memberLabel(managerId)}.` : `${member.name || member.email} is now unassigned.`,
+    );
+  };
+
+  const changeVisibility = (member: TeamMember, managerVisibility: ManagerVisibility) => {
+    void updateHierarchy(
+      member,
+      { managerVisibility },
+      managerVisibility === 'team' ?
+        `${member.name || member.email} now sees only their team.` :
+        `${member.name || member.email} now sees the whole organization.`,
+    );
+  };
+
+  const toggleSelected = (memberId: string) => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(memberId)) next.delete(memberId);
+      else next.add(memberId);
+      return next;
+    });
+  };
+
+  const moveSelected = async () => {
+    if (!claims.orgId || !bulkManagerId || selectedIds.size === 0) return;
+    setMovingBulk(true);
+    setError('');
+    setMessage('');
+    try {
+      const managerId = bulkManagerId === UNASSIGNED ? null : bulkManagerId;
+      const response = await api.patch<ApiResponse<{ moved: number }>>(`/orgs/${claims.orgId}/reporting-lines`, {
+        userIds: [...selectedIds],
+        managerId,
+      });
+      const moved = response.data.data.moved;
+      setMessage(`${moved} member${moved === 1 ? '' : 's'} moved to ${managerId ? memberLabel(managerId) : 'unassigned'}.`);
+      setSelectedIds(new Set());
+      setBulkManagerId('');
+      await loadMembers();
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, 'Failed to move members.'));
+    } finally {
+      setMovingBulk(false);
+    }
+  };
+
+  /** Managers a member may report to: not themselves or anyone below them. */
+  const managerOptionsFor = (member: TeamMember) => {
+    const below = member.role === 'manager' ? collectReports(member.id, members) : new Set<string>();
+    return managers.filter((manager) => manager.id !== member.id && !below.has(manager.id));
+  };
+
   if (!canManage) {
     return (
       <div className="page animate-fade-in">
@@ -211,7 +331,7 @@ export const Team = () => {
   return (
     <div className="page animate-fade-in">
       <div className="page-header">
-        <div><p className="eyebrow">Organization</p><h1>Team management</h1><p>Manage members, password resets, and invitation history.</p></div>
+        <div><p className="eyebrow">Organization</p><h1>Team management</h1><p>{isTeamScopedManager ? 'Your team: the people who report to you, directly or through your managers.' : 'Manage members, reporting lines, password resets, and invitation history.'}</p></div>
         <button className="btn-primary" onClick={() => { setShowInvite(true); setInvite(null); }}><UserPlus size={18} /> Invite member</button>
       </div>
 
@@ -219,6 +339,12 @@ export const Team = () => {
       {message && <div className="notice success-notice">{message}</div>}
       {claims.role === 'manager' && !managerCanEditSalesMembers && (
         <div className="notice error-notice">Manager sales representative edits are disabled by the org admin.</div>
+      )}
+      {isAdmin && managers.length > 0 && unassignedReps.length > 0 && (
+        <div className="notice warning-notice">
+          {unassignedReps.length} active sales {unassignedReps.length === 1 ? 'member has' : 'members have'} no manager. Only admins and organization-wide managers can see {unassignedReps.length === 1 ? 'them' : 'their'} activity.{' '}
+          <button className="link-button" type="button" onClick={() => setManagerFilter(UNASSIGNED)}>Show unassigned</button>
+        </div>
       )}
 
       {showInvite && (
@@ -233,6 +359,18 @@ export const Team = () => {
               <option value="sales_member">Sales member</option>
               {claims.role === 'org_admin' && <option value="manager">Manager</option>}
             </select></label>
+            {isAdmin && (
+              <label>Reports to<select className="input-field" value={inviteManagerId} onChange={(event) => setInviteManagerId(event.target.value)}>
+                <option value={UNASSIGNED}>No manager</option>
+                {managers.map((manager) => <option key={manager.id} value={manager.id}>{manager.name || manager.email}</option>)}
+              </select></label>
+            )}
+            {isAdmin && role === 'manager' && (
+              <label>Can see<select className="input-field" value={inviteVisibility} onChange={(event) => setInviteVisibility(event.target.value as ManagerVisibility)}>
+                <option value="team">Only their team</option>
+                <option value="all">Whole organization</option>
+              </select></label>
+            )}
             <label className="checkbox-label"><input type="checkbox" checked={createAccountNow} onChange={(event) => setCreateAccountNow(event.target.checked)} /> Create account now</label>
             {createAccountNow && <label>Temporary password<input className="input-field" type="text" value={temporaryPassword} onChange={(event) => setTemporaryPassword(event.target.value)} placeholder="Required" minLength={6} required /></label>}
             <button className="btn-primary" disabled={submitting}>{submitting ? 'Creating…' : 'Create invitation'}</button>
@@ -265,17 +403,47 @@ export const Team = () => {
       )}
 
       <div className="section-card table-card">
-        <div className="section-heading table-heading"><div><h2>Members</h2><p>Active organization users and roles.</p></div></div>
+        <div className="section-heading table-heading">
+          <div><h2>Members</h2><p>Organization users, roles, and who they report to.</p></div>
+          {managers.length > 0 && (
+            <label className="table-filter-label">Manager
+              <select className="input-field compact-select" value={managerFilter} onChange={(event) => setManagerFilter(event.target.value)}>
+                <option value="all">Everyone</option>
+                {isAdmin && <option value={UNASSIGNED}>Unassigned</option>}
+                {managers.map((manager) => <option key={manager.id} value={manager.id}>Reports to {manager.name || manager.email}</option>)}
+              </select>
+            </label>
+          )}
+        </div>
+        {isAdmin && selectedIds.size > 0 && (
+          <div className="bulk-action-bar">
+            <span>{selectedIds.size} selected</span>
+            <select className="input-field compact-select" value={bulkManagerId} onChange={(event) => setBulkManagerId(event.target.value)} aria-label="Move selected members to">
+              <option value="">Move to…</option>
+              <option value={UNASSIGNED}>No manager</option>
+              {managers.map((manager) => <option key={manager.id} value={manager.id}>{manager.name || manager.email}</option>)}
+            </select>
+            <button className="btn-primary" type="button" disabled={!bulkManagerId || movingBulk} onClick={moveSelected}>{movingBulk ? 'Moving…' : 'Move'}</button>
+            <button className="secondary-button" type="button" onClick={() => setSelectedIds(new Set())}>Clear</button>
+          </div>
+        )}
         <div className="table-scroll">
           <table className="data-table">
-            <thead><tr><th>Member</th><th>Role</th><th>Status</th><th>Phone</th><th>Joined</th><th>Actions</th></tr></thead>
+            <thead><tr>{isAdmin && <th aria-label="Select" />}<th>Member</th><th>Role</th><th>Reports to</th><th>Status</th><th>Phone</th><th>Joined</th><th>Actions</th></tr></thead>
             <tbody>
               {membersLoading ? (
-                <tr><td colSpan={6} className="table-message">Loading team members…</td></tr>
-              ) : members.length === 0 ? (
-                <tr><td colSpan={6} className="table-message">No team members found.</td></tr>
-              ) : members.map((member) => (
+                <tr><td colSpan={isAdmin ? 8 : 7} className="table-message">Loading team members…</td></tr>
+              ) : visibleMembers.length === 0 ? (
+                <tr><td colSpan={isAdmin ? 8 : 7} className="table-message">No team members found.</td></tr>
+              ) : visibleMembers.map((member) => (
                 <tr key={member.id}>
+                  {isAdmin && (
+                    <td data-label="Select">
+                      {member.role !== 'org_admin' && (
+                        <input type="checkbox" checked={selectedIds.has(member.id)} onChange={() => toggleSelected(member.id)} aria-label={`Select ${member.name || member.email}`} />
+                      )}
+                    </td>
+                  )}
                   <td data-label="Member">
                     {editingMemberId === member.id ? (
                       <div className="member-edit-form">
@@ -287,7 +455,25 @@ export const Team = () => {
                       <div className="member-cell"><div className="avatar"><User size={17} /></div><div><strong>{member.name || 'Unnamed member'}</strong><span>{member.email}</span></div></div>
                     )}
                   </td>
-                  <td data-label="Role"><span className={`role-badge ${member.role}`}><Shield size={14} /> {formatRole(member.role)}</span></td>
+                  <td data-label="Role">
+                    <span className={`role-badge ${member.role}`}><Shield size={14} /> {formatRole(member.role)}</span>
+                    {member.role === 'manager' && (isAdmin ? (
+                      <select className="input-field compact-select visibility-select" value={member.managerVisibility ?? 'all'} disabled={savingMemberId === member.id} onChange={(event) => changeVisibility(member, event.target.value as ManagerVisibility)} aria-label={`What ${member.name || member.email} can see`}>
+                        <option value="team">Sees own team</option>
+                        <option value="all">Sees whole org</option>
+                      </select>
+                    ) : (
+                      <span className="member-subtext">{member.managerVisibility === 'team' ? 'Sees own team' : 'Sees whole org'}</span>
+                    ))}
+                  </td>
+                  <td data-label="Reports to">
+                    {member.role === 'org_admin' ? '—' : isAdmin ? (
+                      <select className="input-field compact-select" value={member.managerId ?? UNASSIGNED} disabled={savingMemberId === member.id} onChange={(event) => changeManager(member, event.target.value)} aria-label={`Manager for ${member.name || member.email}`}>
+                        <option value={UNASSIGNED}>No manager</option>
+                        {managerOptionsFor(member).map((manager) => <option key={manager.id} value={manager.id}>{manager.name || manager.email}</option>)}
+                      </select>
+                    ) : member.managerId ? memberLabel(member.managerId) : 'No manager'}
+                  </td>
                   <td data-label="Status"><span className={`status-badge ${member.status}`}><i /> {member.status}</span></td>
                   <td data-label="Phone">{member.phoneNumber || '—'}</td>
                   <td data-label="Joined">{member.createdAt ? format(new Date(member.createdAt), 'd MMM yyyy') : '—'}</td>

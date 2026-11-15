@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { signInWithCustomToken } from 'firebase/auth';
-import { Activity, BadgePercent, ChartNoAxesGantt, Bell, BrainCircuit, Building2, ContactRound, CreditCard, LayoutDashboard, MapPin, Mic2, PhoneCall, Route, Users, LogOut, Menu, Settings, ShieldAlert, Target, Webhook, X, type LucideIcon } from 'lucide-react';
+import { Activity, BadgePercent, ChartNoAxesGantt, Bell, ClipboardCheck, BrainCircuit, Building2, ContactRound, CreditCard, LayoutDashboard, MapPin, Mic2, PhoneCall, Route, Users, LogOut, Menu, Settings, ShieldAlert, Target, Webhook, X, type LucideIcon } from 'lucide-react';
 import { api, getApiErrorMessage } from '../api/client';
 import { auth } from '../config/firebase';
 import { useAuth } from '../context/auth';
@@ -155,6 +155,7 @@ export const Layout: React.FC = () => {
     {
       label: 'Team & field',
       items: [
+        ...(canManageTeam ? [{ path: '/dashboard/my-team', icon: ClipboardCheck, label: 'My Team Today' }] : []),
         ...(canManageTeam ? [{ path: '/dashboard/team', icon: Users, label: 'Team Management' }] : []),
         ...(canViewCalls ? [{ path: '/dashboard/activity', icon: ChartNoAxesGantt, label: claims.role === 'sales_member' ? 'My Activity' : 'Team Activity' }] : []),
         ...(canManageTeam ? [{ path: '/dashboard/live', icon: MapPin, label: 'Live Tracking' }] : []),

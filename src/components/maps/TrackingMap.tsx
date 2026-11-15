@@ -292,3 +292,26 @@ export const VisitMap = ({
     </div>
   );
 };
+
+const callIcon = L.divIcon({
+  className: 'tracking-div-icon-shell',
+  html: '<span class="tracking-div-icon live" aria-hidden="true"><b>●</b></span>',
+  iconSize: [34, 34],
+  iconAnchor: [17, 17],
+});
+
+/** Where a rep was when a call started; the circle is the fix's accuracy. */
+export const CallLocationMap = ({ lat, lng, accuracyMeters }: { lat: number; lng: number; accuracyMeters: number | null }) => {
+  const center: LatLngTuple = [lat, lng];
+  return (
+    <div className="tracking-map call-location-map">
+      <MapContainer center={center} zoom={16} scrollWheelZoom>
+        <TileLayerForTheme />
+        {accuracyMeters ? (
+          <Circle center={center} radius={accuracyMeters} pathOptions={{ color: '#4f8cff', fillColor: '#4f8cff', fillOpacity: 0.12 }} />
+        ) : null}
+        <Marker position={center} icon={callIcon} />
+      </MapContainer>
+    </div>
+  );
+};

@@ -10,6 +10,8 @@ export interface CallFilters {
   followUpStatus: string;
   minDurationSeconds: string;
   maxDurationSeconds: string;
+  /** 'only': unanswered dials cut within seconds; '' for every call. */
+  quickHangups: string;
   /** Call start-time order: 'desc' (newest first) or 'asc'. Not a filter. */
   sort: string;
 }
@@ -47,6 +49,7 @@ export const createDefaultFilters = (now = new Date()): CallFilters => ({
   followUpStatus: '',
   minDurationSeconds: '',
   maxDurationSeconds: '',
+  quickHangups: '',
   sort: 'desc',
 });
 
@@ -91,6 +94,7 @@ export const activeFilterChips = (filters: CallFilters, repNames: Map<string, st
   if (filters.direction) chips.push({ key: 'direction', label: `${filters.direction.charAt(0).toUpperCase()}${filters.direction.slice(1)} calls` });
   if (filters.minDurationSeconds) chips.push({ key: 'minDurationSeconds', label: `At least ${formatDurationLabel(Number(filters.minDurationSeconds))}` });
   if (filters.maxDurationSeconds) chips.push({ key: 'maxDurationSeconds', label: `At most ${formatDurationLabel(Number(filters.maxDurationSeconds))}` });
+  if (filters.quickHangups === 'only') chips.push({ key: 'quickHangups', label: 'Quick hang-ups only' });
   if (filters.phoneSearch.trim()) chips.push({ key: 'phoneSearch', label: `Phone: ${filters.phoneSearch.trim()}` });
   if (filters.tag.trim()) chips.push({ key: 'tag', label: `Tag: ${filters.tag.trim()}` });
   if (filters.followUpStatus) chips.push({ key: 'followUpStatus', label: `Follow-up: ${FOLLOW_UP_LABELS[filters.followUpStatus] ?? filters.followUpStatus}` });

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Clock, Coffee, Info, PhoneCall, RefreshCw, Sunrise, Timer } from 'lucide-react';
+import { Clock, Coffee, Info, PhoneCall, PhoneOff, RefreshCw, Sunrise, Timer } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { api, getApiErrorMessage } from '../api/client';
 import { useAuth } from '../context/auth';
@@ -33,6 +33,37 @@ const median = (values: number[]) => {
 const shareLabel = (active: number, total: number) => {
   const share = percent(active, total);
   return share === null ? '—' : `${share}%`;
+};
+
+// Flag a rep when quick hang-ups are a large share of a meaningful number of dials.
+const QUICK_HANGUP_FLAG_SHARE = 20;
+const QUICK_HANGUP_FLAG_MIN = 5;
+
+type DialStats = Pick<ActivityReport['team'], 'quickHangups' | 'outgoingCalls' | 'measuredUnansweredDials' | 'unansweredRingSeconds'>;
+
+/** Average dial + ring seconds before an unanswered call was cut; null until the app measures ring time. */
+const averageUnansweredRing = (stats: DialStats) =>
+  stats.measuredUnansweredDials ? Math.round((stats.unansweredRingSeconds ?? 0) / stats.measuredUnansweredDials) : null;
+
+const QuickHangups = ({ rep }: { rep: DialStats }) => {
+  const count = rep.quickHangups ?? 0;
+  const share = percent(count, rep.outgoingCalls ?? 0);
+  const flagged = count >= QUICK_HANGUP_FLAG_MIN && share !== null && share >= QUICK_HANGUP_FLAG_SHARE;
+  const averageRing = averageUnansweredRing(rep);
+  return (
+    <span className={flagged ? 'activity-quick-hangups' : undefined} title={flagged ? 'Many dials were cut before the customer could answer' : undefined}>
+      {count}
+      {count > 0 && share !== null && <small className="activity-cell-detail">{share}% of dials</small>}
+      {averageRing !== null && <small className="activity-cell-detail">Unanswered ring avg {averageRing}s</small>}
+    </span>
+  );
+};
+
+const quickHangupDetail = (team: DialStats) => {
+  const share = percent(team.quickHangups ?? 0, team.outgoingCalls ?? 0);
+  const averageRing = averageUnansweredRing(team);
+  if (averageRing === null) return 'Dials cut within 10s · needs the latest app';
+  return `${share ?? 0}% of dials · unanswered ring avg ${averageRing}s`;
 };
 
 interface TimelineRowProps {
@@ -70,6 +101,7 @@ const TimelineRow = ({ label, day, settings, onHover }: TimelineRowProps) => {
       <div className="activity-timeline-label">
         <strong>{label}</strong>
         <small>{day.callCount} call{day.callCount === 1 ? '' : 's'} · {formatMinute(day.firstActivityMinute)}–{formatMinute(day.lastActivityMinute)}</small>
+        {Boolean(day.quickHangups) && <small className="activity-quick-hangups">{day.quickHangups} quick hang-up{day.quickHangups === 1 ? '' : 's'}</small>}
       </div>
       <div className="activity-timeline-track" role="img" aria-label={summary}>
         {Array.from(day.slots.slice(startSlot, endSlot)).map((code, index) => {
@@ -267,7 +299,7 @@ export const Activity = () => {
         </span>
       </div>
 
-      <div className="stats-grid" aria-busy={loading}>
+      <div className="stats-grid activity-stats-grid" aria-busy={loading}>
         <div className="stat-card section-card">
           <div className="stat-icon blue"><PhoneCall /></div>
           <div>
@@ -293,6 +325,14 @@ export const Activity = () => {
           </div>
         </div>
         <div className="stat-card section-card">
+          <div className="stat-icon red"><PhoneOff /></div>
+          <div>
+            <p>Quick hang-ups</p>
+            <strong>{loading || !team ? '—' : team.quickHangups ?? 0}</strong>
+            <small>{loading || !team ? '' : quickHangupDetail(team)}</small>
+          </div>
+        </div>
+        <div className="stat-card section-card">
           <div className="stat-icon green"><Sunrise /></div>
           <div>
             <p>Typical first call</p>
@@ -314,6 +354,7 @@ export const Activity = () => {
                   <th>Representative</th>
                   <th>Days</th>
                   <th>Calls / day</th>
+                  <th title="Outgoing calls cut unanswered within 10 seconds">Quick hang-ups</th>
                   <th>First call</th>
                   <th>Last call</th>
                   <th>Talk / day</th>
@@ -324,9 +365,9 @@ export const Activity = () => {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={9} className="table-message">Loading activity…</td></tr>
+                  <tr><td colSpan={10} className="table-message">Loading activity…</td></tr>
                 ) : reps.length === 0 ? (
-                  <tr><td colSpan={9} className="table-message">No calls in this range.</td></tr>
+                  <tr><td colSpan={10} className="table-message">No calls in this range.</td></tr>
                 ) : reps.map((rep) => {
                   const share = percent(rep.activeSlots, rep.windowSlots);
                   return (
@@ -336,6 +377,7 @@ export const Activity = () => {
                       </td>
                       <td data-label="Days">{rep.activeDays}</td>
                       <td data-label="Calls / day">{Math.round(rep.callCount / rep.activeDays)}</td>
+                      <td data-label="Quick hang-ups"><QuickHangups rep={rep} /></td>
                       <td data-label="First call">{formatMinute(rep.medianFirstActivityMinute)}</td>
                       <td data-label="Last call">{formatMinute(rep.medianLastActivityMinute)}</td>
                       <td data-label="Talk / day">{formatMinutes(rep.talkSeconds / 60 / rep.activeDays)}</td>

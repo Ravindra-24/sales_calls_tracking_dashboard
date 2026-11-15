@@ -26,6 +26,12 @@ const metricLabels: Record<TargetMetric, string> = {
   client_visits: 'Client visits',
   custom: 'Custom (reported by rep)',
 };
+// Call-count metrics can ignore short calls, so dial-and-cut attempts don't count.
+const minCallMetrics = new Set<TargetMetric>(['calls', 'connected_calls', 'outgoing_calls']);
+const DEFAULT_MIN_CALL_SECONDS = '20';
+const minCallText = (seconds: number | null) => (seconds ? `Answered calls of ${seconds}s or longer` : 'Every call, including unanswered dials');
+const minCallSecondsError = (value: string) =>
+  value === '' || (Number.isInteger(Number(value)) && Number(value) >= 0 && Number(value) <= 600) ? undefined : 'Enter whole seconds from 0 to 600.';
 const periodLabels: Record<TargetPeriodType, string> = {
   daily: 'Daily',
   weekly: 'Weekly',
@@ -52,6 +58,7 @@ const editableFieldLabels: Record<string, string> = {
   title: 'Title',
   description: 'Description',
   targetValue: 'Target',
+  minCallSeconds: 'Minimum call length (s)',
   customUnit: 'Unit',
   periodType: 'Period',
   startDate: 'Start',
@@ -63,14 +70,19 @@ const emptyForm = {
   title: '',
   metric: 'calls' as TargetMetric,
   targetValue: '',
+  minCallSeconds: DEFAULT_MIN_CALL_SECONDS,
   customUnit: '',
   periodType: 'monthly' as TargetPeriodType,
   startDate: todayIso(),
   endDate: '',
   assignTo: 'reps' as 'reps' | 'team',
+  /** Team targets: a manager's ID, ORG_WIDE, or '' for the caller's default. */
+  teamManagerId: '',
   repIds: [] as string[],
   description: '',
 };
+
+const ORG_WIDE = 'org';
 
 const unitFor = (target: Pick<TargetRecord, 'metric' | 'customUnit'>) =>
   target.metric === 'custom' ? target.customUnit || '' : metricLabels[target.metric].toLowerCase();
@@ -111,8 +123,13 @@ export const Targets = () => {
   const [showForm, setShowForm] = useState(false);
 
   const names = useMemo(() => new Map(members.map((member) => [member.id, member.name || member.email])), [members]);
-  const assigneeName = useCallback((target: Pick<TargetRecord, 'scope' | 'repId'>) => {
-    if (target.scope === 'team') return 'Whole team';
+  const assigneeName = useCallback((target: Pick<TargetRecord, 'scope' | 'repId' | 'teamManagerId'>) => {
+    if (target.scope === 'team') {
+      if (!target.teamManagerId) return 'Whole organization';
+      if (target.teamManagerId === uid) return 'Your team';
+      const manager = names.get(target.teamManagerId);
+      return manager ? `${manager}'s team` : 'Your team';
+    }
     if (target.repId === uid) return 'You';
     return names.get(target.repId || '') || target.repId?.slice(0, 8) || '—';
   }, [names, uid]);
@@ -125,6 +142,10 @@ export const Targets = () => {
       .catch(() => undefined);
   }, [claims.orgId, isManager]);
   const salesMembers = useMemo(() => members.filter((member) => member.role === 'sales_member' && member.status === 'active'), [members]);
+  // Team targets: admins and org-wide managers may also target the whole org.
+  const me = members.find((member) => member.id === uid);
+  const canTargetOrg = claims.role === 'org_admin' || (claims.role === 'manager' && me?.managerVisibility !== 'team');
+  const teamManagers = useMemo(() => members.filter((member) => member.role === 'manager' && member.status === 'active'), [members]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -178,11 +199,15 @@ export const Targets = () => {
       const response = await api.post<ApiResponse<TargetRecord[]>>('/targets', {
         scope: isManager ? (form.assignTo === 'team' ? 'team' : 'rep') : 'rep',
         repIds: isManager && form.assignTo === 'reps' ? form.repIds : undefined,
+        ...(isManager && form.assignTo === 'team' && form.teamManagerId ?
+          { teamManagerId: form.teamManagerId === ORG_WIDE ? null : form.teamManagerId } :
+          {}),
         title: form.title,
         description: form.description || null,
         metric: form.metric,
         customUnit: form.metric === 'custom' ? form.customUnit : null,
         targetValue: Number(form.targetValue),
+        minCallSeconds: minCallMetrics.has(form.metric) && form.minCallSeconds ? Number(form.minCallSeconds) : null,
         periodType: form.periodType,
         startDate: form.startDate,
         endDate: form.periodType === 'custom' ? form.endDate : null,
@@ -213,6 +238,7 @@ export const Targets = () => {
       fields: [
         { id: 'title', label: 'Title', required: true, maxLength: 120, initialValue: detail.title },
         { id: 'targetValue', label: `Target (${unitFor(detail)})`, type: 'number', required: true, initialValue: String(detail.targetValue), validate: (value) => (Number(value) > 0 ? undefined : 'Enter a number above zero.') },
+        ...(minCallMetrics.has(detail.metric) ? [{ id: 'minCallSeconds', label: 'Minimum call length (seconds)', type: 'number' as const, required: false, initialValue: String(detail.minCallSeconds ?? ''), helpText: 'Only answered calls at least this long count. Leave empty to count every dial.', validate: minCallSecondsError }] : []),
         { id: 'startDate', label: 'Start date', required: true, placeholder: 'YYYY-MM-DD', initialValue: detail.startDate, helpText: detail.periodType === 'custom' ? undefined : `${periodLabels[detail.periodType]} periods snap to the calendar period containing this date.` },
         ...(detail.periodType === 'custom' ? [{ id: 'endDate', label: 'End date', required: true, placeholder: 'YYYY-MM-DD', initialValue: detail.endDate }] : []),
         { id: 'description', label: 'Description', multiline: true, required: false, maxLength: 1000, initialValue: detail.description || '' },
@@ -224,6 +250,7 @@ export const Targets = () => {
       await api.patch(`/targets/${detail.id}`, {
         title: values.title,
         targetValue: Number(values.targetValue),
+        ...(minCallMetrics.has(detail.metric) ? { minCallSeconds: values.minCallSeconds ? Number(values.minCallSeconds) : null } : {}),
         startDate: values.startDate,
         ...(detail.periodType === 'custom' ? { endDate: values.endDate } : {}),
         description: values.description || null,
@@ -354,6 +381,15 @@ export const Targets = () => {
               )}
               <div className="lead-profile-grid">
                 <div><small>Metric</small><p>{metricLabels[detail.metric]}{detail.metric === 'custom' && detail.customUnit ? ` (${detail.customUnit})` : ''}</p></div>
+                {minCallMetrics.has(detail.metric) && <div><small>Counts</small><p>{minCallText(detail.minCallSeconds)}</p></div>}
+                {Boolean(detail.minCallSeconds) && typeof detail.excludedShortCalls === 'number' && (
+                  <div>
+                    <small>Calls in period</small>
+                    <p>
+                      {detail.progress.achievedValue} counted · <span className={detail.excludedShortCalls > 0 ? 'target-excluded-calls' : undefined}>{detail.excludedShortCalls} under {detail.minCallSeconds}s</span>
+                    </p>
+                  </div>
+                )}
                 <div><small>Assigned to</small><p>{assigneeName(detail)}</p></div>
                 <div><small>Period</small><p>{formatPeriod(detail)}</p></div>
                 {detail.metric === 'custom' && <div><small>Last reported</small><p>{detail.reportedAt ? `${format(new Date(detail.reportedAt), 'd MMM yyyy, h:mm a')} by ${personName(detail.reportedBy || '')}` : 'Not reported yet'}</p></div>}
@@ -450,12 +486,23 @@ export const Targets = () => {
             <label className="target-title-field">Title<input className="input-field" placeholder="e.g. October outreach" value={form.title} maxLength={120} onChange={(event) => setForm({ ...form, title: event.target.value })} required autoFocus /></label>
             <label>Metric<select className="input-field" value={form.metric} onChange={(event) => setForm({ ...form, metric: event.target.value as TargetMetric })}>{(Object.keys(metricLabels) as TargetMetric[]).map((metric) => <option key={metric} value={metric}>{metricLabels[metric]}</option>)}</select></label>
             <label>Target<input className="input-field" type="number" min={1} step="any" placeholder="100" value={form.targetValue} onChange={(event) => setForm({ ...form, targetValue: event.target.value })} required /></label>
+            {minCallMetrics.has(form.metric) && <label>Minimum call length (seconds)<input className="input-field" type="number" min={0} max={600} step={1} placeholder="No minimum" value={form.minCallSeconds} onChange={(event) => setForm({ ...form, minCallSeconds: event.target.value })} /><small className="subtle-text">Only answered calls at least this long count. Leave empty to count every dial.</small></label>}
             {form.metric === 'custom' && <label>Unit<input className="input-field" placeholder="e.g. INR, orders" maxLength={24} value={form.customUnit} onChange={(event) => setForm({ ...form, customUnit: event.target.value })} required /></label>}
             <label>Period<select className="input-field" value={form.periodType} onChange={(event) => setForm({ ...form, periodType: event.target.value as TargetPeriodType })}>{(Object.keys(periodLabels) as TargetPeriodType[]).map((period) => <option key={period} value={period}>{periodLabels[period]}</option>)}</select></label>
             <label>{form.periodType === 'custom' ? 'Start date' : 'Any date in period'}<input className="input-field" type="date" value={form.startDate} onChange={(event) => setForm({ ...form, startDate: event.target.value })} required /></label>
             {form.periodType === 'custom' && <label>End date<input className="input-field" type="date" min={form.startDate} value={form.endDate} onChange={(event) => setForm({ ...form, endDate: event.target.value })} required /></label>}
             {isManager && (
-              <label>Assign to<select className="input-field" value={form.assignTo} onChange={(event) => setForm({ ...form, assignTo: event.target.value as 'reps' | 'team' })}><option value="reps">Selected sales members</option><option value="team">Whole team (combined)</option></select></label>
+              <label>Assign to<select className="input-field" value={form.assignTo} onChange={(event) => setForm({ ...form, assignTo: event.target.value as 'reps' | 'team' })}><option value="reps">Selected sales members</option><option value="team">A team (combined)</option></select></label>
+            )}
+            {isManager && form.assignTo === 'team' && (
+              <label>Team<select className="input-field" value={form.teamManagerId} onChange={(event) => setForm({ ...form, teamManagerId: event.target.value })}>
+                {canTargetOrg ?
+                  <option value="">Whole organization</option> :
+                  <option value="">My team</option>}
+                {teamManagers.filter((manager) => canTargetOrg || manager.id !== uid).map((manager) => (
+                  <option key={manager.id} value={manager.id}>{manager.id === uid ? 'My team' : `${manager.name || manager.email}'s team`}</option>
+                ))}
+              </select><small className="subtle-text">Progress adds up everyone on the team, including people under their managers.</small></label>
             )}
             {isManager && form.assignTo === 'reps' && (
               <fieldset className="target-rep-picker">
@@ -509,7 +556,7 @@ export const Targets = () => {
             <tr key={target.id}>
               <td data-label="Target"><Link className="lead-name-link" to={`/dashboard/targets/${target.id}`}><strong>{target.title}</strong><span>{formatPeriod(target)} · {periodLabels[target.periodType]}</span></Link></td>
               <td data-label="Assignee">{assigneeName(target)}</td>
-              <td data-label="Metric">{metricLabels[target.metric]}</td>
+              <td data-label="Metric">{metricLabels[target.metric]}{target.minCallSeconds ? <span className="subtle-text"> · {target.minCallSeconds}s+</span> : null}</td>
               <td data-label="Progress"><ProgressBar target={target} /></td>
               <td data-label="Status"><span className={`health-pill ${statusPill[target.progress.status]}`}>{statusLabels[target.progress.status]}</span></td>
               <td data-label="Set by"><span className="role-badge">{target.source === 'manager' ? 'Manager' : 'Personal'}</span></td>

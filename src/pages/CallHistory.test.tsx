@@ -55,6 +55,8 @@ const installApiMock = (savedFilters: unknown[] = []) => {
       uniqueIncomingCalls: 3,
       uniqueOutgoingCalls: 4,
       uniqueConnectedCalls: 5,
+      outgoingCalls: 4,
+      quickHangups: 1,
     } } });
     if (url === '/calls') {
       const secondPage = config?.params?.cursor === 'page-2';
@@ -85,6 +87,32 @@ afterEach(() => {
 });
 
 describe('CallHistory', () => {
+  it('offers a location only for calls that carry one', async () => {
+    installApiMock();
+    const located = { ...call('call-9', 'outgoing'), location: { lat: 18.52, lng: 73.85, accuracyMeters: 20, capturedAt: '2026-07-22T10:00:00.000Z' } };
+    const base = mocks.get.getMockImplementation()!;
+    mocks.get.mockImplementation((url: string, config?: { params?: Record<string, unknown> }) => (
+      url === '/calls' ? Promise.resolve({ data: { data: [located, call('call-2', 'incoming')], meta: {} } }) : base(url, config)
+    ));
+    render(<CallHistory />);
+
+    expect(await screen.findAllByRole('button', { name: 'Location' })).toHaveLength(1);
+  });
+
+  it('shows quick hang-ups and filters the list to them from the summary card', async () => {
+    installApiMock();
+    const user = userEvent.setup();
+    render(<CallHistory />);
+
+    const card = await screen.findByRole('button', { name: /Quick hang-ups: 1/ });
+    expect(card).toHaveTextContent('25% of dials');
+    await user.click(card);
+    await waitFor(() => expect(mocks.get.mock.calls.some(([url, config]) => (
+      url === '/calls' && config?.params?.quickHangups === 'only'
+    ))).toBe(true));
+    expect(screen.getByText('Quick hang-ups only')).toBeInTheDocument();
+  });
+
   it('keeps draft filters local until Apply and numbers cursor pages continuously', async () => {
     installApiMock();
     const user = userEvent.setup();
@@ -94,7 +122,7 @@ describe('CallHistory', () => {
     expect(screen.getByText('Unique incoming')).toBeInTheDocument();
     expect(screen.getByText('Unique outgoing')).toBeInTheDocument();
     expect(screen.getByText('Unique connected')).toBeInTheDocument();
-    expect(document.querySelectorAll('.call-summary-card')).toHaveLength(7);
+    expect(document.querySelectorAll('.call-summary-card')).toHaveLength(8);
     expect(screen.getByRole('cell', { name: '1' })).toBeInTheDocument();
     const initialListRequests = mocks.get.mock.calls.filter(([url]) => url === '/calls').length;
 

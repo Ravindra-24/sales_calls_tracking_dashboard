@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { endOfToday, format, isAfter, isValid } from 'date-fns';
@@ -9,6 +9,7 @@ import {
   ArrowRight,
   Download,
   Filter,
+  MapPin,
   MessageSquare,
   PlayCircle,
   RefreshCw,
@@ -17,6 +18,7 @@ import {
   PhoneCall,
   PhoneIncoming,
   PhoneMissed,
+  PhoneOff,
   Save,
   X,
 } from 'lucide-react';
@@ -38,6 +40,9 @@ import {
   type CallFilters,
   type ChipKey,
 } from './callHistoryFilters';
+
+// Leaflet loads only when someone opens a call's location.
+const CallLocationMap = lazy(() => import('../components/maps/TrackingMap').then((module) => ({ default: module.CallLocationMap })));
 
 interface CursorPage {
   cursor?: string;
@@ -74,6 +79,7 @@ const filterParams = (filters: CallFilters) => ({
   followUpStatus: filters.followUpStatus || undefined,
   minDurationSeconds: filters.minDurationSeconds ? Number(filters.minDurationSeconds) : undefined,
   maxDurationSeconds: filters.maxDurationSeconds ? Number(filters.maxDurationSeconds) : undefined,
+  quickHangups: filters.quickHangups === 'only' ? 'only' : undefined,
 });
 
 const toDate = (value: string) => new Date(`${value}T00:00:00`);
@@ -119,6 +125,7 @@ export const CallHistory = () => {
   const [nextCursor, setNextCursor] = useState<string>();
   const [refreshVersion, setRefreshVersion] = useState(0);
   const [analysisCall, setAnalysisCall] = useState<CallRecord | null>(null);
+  const [locationCall, setLocationCall] = useState<CallRecord | null>(null);
   const [analysis, setAnalysis] = useState<CallAnalysis | null>(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisError, setAnalysisError] = useState('');
@@ -325,6 +332,7 @@ export const CallHistory = () => {
       followUpStatus: typeof values.followUpStatus === 'string' ? values.followUpStatus : '',
       minDurationSeconds: values.minDurationSeconds === undefined ? '' : String(values.minDurationSeconds),
       maxDurationSeconds: values.maxDurationSeconds === undefined ? '' : String(values.maxDurationSeconds),
+      quickHangups: values.quickHangups === 'only' ? 'only' : '',
       from: typeof values.from === 'string' ? values.from.slice(0, 10) : createDefaultFilters().from,
       to: typeof values.to === 'string' ? values.to.slice(0, 10) : createDefaultFilters().to,
       sort: appliedFilters.sort,
@@ -501,6 +509,11 @@ export const CallHistory = () => {
           <label>Max duration (seconds)<input className="input-field" type="number" min="0" value={draftFilters.maxDurationSeconds} onChange={(event) => updateDraft({ maxDurationSeconds: event.target.value })} />
             {draftFilters.maxDurationSeconds && <small className="call-duration-hint">= {formatDurationLabel(Number(draftFilters.maxDurationSeconds))}</small>}
           </label>
+          <label>Ring time
+            <select className="input-field" value={draftFilters.quickHangups} onChange={(event) => updateDraft({ quickHangups: event.target.value })}>
+              <option value="">Any</option><option value="only">Quick hang-ups only (cut within {QUICK_HANGUP_SECONDS}s)</option>
+            </select>
+          </label>
         </div>
         <div className="call-filter-save">
           <input className="input-field" value={filterName} onChange={(event) => setFilterName(event.target.value)} placeholder="Saved filter name" />
@@ -586,6 +599,15 @@ export const CallHistory = () => {
             <CallSummaryCard label="Connected" value={summaryLoading ? '—' : summary?.connectedCalls ?? '—'} icon={<PhoneIncoming />} tone="green" />
             <CallSummaryCard label="Not connected" value={summaryLoading ? '—' : summary?.notConnectedCalls ?? '—'} icon={<PhoneMissed />} tone="orange" />
             <CallSummaryCard label="Missed" value={summaryLoading ? '—' : summary?.missedCalls ?? '—'} icon={<PhoneMissed />} tone="orange" />
+            <CallSummaryCard
+              label="Quick hang-ups"
+              value={summaryLoading ? '—' : summary?.quickHangups ?? '—'}
+              detail={!summaryLoading && summary?.quickHangups && summary.outgoingCalls ? `${Math.round((summary.quickHangups / summary.outgoingCalls) * 100)}% of dials · cut within ${QUICK_HANGUP_SECONDS}s` : `Dials cut within ${QUICK_HANGUP_SECONDS}s`}
+              icon={<PhoneOff />}
+              tone="red"
+              onClick={appliedFilters.quickHangups === 'only' ? undefined : () => applyQuickFilters({ quickHangups: 'only' })}
+              actionLabel="Show these calls"
+            />
             <CallSummaryCard label="Unique incoming" value={summaryLoading ? '—' : summary?.uniqueIncomingCalls ?? '—'} icon={<PhoneIncoming />} tone="green" />
             <CallSummaryCard label="Unique outgoing" value={summaryLoading ? '—' : summary?.uniqueOutgoingCalls ?? '—'} icon={<PhoneCall />} tone="blue" />
             <CallSummaryCard label="Unique connected" value={summaryLoading ? '—' : summary?.uniqueConnectedCalls ?? '—'} icon={<PhoneIncoming />} tone="green" />
@@ -611,8 +633,18 @@ export const CallHistory = () => {
                   <td data-label="Direction"><span className={`direction-badge ${call.direction}`}>{directionIcon(call.direction)} {call.direction}</span></td>
                   <td data-label="Representative">{names.get(call.repId) ?? `Rep ${call.repId.slice(0, 6)}`}</td>
                   <td data-label="Phone number" className="phone-number">{call.leadId ? <Link to={`/dashboard/leads/${call.leadId}`}>{call.phoneNumber}</Link> : call.phoneNumber}</td>
-                  <td data-label="Date & time">{format(new Date(call.startTime), 'd MMM yyyy, h:mm a')}</td>
-                  <td data-label="Duration">{formatDuration(call.durationSeconds)}</td>
+                  <td data-label="Date & time">
+                    {format(new Date(call.startTime), 'd MMM yyyy, h:mm a')}
+                    {call.location && (
+                      <button type="button" className="call-location-button" onClick={() => setLocationCall(call)}>
+                        <MapPin size={13} /> Location
+                      </button>
+                    )}
+                  </td>
+                  <td data-label="Duration">
+                    {formatDuration(call.durationSeconds)}
+                    <RingTime call={call} />
+                  </td>
                   <td data-label="AI">
                     {call.analysisStatus && call.analysisStatus !== 'none' ? (
                       <button className="analysis-status-button" type="button" onClick={() => void openAnalysis(call)}>
@@ -644,6 +676,30 @@ export const CallHistory = () => {
           </div>
         </div>
       </div>
+
+      {locationCall?.location && (
+        <div className="analysis-dialog-backdrop" role="presentation" onMouseDown={event => {
+          if (event.target === event.currentTarget) setLocationCall(null);
+        }}>
+          <section className="analysis-dialog section-card" role="dialog" aria-modal="true" aria-labelledby="call-location-title">
+            <div className="analysis-dialog-heading">
+              <div>
+                <p className="eyebrow">Location at call start</p>
+                <h2 id="call-location-title">{locationCall.phoneNumber}</h2>
+              </div>
+              <button className="icon-button" type="button" aria-label="Close" onClick={() => setLocationCall(null)}><X size={19} /></button>
+            </div>
+            <Suspense fallback={<div className="table-message">Loading map…</div>}>
+              <CallLocationMap {...locationCall.location} />
+            </Suspense>
+            <p className="call-location-meta">
+              {names.get(locationCall.repId) ?? 'Rep'} · {format(new Date(locationCall.startTime), 'd MMM yyyy, h:mm a')}
+              {locationCall.location.accuracyMeters ? ` · accurate to about ${Math.round(locationCall.location.accuracyMeters)} m` : ''}
+              {locationCall.location.capturedAt ? ` · fix from ${format(new Date(locationCall.location.capturedAt), 'h:mm a')}` : ''}
+            </p>
+          </section>
+        </div>
+      )}
 
       {analysisCall && (
         <div className="analysis-dialog-backdrop" role="presentation" onMouseDown={event => {
@@ -700,14 +756,42 @@ export const CallHistory = () => {
   );
 };
 
-const CallSummaryCard = ({ label, value, icon, tone }: { label: string; value: string | number; icon: React.ReactNode; tone: string }) => (
-  <div className="call-summary-card section-card"><span className={`stat-icon ${tone}`}>{icon}</span><div><p>{label}</p><strong>{value}</strong></div></div>
-);
+interface CallSummaryCardProps {
+  label: string;
+  value: string | number;
+  icon: React.ReactNode;
+  tone: string;
+  detail?: string;
+  /** Makes the card a button that filters the list to these calls. */
+  onClick?: () => void;
+  actionLabel?: string;
+}
+
+const CallSummaryCard = ({ label, value, icon, tone, detail, onClick, actionLabel }: CallSummaryCardProps) => {
+  const body = <><span className={`stat-icon ${tone}`}>{icon}</span><div><p>{label}</p><strong>{value}</strong>{detail && <small className="call-summary-detail">{detail}</small>}</div></>;
+  return onClick ? (
+    <button type="button" className="call-summary-card section-card call-summary-card-action" onClick={onClick} title={actionLabel} aria-label={`${label}: ${value}. ${actionLabel ?? ''}`}>{body}</button>
+  ) : <div className="call-summary-card section-card">{body}</div>;
+};
 
 const directionIcon = (direction: CallRecord['direction']) => {
   if (direction === 'incoming') return <PhoneIncoming size={16} />;
   if (direction === 'outgoing') return <PhoneCall size={16} />;
   return <PhoneMissed size={16} />;
+};
+
+/** Unanswered dials cut before this many seconds look like target padding. */
+const QUICK_HANGUP_SECONDS = 10;
+
+const RingTime = ({ call }: { call: CallRecord }) => {
+  if (call.direction !== 'outgoing' || call.ringSeconds == null) return null;
+  if (call.durationSeconds > 0) return <small className="call-duration-hint call-ring-time">Rang {call.ringSeconds}s before answer</small>;
+  const quick = call.ringSeconds < QUICK_HANGUP_SECONDS;
+  return (
+    <small className={`call-ring-time ${quick ? 'call-recording-error' : 'call-duration-hint'}`} title={quick ? 'Hung up before the customer had a real chance to answer' : undefined}>
+      Rang {call.ringSeconds}s · not answered
+    </small>
+  );
 };
 
 const formatDuration = (seconds: number) => {

@@ -21,7 +21,15 @@ const defaultOrgSettings: OrganizationDetails['settings'] = {
   breakStart: '13:30',
   breakEnd: '14:30',
   idleThresholdMinutes: 30,
+  // Mirrors DEFAULT_WORKING_DAYS in GCF/functions/src/services/teamTodayCore.ts.
+  workingDays: [1, 2, 3, 4, 5, 6],
+  teamAlertsEnabled: true,
 };
+
+const WEEKDAY_OPTIONS = [
+  { value: 1, label: 'Mon' }, { value: 2, label: 'Tue' }, { value: 3, label: 'Wed' },
+  { value: 4, label: 'Thu' }, { value: 5, label: 'Fri' }, { value: 6, label: 'Sat' }, { value: 0, label: 'Sun' },
+];
 
 const DEFAULT_BREAK = { breakStart: '13:30', breakEnd: '14:30' };
 
@@ -32,6 +40,7 @@ const workingHoursError = (settings: OrganizationDetails['settings']) => {
   if (breakStart && breakEnd && (breakEnd <= breakStart || breakStart < start || breakEnd > end)) {
     return 'The break must end after it starts and sit inside working hours.';
   }
+  if ((settings.workingDays ?? [1]).length === 0) return 'Choose at least one working day.';
   const threshold = settings.idleThresholdMinutes ?? 30;
   if (!Number.isInteger(threshold) || threshold < 10 || threshold > 180) {
     return 'The no-activity threshold must be between 10 and 180 minutes.';
@@ -310,6 +319,14 @@ export const Settings = () => {
                   </label>
                 </div>
 
+                <div className="settings-row">
+                  <div><h3>Team Alerts</h3><p>Tell a rep's manager when the rep has no shift and no calls an hour into a working day, and the next manager up if it's still true two hours later.</p></div>
+                  <label className="toggle-switch">
+                    <input type="checkbox" checked={orgSettings.teamAlertsEnabled ?? true} onChange={(event) => setOrgSettings((settings) => ({ ...settings, teamAlertsEnabled: event.target.checked }))} />
+                    <span className="toggle-slider" />
+                  </label>
+                </div>
+
                 <div className="settings-grid">
                   <label>Default Timezone
                     <select className="input-field" value={orgSettings.timezone || 'Asia/Kolkata'} onChange={(event) => setOrgSettings((settings) => ({ ...settings, timezone: event.target.value }))}>
@@ -345,6 +362,26 @@ export const Settings = () => {
                     <input className="input-field" type="number" min={10} max={180} step={5} required value={orgSettings.idleThresholdMinutes ?? 30} onChange={(event) => setOrgSettings((settings) => ({ ...settings, idleThresholdMinutes: Number(event.target.value) }))} />
                   </label>
                 </div>
+                <fieldset className="weekday-picker">
+                  <legend>Working days</legend>
+                  {WEEKDAY_OPTIONS.map((day) => {
+                    const days = orgSettings.workingDays ?? defaultOrgSettings.workingDays!;
+                    return (
+                      <label key={day.value} className="weekday-option">
+                        <input
+                          type="checkbox"
+                          checked={days.includes(day.value)}
+                          onChange={(event) => setOrgSettings((settings) => {
+                            const current = settings.workingDays ?? defaultOrgSettings.workingDays!;
+                            const next = event.target.checked ? [...current, day.value] : current.filter((value) => value !== day.value);
+                            return { ...settings, workingDays: [...new Set(next)].sort() };
+                          })}
+                        />
+                        {day.label}
+                      </label>
+                    );
+                  })}
+                </fieldset>
                 <div className="settings-row">
                   <div><h3>Scheduled Break</h3><p>Time excluded from activity analysis, such as lunch.</p></div>
                   <label className="toggle-switch">

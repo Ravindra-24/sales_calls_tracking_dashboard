@@ -9,6 +9,8 @@ export interface ApiResponse<T> {
 
 export type UserRole = 'platform_owner' | 'org_admin' | 'manager' | 'sales_member';
 export type UserStatus = 'active' | 'disabled';
+/** 'team' limits a manager to their reporting line; 'all' = whole org. */
+export type ManagerVisibility = 'all' | 'team';
 export type OrgPlan = 'lite' | 'pro' | 'max' | 'enterprise';
 export type IntegrationScope = 'read:org' | 'read:team' | 'read:calls' | 'read:stats';
 export type IntegrationEventType = 'call.created' | 'daily_stats.updated';
@@ -21,6 +23,10 @@ export interface TeamMember {
   status: UserStatus;
   phoneNumber?: string;
   avatarUrl?: string;
+  /** Direct manager; null/absent = unassigned (reports to org admins). */
+  managerId?: string | null;
+  /** Managers only. Absent = 'all' (managers created before hierarchy). */
+  managerVisibility?: ManagerVisibility;
   createdAt: string;
   updatedAt: string;
 }
@@ -40,6 +46,10 @@ export interface CallRecord {
   startTime: string;
   endTime: string | null;
   durationSeconds: number;
+  /** Dial + ring seconds before answer or hang-up; null on older calls. */
+  ringSeconds?: number | null;
+  /** Where the rep was at call start; only for calls made during a shift. */
+  location?: { lat: number; lng: number; accuracyMeters: number | null; capturedAt: string | null } | null;
   notes?: string;
   tags?: string[];
   followUpAt?: string | null;
@@ -134,6 +144,9 @@ export interface RecordingImport {
 
 export interface CallSummary {
   totalCalls: number;
+  /** Absent from APIs older than the quick hang-up stats. */
+  outgoingCalls?: number;
+  quickHangups?: number;
   connectedCalls: number;
   notConnectedCalls: number;
   missedCalls: number;
@@ -183,7 +196,7 @@ export interface SyncHealthRecord {
 
 export interface AppNotification {
   id: string;
-  type: 'sync_health' | 'invite_reminder' | 'weekly_nudge' | 'account_issue' | 'call_analysis_ready' | 'call_analysis_failed' | 'deal_health_at_risk' | 'target_assigned' | 'target_updated';
+  type: 'sync_health' | 'invite_reminder' | 'weekly_nudge' | 'account_issue' | 'call_analysis_ready' | 'call_analysis_failed' | 'deal_health_at_risk' | 'target_assigned' | 'target_updated' | 'team_attendance';
   severity: 'info' | 'warning' | 'critical';
   title: string;
   message: string;
@@ -274,6 +287,7 @@ export interface InviteLog {
   role: UserRole;
   status: 'pending' | 'accepted' | 'expired' | 'revoked';
   invitedBy: string;
+  managerId?: string | null;
   createdAt: string | null;
   expiresAt: string | null;
   acceptedAt?: string | null;
@@ -551,9 +565,61 @@ export interface OrganizationDetails {
     breakStart?: string | null;
     breakEnd?: string | null;
     idleThresholdMinutes?: number;
+    /** Local weekdays the team works, 0 = Sunday. */
+    workingDays?: number[];
+    teamAlertsEnabled?: boolean;
   };
   createdAt: string | null;
   updatedAt: string | null;
+}
+
+export type TeamTodayFlag =
+  | 'not_started'
+  | 'tracking_dropped'
+  | 'idle_now'
+  | 'quick_hangups'
+  | 'target_behind'
+  | 'device_issue';
+
+export interface TeamTodayRow {
+  repId: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  managerId: string | null;
+  onShift: boolean;
+  trackingStale: boolean;
+  shiftStartedAtMs: number | null;
+  lastFixAtMs: number | null;
+  batteryPct: number | null;
+  calls: number;
+  talkSeconds: number;
+  outgoingCalls: number;
+  quickHangups: number;
+  /** Local minute-of-day in the org's timezone. */
+  firstActivityMinute: number | null;
+  lastActivityMinute: number | null;
+  noActivityMinutes: number;
+  targets: { total: number; behind: number; onTrack: number; achieved: number };
+  deviceIssues: string[];
+  flags: TeamTodayFlag[];
+}
+
+export interface TeamToday {
+  date: string;
+  generatedAt: string;
+  workingDay: boolean;
+  settings: { workStart: string; workEnd: string; idleThresholdMinutes: number; workingDays: number[] };
+  totals: {
+    members: number;
+    onShift: number;
+    started: number;
+    notStarted: number;
+    flagged: number;
+    calls: number;
+    talkSeconds: number;
+  };
+  rows: TeamTodayRow[];
 }
 
 export interface TenantCreateResult {
@@ -673,12 +739,16 @@ export interface TargetRecord {
   id: string;
   scope: 'rep' | 'team';
   repId: string | null;
+  /** Team targets: whose team; null = whole organization. */
+  teamManagerId?: string | null;
   source: 'manager' | 'self';
   title: string;
   description: string | null;
   metric: TargetMetric;
   customUnit: string | null;
   targetValue: number;
+  /** Call metrics only: just answered calls at least this long count. */
+  minCallSeconds: number | null;
   periodType: TargetPeriodType;
   startDate: string;
   endDate: string;
@@ -687,6 +757,8 @@ export interface TargetRecord {
   reportedBy: string | null;
   finalized: boolean;
   progress: TargetProgress;
+  /** Calls the minimum call length left out; null without a minimum (absent on older APIs). */
+  excludedShortCalls?: number | null;
   revisions: TargetRevisionRecord[];
   createdBy: string;
   createdByRole: UserRole;

@@ -20,6 +20,12 @@ export interface ActivityDay {
   weekday: number;
   callCount: number;
   talkSeconds: number;
+  /** Outgoing dials, and those cut unanswered within a few seconds. Absent before the API added them. */
+  outgoingCalls?: number;
+  quickHangups?: number;
+  /** Unanswered dials with measured ring time, and their total ring seconds. */
+  measuredUnansweredDials?: number;
+  unansweredRingSeconds?: number;
   firstActivityMinute: number;
   lastActivityMinute: number;
   windowMinutes: number;
@@ -46,6 +52,12 @@ export interface RepActivity {
   activeDays: number;
   callCount: number;
   talkSeconds: number;
+  /** Outgoing dials, and those cut unanswered within a few seconds. Absent before the API added them. */
+  outgoingCalls?: number;
+  quickHangups?: number;
+  /** Unanswered dials with measured ring time, and their total ring seconds. */
+  measuredUnansweredDials?: number;
+  unansweredRingSeconds?: number;
   windowMinutes: number;
   noActivityMinutes: number;
   noActivityBlocks: number;
@@ -74,6 +86,10 @@ export interface ActivityReport {
     daysOff: number;
     callCount: number;
     talkSeconds: number;
+    outgoingCalls?: number;
+    quickHangups?: number;
+    measuredUnansweredDials?: number;
+    unansweredRingSeconds?: number;
     windowMinutes: number;
     noActivityMinutes: number;
     noActivityBlocks: number;
