@@ -20,8 +20,15 @@ import type {
 } from '../../types/tracking';
 
 const DEFAULT_CENTER: LatLngTuple = [18.5204, 73.8567];
-const CARTO_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
+const OSM_ATTRIBUTION =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+
+// Free OSM tiles by default (no key). A keyed provider (MapTiler, Stadia, ...)
+// can be swapped in via env; without a dark URL, dark mode tints the light tiles.
+const TILE_URL_LIGHT =
+  import.meta.env.VITE_MAP_TILE_URL_LIGHT || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const TILE_URL_DARK = import.meta.env.VITE_MAP_TILE_URL_DARK || '';
+const TILE_ATTRIBUTION = import.meta.env.VITE_MAP_TILE_ATTRIBUTION || OSM_ATTRIBUTION;
 
 const escapeHtml = (value: string) =>
   value
@@ -78,14 +85,15 @@ const FitMapToPoints = ({ points }: { points: LatLngTuple[] }) => {
 
 const TileLayerForTheme = () => {
   const { resolvedTheme } = useTheme();
-  const style = resolvedTheme === 'dark' ? 'dark_all' : 'light_all';
+  const dark = resolvedTheme === 'dark';
+  const url = dark && TILE_URL_DARK ? TILE_URL_DARK : TILE_URL_LIGHT;
   return (
     <TileLayer
-      key={style}
-      attribution={CARTO_ATTRIBUTION}
-      url={`https://{s}.basemaps.cartocdn.com/${style}/{z}/{x}/{y}{r}.png`}
-      subdomains="abcd"
-      maxZoom={20}
+      key={`${url}:${dark}`}
+      attribution={TILE_ATTRIBUTION}
+      url={url}
+      className={dark && !TILE_URL_DARK ? 'map-tiles-dimmed' : undefined}
+      maxZoom={19}
     />
   );
 };

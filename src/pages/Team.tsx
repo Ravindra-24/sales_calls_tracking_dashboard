@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { api, getApiErrorMessage } from '../api/client';
 import { ActionMenu } from '../components/ActionMenu';
 import { useAuth } from '../context/auth';
+import { useFeedback } from '../context/feedback';
 import type { ApiResponse, InviteLog, InviteResult, ManagerVisibility, OrganizationDetails, TeamMember } from '../types/api';
 
 const UNASSIGNED = 'unassigned';
@@ -51,6 +52,7 @@ export const Team = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkManagerId, setBulkManagerId] = useState('');
   const [movingBulk, setMovingBulk] = useState(false);
+  const { confirm } = useFeedback();
   const canManage = claims.role === 'org_admin' || claims.role === 'manager';
   const isAdmin = claims.role === 'org_admin';
 
@@ -243,7 +245,7 @@ export const Team = () => {
 
   const updateHierarchy = async (
     member: TeamMember,
-    patch: { managerId?: string | null; managerVisibility?: ManagerVisibility },
+    patch: { managerId?: string | null; managerVisibility?: ManagerVisibility; role?: MemberRole },
     success: string,
   ) => {
     setSavingMemberId(member.id);
@@ -266,6 +268,28 @@ export const Team = () => {
       member,
       { managerId },
       managerId ? `${member.name || member.email} now reports to ${memberLabel(managerId)}.` : `${member.name || member.email} is now unassigned.`,
+    );
+  };
+
+  const changeRole = async (member: TeamMember, nextRole: MemberRole) => {
+    if (nextRole === member.role) return;
+    const label = member.name || member.email;
+    const promoting = nextRole === 'manager';
+    const confirmed = await confirm({
+      title: promoting ? `Make ${label} a manager?` : `Change ${label} to sales member?`,
+      description: promoting ?
+        'They will see only their own team until you change their visibility. The new access applies after they sign out and back in.' :
+        'They lose manager access. Any direct reports must be reassigned first.',
+      confirmLabel: promoting ? 'Make manager' : 'Change role',
+      variant: 'warning',
+    });
+    if (!confirmed) return;
+    void updateHierarchy(
+      member,
+      { role: nextRole },
+      promoting ?
+        `${label} is now a manager. Ask them to sign out and back in.` :
+        `${label} is now a sales member.`,
     );
   };
 
@@ -456,7 +480,14 @@ export const Team = () => {
                     )}
                   </td>
                   <td data-label="Role">
-                    <span className={`role-badge ${member.role}`}><Shield size={14} /> {formatRole(member.role)}</span>
+                    {isAdmin && member.role !== 'org_admin' && member.id !== user?.uid ? (
+                      <select className="input-field compact-select" value={member.role} disabled={savingMemberId === member.id} onChange={(event) => void changeRole(member, event.target.value as MemberRole)} aria-label={`Role for ${member.name || member.email}`}>
+                        <option value="sales_member">Sales member</option>
+                        <option value="manager">Manager</option>
+                      </select>
+                    ) : (
+                      <span className={`role-badge ${member.role}`}><Shield size={14} /> {formatRole(member.role)}</span>
+                    )}
                     {member.role === 'manager' && (isAdmin ? (
                       <select className="input-field compact-select visibility-select" value={member.managerVisibility ?? 'all'} disabled={savingMemberId === member.id} onChange={(event) => changeVisibility(member, event.target.value as ManagerVisibility)} aria-label={`What ${member.name || member.email} can see`}>
                         <option value="team">Sees own team</option>
@@ -548,5 +579,7 @@ export const Team = () => {
     </div>
   );
 };
+
+type MemberRole = 'sales_member' | 'manager';
 
 const formatRole = (role: string) => role.replace('org_admin', 'org admin').replace('sales_member', 'sales member');
